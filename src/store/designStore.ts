@@ -14,7 +14,7 @@ const DEFAULT_DESIGN: Design = {
   venue: 0,
   time: 'venue',
   wx: 'clear',
-  table: { layout: 'round', guests: 8, mirror: true, rot: 0 },
+  table: { layout: 'round', guests: 8, mirror: true, rotations: {} },
   items: [],
   palette: 'ivory',
   customPalette: [],
@@ -36,7 +36,7 @@ interface PlaceItemInput {
   on?: string;
 }
 
-export type ModalName = 'designs' | 'quote' | 'addons';
+export type ModalName = 'designs' | 'quote' | 'addons' | 'storybook';
 
 interface StoreState {
   design: Design;
@@ -66,6 +66,7 @@ interface StoreState {
   toggleMirror: () => void;
   setPalette: (id: string) => void;
   setTableChair: (chair: ChairStyle | undefined) => void;
+  rotateTable: (index: number, dir: 1 | -1) => void;
 
   placeItem: (input: PlaceItemInput) => string;
   removeItem: (id: string) => void;
@@ -78,9 +79,11 @@ interface StoreState {
   clearAll: () => void;
 
   select: (sel: Selection) => void;
+  toggleMultiSelect: (id: string) => void;
   rotateSelected: (dir: 1 | -1) => void;
   duplicateSelected: () => void;
   removeSelected: () => void;
+  arrangeSelected: (kind: 'row' | 'circle' | 'face') => void;
 
   undo: () => void;
   redo: () => void;
@@ -115,6 +118,12 @@ interface StoreState {
 
 function snapshot(d: Design): Design {
   return JSON.parse(JSON.stringify(d));
+}
+
+function selectedIds(sel: Selection): string[] {
+  if (sel?.k === 'item') return [sel.id];
+  if (sel?.k === 'multi') return sel.ids;
+  return [];
 }
 
 export const useDesignStore = create<StoreState>((set, get) => {
@@ -193,20 +202,95 @@ export const useDesignStore = create<StoreState>((set, get) => {
     },
 
     select: (sel) => set({ selection: sel }),
+    toggleMultiSelect: (id) => {
+      const cur = selectedIds(get().selection);
+      const has = cur.includes(id);
+      const next = has ? cur.filter((i) => i !== id) : [...cur, id];
+      if (next.length === 0) set({ selection: null });
+      else if (next.length === 1) set({ selection: { k: 'item', id: next[0] } });
+      else set({ selection: { k: 'multi', ids: next } });
+    },
     rotateSelected: (dir) => {
       const sel = get().selection;
-      if (sel?.k === 'item') get().rotateItem(sel.id, dir);
+      if (sel?.k === 'table') {
+        get().rotateTable(sel.index, dir);
+        return;
+      }
+      const ids = selectedIds(sel);
+      if (!ids.length) return;
+      commit((d) => ({
+        ...d,
+        items: d.items.map((i) => (ids.includes(i.id) ? { ...i, rot: i.rot + dir * (Math.PI / 12) } : i)),
+      }));
     },
+    rotateTable: (index, dir) =>
+      commit((d) => ({
+        ...d,
+        table: {
+          ...d.table,
+          rotations: { ...d.table.rotations, [index]: (d.table.rotations?.[index] ?? 0) + dir * (Math.PI / 12) },
+        },
+      })),
     duplicateSelected: () => {
-      const sel = get().selection;
-      if (sel?.k === 'item') get().duplicateItem(sel.id);
+      const ids = selectedIds(get().selection);
+      if (!ids.length) return;
+      const newIds: string[] = [];
+      commit((d) => {
+        const dupes = d.items
+          .filter((i) => ids.includes(i.id))
+          .map((src) => {
+            const newId = crypto.randomUUID();
+            newIds.push(newId);
+            return { ...src, id: newId, x: src.x + 0.15, z: src.z + 0.15 };
+          });
+        return { ...d, items: [...d.items, ...dupes] };
+      });
+      if (newIds.length === 1) set({ selection: { k: 'item', id: newIds[0] } });
+      else if (newIds.length > 1) set({ selection: { k: 'multi', ids: newIds } });
     },
     removeSelected: () => {
+      const ids = selectedIds(get().selection);
+      if (!ids.length) return;
+      commit((d) => ({ ...d, items: d.items.filter((i) => !ids.includes(i.id) && !ids.includes(i.on ?? '')) }));
+      set({ selection: null });
+    },
+    arrangeSelected: (kind) => {
       const sel = get().selection;
-      if (sel?.k === 'item') {
-        get().removeItem(sel.id);
-        set({ selection: null });
+      if (sel?.k !== 'multi') return;
+      const targets = get().design.items.filter((i) => sel.ids.includes(i.id) && ITEMS[i.type]?.surf !== 'table');
+      if (targets.length < 2) {
+        get().showToast('Arrange works on floor and hanging pieces');
+        return;
       }
+      const cx = targets.reduce((a, i) => a + i.x, 0) / targets.length;
+      const cz = targets.reduce((a, i) => a + i.z, 0) / targets.length;
+      const updates = new Map<string, { x: number; z: number; rot: number }>();
+      if (kind === 'circle') {
+        const radius = Math.max(1.2, targets.reduce((a, i) => a + Math.hypot(i.x - cx, i.z - cz), 0) / targets.length);
+        targets.forEach((i, k) => {
+          const a = (k / targets.length) * Math.PI * 2;
+          updates.set(i.id, { x: cx + Math.sin(a) * radius, z: cz + Math.cos(a) * radius, rot: a + Math.PI });
+        });
+      } else if (kind === 'row') {
+        const alongX = Math.max(...targets.map((i) => i.x)) - Math.min(...targets.map((i) => i.x)) >= Math.max(...targets.map((i) => i.z)) - Math.min(...targets.map((i) => i.z));
+        const sorted = [...targets].sort((a, b) => (alongX ? a.x - b.x : a.z - b.z));
+        const a0 = alongX ? sorted[0].x : sorted[0].z;
+        const a1 = alongX ? sorted[sorted.length - 1].x : sorted[sorted.length - 1].z;
+        const span = Math.max(a1 - a0, (sorted.length - 1) * 1.2);
+        sorted.forEach((i, k) => {
+          const v = a0 + (span * k) / (sorted.length - 1);
+          updates.set(i.id, alongX ? { x: v, z: cz, rot: i.rot } : { x: cx, z: v, rot: i.rot });
+        });
+      } else {
+        targets.forEach((i) => updates.set(i.id, { x: i.x, z: i.z, rot: Math.atan2(-i.x, -i.z) }));
+      }
+      commit((d) => ({
+        ...d,
+        items: d.items.map((i) => {
+          const u = updates.get(i.id);
+          return u ? { ...i, x: u.x, z: u.z, rot: u.rot } : i;
+        }),
+      }));
     },
 
     undo: () => {

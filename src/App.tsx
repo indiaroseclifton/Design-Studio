@@ -9,13 +9,16 @@ import { ComingSoonOverlay } from './components/ui/ComingSoonOverlay';
 import { DesignsModal } from './components/ui/DesignsModal';
 import { QuoteModal } from './components/ui/QuoteModal';
 import { AddonsModal } from './components/ui/AddonsModal';
+import { StorybookModal } from './components/ui/StorybookModal';
 import { FlowerStudioOverlay } from './components/flowerStudio/FlowerStudioOverlay';
 import { useDesignStore } from './store/designStore';
 import { useFlowerStudioStore } from './store/flowerStudioStore';
+import { useKeyboardShortcuts } from './lib/useKeyboardShortcuts';
 
 export default function App() {
   const modal = useDesignStore((s) => s.modal);
   const flowerStudioOpen = useFlowerStudioStore((s) => s.isOpen);
+  useKeyboardShortcuts();
 
   return (
     <div className="relative h-full w-full overflow-hidden">
@@ -30,6 +33,7 @@ export default function App() {
       {modal === 'designs' && <DesignsModal />}
       {modal === 'quote' && <QuoteModal />}
       {modal === 'addons' && <AddonsModal />}
+      {modal === 'storybook' && <StorybookModal />}
       {flowerStudioOpen && <FlowerStudioOverlay />}
     </div>
   );

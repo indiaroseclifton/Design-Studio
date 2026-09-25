@@ -12,6 +12,7 @@ export function InspectorPanel() {
   const rotateSelected = useDesignStore((s) => s.rotateSelected);
   const duplicateSelected = useDesignStore((s) => s.duplicateSelected);
   const removeSelected = useDesignStore((s) => s.removeSelected);
+  const arrangeSelected = useDesignStore((s) => s.arrangeSelected);
   const select = useDesignStore((s) => s.select);
   const customFlowers = useFlowerStudioStore((s) => s.customFlowers);
   const openFlowerStudio = useFlowerStudioStore((s) => s.open);
@@ -24,13 +25,50 @@ export function InspectorPanel() {
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="lbl">Table</div>
-            <div className="serif text-[22px] leading-[1.1]">Selected table</div>
+            <div className="serif text-[22px] leading-[1.1]">Table {selection.index + 1}</div>
           </div>
-          <button type="button" className="px-1 text-[20px] leading-none opacity-60 hover:opacity-100" onClick={() => select(null)}>
+          <button type="button" className="px-1 text-[20px] leading-none opacity-60 hover:opacity-100" title="Deselect (Esc)" onClick={() => select(null)}>
             ×
           </button>
         </div>
-        <div className="text-[12px] opacity-70">Per-table rotation and dragging arrive with plan view.</div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button type="button" className="btn" title="Rotate table left (Q)" onClick={() => rotateSelected(-1)}>
+            ↺ Rotate table
+          </button>
+          <button type="button" className="btn" title="Rotate table right (E)" onClick={() => rotateSelected(1)}>
+            Rotate table ↻
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (selection.k === 'multi') {
+    return (
+      <section className="glass flex flex-col gap-2 p-3.5">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="lbl">Multiple pieces</div>
+            <div className="serif mt-0.5 text-[22px] leading-[1.1]">{selection.ids.length} selected</div>
+          </div>
+          <button type="button" className="px-1 text-[20px] leading-none opacity-60 hover:opacity-100" title="Deselect (Esc)" onClick={() => select(null)}>
+            ×
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button type="button" className="btn" onClick={() => arrangeSelected('row')}>
+            Line up
+          </button>
+          <button type="button" className="btn" onClick={() => arrangeSelected('circle')}>
+            Circle
+          </button>
+          <button type="button" className="btn" onClick={() => arrangeSelected('face')}>
+            Face centre
+          </button>
+          <button type="button" className="btn" title="Remove all (Delete)" onClick={removeSelected}>
+            Remove all
+          </button>
+        </div>
       </section>
     );
   }

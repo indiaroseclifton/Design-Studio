@@ -37,13 +37,21 @@ export function resolvePlacements(design: Design, tables: TableInstance[]): Plac
   return out;
 }
 
+function rotateAround(x: number, z: number, rot: number): [number, number] {
+  const cos = Math.cos(rot);
+  const sin = Math.sin(rot);
+  return [x * cos + z * sin, -x * sin + z * cos];
+}
+
 function emitTableItem(item: PlacedItem, table: TableInstance, design: Design, out: Placement[]) {
   const def = ITEMS[item.type];
   if (!def) return;
-  const x = table.x + item.x;
-  const z = table.z + item.z;
+  const [ox, oz] = rotateAround(item.x, item.z, table.rot);
+  const x = table.x + ox;
+  const z = table.z + oz;
+  const rot = item.rot + table.rot;
   const key = `${item.id}@${table.index}`;
-  out.push({ key, item, x, y: TABLE_TOP_Y, z, rot: item.rot });
+  out.push({ key, item, x, y: TABLE_TOP_Y, z, rot });
 
   if (def.top) {
     const topY = TABLE_TOP_Y + def.top.h;
@@ -51,7 +59,8 @@ function emitTableItem(item: PlacedItem, table: TableInstance, design: Design, o
       if (child.on !== item.id) continue;
       const childDef = ITEMS[child.type];
       if (!childDef) continue;
-      out.push({ key: `${key}>${child.id}`, item: child, x: x + child.x, y: topY, z: z + child.z, rot: child.rot });
+      const [cox, coz] = rotateAround(child.x, child.z, table.rot);
+      out.push({ key: `${key}>${child.id}`, item: child, x: x + cox, y: topY, z: z + coz, rot: child.rot + table.rot });
     }
   }
 }

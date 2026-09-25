@@ -35,9 +35,9 @@ export function TableSystem({
     return { perTable, ceremony };
   }, [chairProto, tables, ceremonySeats]);
 
-  const selectTable = (e: ThreeEvent<MouseEvent>) => {
+  const selectTable = (e: ThreeEvent<MouseEvent>, index: number) => {
     e.stopPropagation();
-    select({ k: 'table' });
+    select({ k: 'table', index });
   };
 
   return (
@@ -48,7 +48,7 @@ export function TableSystem({
           <group key={t.index} position={[t.x, 0, t.z]} rotation={[0, t.rot, 0]}>
             {t.kind === 'round' ? (
               <>
-                <mesh position={[0, 0.75, 0]} castShadow receiveShadow onClick={selectTable}>
+                <mesh position={[0, 0.75, 0]} castShadow receiveShadow onClick={(e) => selectTable(e, t.index)}>
                   <cylinderGeometry args={[t.radius, t.radius, 0.04, 32]} />
                   <meshStandardMaterial color={linen} roughness={0.9} />
                 </mesh>
@@ -59,7 +59,7 @@ export function TableSystem({
               </>
             ) : (
               <>
-                <mesh position={[0, 0.75, 0]} castShadow receiveShadow onClick={selectTable}>
+                <mesh position={[0, 0.75, 0]} castShadow receiveShadow onClick={(e) => selectTable(e, t.index)}>
                   <boxGeometry args={[t.width, 0.04, t.length]} />
                   <meshStandardMaterial color={linen} roughness={0.9} />
                 </mesh>
@@ -72,7 +72,7 @@ export function TableSystem({
             {t.seats.map((s, i) => (
               <primitive key={i} object={chairClones.perTable[ti][i]} position={[s.x, 0, s.z]} rotation={[0, s.facing, 0]} />
             ))}
-            {selection?.k === 'table' && (
+            {selection?.k === 'table' && selection.index === t.index && (
               <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
                 <ringGeometry args={[ringR, ringR + 0.05, 48]} />
                 <meshBasicMaterial color="#f3d9a4" transparent opacity={0.6} />

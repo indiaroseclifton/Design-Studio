@@ -12,7 +12,11 @@ export function PlacedItems({ tables }: { tables: TableInstance[] }) {
   return (
     <>
       {placements.map((p) => (
-        <PlacedItemMesh key={p.key} placement={p} selected={selection?.k === 'item' && selection.id === p.item.id} />
+        <PlacedItemMesh
+          key={p.key}
+          placement={p}
+          selected={(selection?.k === 'item' && selection.id === p.item.id) || (selection?.k === 'multi' && selection.ids.includes(p.item.id))}
+        />
       ))}
     </>
   );

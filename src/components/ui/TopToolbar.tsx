@@ -4,7 +4,6 @@ import { captureSceneSnapshot } from '../../three/snapshot';
 import { triggerDownload } from '../../lib/download';
 
 const COMING_SOON_BUTTONS = [
-  { key: 'storybook', label: 'Storybook', name: 'Storybook' },
   { key: 'lantern', label: 'Brass Lantern', name: 'Brass Lantern' },
   { key: 'ar', label: 'View in AR', name: 'View in AR' },
 ];
@@ -54,6 +53,9 @@ export function TopToolbar() {
       </button>
       <button type="button" className={btnClass} onClick={handleSnapshot}>
         Snapshot
+      </button>
+      <button type="button" className={btnClass} onClick={() => openModal('storybook')}>
+        Storybook
       </button>
       {COMING_SOON_BUTTONS.map((b) => (
         <button key={b.key} type="button" className={btnClass} onClick={() => showComingSoon(b.name)}>

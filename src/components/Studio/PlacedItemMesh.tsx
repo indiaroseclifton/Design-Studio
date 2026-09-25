@@ -13,6 +13,7 @@ export function PlacedItemMesh({ placement, selected }: { placement: Placement; 
   const def = ITEMS[item.type];
   const design = useDesignStore((s) => s.design);
   const select = useDesignStore((s) => s.select);
+  const toggleMultiSelect = useDesignStore((s) => s.toggleMultiSelect);
   const palette = getPalette(item.pal ?? design.palette);
 
   const group = useMemo(() => {
@@ -43,7 +44,8 @@ export function PlacedItemMesh({ placement, selected }: { placement: Placement; 
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    select({ k: 'item', id: item.id });
+    if (e.shiftKey) toggleMultiSelect(item.id);
+    else select({ k: 'item', id: item.id });
   };
 
   if (!def) return null;

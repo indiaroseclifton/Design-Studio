@@ -86,7 +86,8 @@ export interface TableConfig {
   linen?: string;
   /** overrides the venue's default chair style when set */
   chair?: ChairStyle;
-  rot: number;
+  /** per-table rotation overrides, keyed by TableInstance.index, in radians */
+  rotations: Record<number, number>;
 }
 
 export interface Design {
@@ -101,7 +102,7 @@ export interface Design {
 
 export type Selection =
   | { k: 'item'; id: string }
-  | { k: 'table' }
+  | { k: 'table'; index: number }
   | { k: 'multi'; ids: string[] }
   | null;
 

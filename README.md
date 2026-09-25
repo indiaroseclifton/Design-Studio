@@ -36,7 +36,8 @@ npm run lint      # oxlint
   that wraps all the way around, while any other photo becomes a curved backdrop panel behind the tables.
   The photo persists to `localStorage` and can be swapped via the "Change" link on its venue card
   (`src/store/venuePhotoStore.ts`).
-- **Catalogue** — 152 placeable pieces across Templates, Linens, Chairs, Tableware, Florals, Candles &
+- **Catalogue** — 152 placeable pieces (up from the original build's 108, ~55% of the way to the handoff's
+  full ~277-item set) across Templates, Linens, Chairs, Tableware, Florals, Candles &
   light, Furniture & lighting, Wedding, Holiday, Faith & culture, Corporate, Parties & kids, Desserts, and
   five add-on packs (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail
   (`src/three/thumbnail.ts`). Two categories use special placement mechanics instead of adding a single
@@ -59,10 +60,19 @@ npm run lint      # oxlint
   item (one with a `top` surface) to enter decorating mode and stack stackable pieces on it.
 - **Tables & guests** — Round / Banquet / Ceremony / Empty layouts, a guests slider that adds tables,
   "Dress every table alike" mirroring, and "Set a place at every chair" (`src/lib/layout.ts`).
-- **Selection & editing** — click to select, rotate (↺/↻), duplicate, remove, recolour via palette or a
-  custom colour, and edit text on signage/menu cards.
-- **Undo/redo** — snapshot-based history wired to the toolbar.
-- **Camera** — Wide / Guest's eye / Couple's view / Overhead presets, orbit controls, slow-orbit toggle.
+- **Selection & editing** — click to select, rotate (Q/↺, E/↻), duplicate (D), remove (Delete), recolour via
+  palette or a custom colour, and edit text on signage/menu cards. Shift-click adds pieces to a multi-select;
+  the inspector then offers "Line up", "Circle", "Face centre" and "Remove all" for the group
+  (`src/store/designStore.ts`, `src/lib/useKeyboardShortcuts.ts`).
+- **Tables** — click a table to select and rotate just that one (independent of the others in a multi-table
+  layout) via the inspector or Q/E.
+- **Undo/redo** — snapshot-based history wired to the toolbar and Ctrl/Cmd+Z / Ctrl+Shift+Z.
+- **Camera** — Wide / Guest's eye / Couple's view / Overhead presets, orbit controls, slow-orbit toggle, and
+  a **Plan view** that clips away roofs and hanging décor above head height and drops into a top-down,
+  pan-only floor plan of the layout (`src/components/Studio/CameraRig.tsx`).
+- **Storybook** — a toolbar button that cycles the camera through four presets (including a plan-view shot
+  of the layout) and captures a small photo set of the current design, each downloadable individually or
+  all at once (`src/components/ui/StorybookModal.tsx`).
 - **Snapshot** — downloads a PNG of the current 3D view; also used as the thumbnail when saving a design.
 - **Designs modal** — save/load/rename/delete named designs (with a live snapshot thumbnail) to
   `localStorage`, plus JSON export/import of the current design (`src/components/ui/DesignsModal.tsx`).
@@ -72,11 +82,11 @@ npm run lint      # oxlint
 
 ## Deferred
 
-Storybook, Brass Lantern, and the AR viewer are stubbed with a "coming soon" overlay from the toolbar —
-they're substantial features in their own right and were scoped out by design. Also deferred: My Uploads
-(a general-purpose upload gallery beyond the venue photo), the rest of the ~277-item catalogue,
-drag-and-drop placement (click-to-place is implemented instead), plan view, multi-select, per-table
-rotation, and the placement-zone/weather visualizations.
+Brass Lantern (a bespoke cocktail-menu design sub-app, unrelated to the venue-planning core) and the AR
+viewer (needs WebXR and a real device/camera to test) are stubbed with a "coming soon" overlay from the
+toolbar and were scoped out by design. Also deferred: My Uploads (a general-purpose upload gallery beyond
+the venue photo), the rest of the ~277-item catalogue, drag-and-drop placement (click-to-place is
+implemented instead), and the placement-zone/weather visualizations.
 
 See `docs/design_handoff_event_studio/README.md` (the original handoff bundle) for the full original spec,
 including the working HTML/three.js prototype and screenshots.

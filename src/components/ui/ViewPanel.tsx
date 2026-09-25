@@ -19,13 +19,14 @@ export function ViewPanel() {
   const showZone = useDesignStore((s) => s.showZone);
   const setShowZone = useDesignStore((s) => s.setShowZone);
   const clearAll = useDesignStore((s) => s.clearAll);
-  const showComingSoon = useDesignStore((s) => s.showComingSoon);
+  const planView = useDesignStore((s) => s.planView);
+  const setPlanView = useDesignStore((s) => s.setPlanView);
 
   return (
     <section className="glass flex flex-col gap-2 p-3.5">
       <div className="lbl">View</div>
       <div className="grid grid-cols-2 gap-1.5">
-        <button type="button" className="btn" onClick={() => showComingSoon('Plan view')}>
+        <button type="button" className={`btn ${planView ? 'on' : ''}`} onClick={() => setPlanView(!planView)}>
           Plan view
         </button>
         <button type="button" className="btn" onClick={() => setCameraPreset('wide')}>
