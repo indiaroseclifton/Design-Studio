@@ -176,6 +176,12 @@ design, so saved designs, exports and share links carry it, and each feeds the o
     and eras, and songs like the ones you've pinned, each with its reason. One tap adds a song (a set
     grows to fit it) or picks it for a single-song moment.
   - Pin, remove, reshuffle and add your own songs, with a do-not-play list.
+  - **Previews in the app** (`src/music/preview.ts`): ▶ plays a 30-second clip without leaving the studio,
+    from Apple's public iTunes Search API (no account or key). A ring fills as it plays, one clip plays at
+    a time, Space pauses and resumes, and a player bar under the playlist has the artwork, a seekable
+    progress line and a link to the full track on Apple Music. Once previewed, a song's record label shows
+    its album artwork. Lookups skip karaoke and cover versions, are cached, and fall back to JSONP if the
+    browser refuses the direct request; when there's no preview, the bar links to a Spotify search.
   - A warm black-and-gold look: a glowing energy wave across the day (click it to open a moment), moment
     chips, and a track table with energy bars, tempo and start times. A little crowd dances along the floor
     under the wave (swaying, bobbing or jumping to the energy), and one-song moments spin on a turntable.

@@ -3,6 +3,7 @@ import { useDesignStore } from '../../store/designStore';
 import { downloadText } from '../../lib/capture';
 import { GENRES as GENRE_NAMES, ERAS, FORMATS, MOMENTS, MOMENT_ORDER, TRACK_MIN, clock, curate, dayStart, defaultMusic, playlistCsv, recommend, searchLinks, type Era, type Format, type MomentId, type MusicPlan, type Segment } from '../../music/model';
 import type { Genre, Song } from '../../music/library';
+import { cachedArtwork, previewState, seekPreview, stopPreview, togglePreview, usePreview, usePreviewKey } from '../../music/preview';
 import { Sec, Stepper } from '../studio3d/ui';
 import { histReducer } from '../studio3d/state';
 
@@ -21,11 +22,89 @@ function hue(s: string) {
 }
 function Cover({ t, big }: { t: Song; big?: boolean }) {
   const h = hue(t.title + t.artist);
-  // A record: the label takes the song's colour, the vinyl stays dark.
+  // A record: the label is the album artwork once the song has been previewed, else the song's colour.
+  const art = cachedArtwork(t.id);
   return (
-    <span className={`mu-cover ${big ? 'big' : ''}`} style={{ '--h': h } as CSSProperties} aria-hidden>
-      <i>{t.title.replace(/[^A-Za-z0-9]/g, '').slice(0, 1)}</i>
+    <span className={`mu-cover ${big ? 'big' : ''}`} style={{ '--h': h, ...(art ? { '--art': `url("${art}")` } : {}) } as CSSProperties} aria-hidden>
+      {art ? <b className="mu-art" /> : <i>{t.title.replace(/[^A-Za-z0-9]/g, '').slice(0, 1)}</i>}
     </span>
+  );
+}
+
+/** Play or pause a song's 30-second preview in the app; the ring fills as it plays. */
+function PlayButton({ song, label }: { song: Song; label?: string }) {
+  const p = usePreview();
+  const mine = p.song?.id === song.id;
+  const status = mine ? p.status : 'idle';
+  const playing = status === 'playing';
+  return (
+    <button
+      type="button"
+      className={`mu-play ${label ? 'wide' : ''} ${mine ? status : ''}`}
+      style={{ '--p': mine ? p.progress : 0 } as CSSProperties}
+      aria-label={`${playing ? 'Pause' : 'Play'} a preview of ${song.title}`}
+      title={status === 'unavailable' ? 'No preview available' : playing ? 'Pause' : 'Play a 30-second preview'}
+      onClick={() => void togglePreview(song)}
+    >
+      <span className="mu-play-i" aria-hidden>
+        {status === 'loading' ? '' : playing ? '❚❚' : '▶'}
+      </span>
+      {label && <span>{playing ? 'Pause' : label}</span>}
+    </button>
+  );
+}
+
+/** The preview playing now: artwork, progress (click to seek), pause, and the full track on Apple Music. */
+function NowPlaying({ fallback }: { fallback: (s: { title: string; artist: string }) => string }) {
+  const p = usePreview();
+  if (!p.song) return null;
+  const s = p.song;
+  return (
+    <div className="mu-now" role="region" aria-label="Now playing">
+      {p.info?.artwork ? <img src={p.info.artwork} alt="" className="mu-now-art" /> : <span className="mu-now-art" />}
+      <div className="mu-now-t">
+        <b>{s.title}</b>
+        <small>
+          {s.artist}
+          {p.status === 'loading' ? ' · finding a preview…' : p.status === 'unavailable' ? ' · no preview available' : ' · 30-second preview'}
+        </small>
+        {p.info && (
+          <div
+            className="mu-now-bar"
+            role="slider"
+            aria-label="Preview position"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(p.progress * 100)}
+            tabIndex={0}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              seekPreview((e.clientX - r.left) / r.width);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight') seekPreview(p.progress + 0.1);
+              else if (e.key === 'ArrowLeft') seekPreview(p.progress - 0.1);
+            }}
+          >
+            <i style={{ width: `${p.progress * 100}%` }} />
+          </div>
+        )}
+      </div>
+      {p.status !== 'unavailable' && (
+        <button type="button" className="mu-play big" aria-label={p.status === 'playing' ? 'Pause' : 'Play'} onClick={() => void togglePreview(s)}>
+          <span className="mu-play-i" aria-hidden>
+            {p.status === 'loading' ? '' : p.status === 'playing' ? '❚❚' : '▶'}
+          </span>
+        </button>
+      )}
+      <a className="mu-now-link" href={p.info?.trackUrl || fallback(s)} target="_blank" rel="noreferrer">
+        {p.info?.trackUrl ? 'Apple Music ↗' : 'Find on Spotify ↗'}
+      </a>
+      <button type="button" className="fs-mini" aria-label="Close the player" onClick={stopPreview}>
+        ×
+      </button>
+      {p.info && <span className="mu-now-credit">Preview courtesy of Apple Music</span>}
+    </div>
   );
 }
 
@@ -249,6 +328,15 @@ export function MusicStudio() {
       if (typing) return;
       const mod = e.metaKey || e.ctrlKey,
         k = e.key.toLowerCase();
+      // Space pauses or resumes the preview (unless a button has focus, where Space presses it).
+      if (e.key === ' ' && !(e.target instanceof HTMLButtonElement)) {
+        const cur = previewState();
+        if (cur.song && cur.status !== 'unavailable') {
+          e.preventDefault();
+          void togglePreview(cur.song);
+        }
+        return;
+      }
       if (mod && k === 'z') {
         e.preventDefault();
         dispatch({ t: e.shiftKey ? 'redo' : 'undo' });
@@ -260,6 +348,10 @@ export function MusicStudio() {
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [confirm, requestClose]);
+
+  // Previews stop when the studio closes; record labels pick up album artwork as songs are previewed.
+  useEffect(() => () => stopPreview(), []);
+  usePreviewKey();
 
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   const mp = plan.moments.find((m) => m.id === sel)!;
@@ -357,9 +449,7 @@ export function MusicStudio() {
                     </span>
                     <EnergyBars t={selSeg.tracks[0]} />
                     <div className="mu-hero-acts">
-                      <a className="btn mu-btn" href={searchLinks(selSeg.tracks[0]).spotify} target="_blank" rel="noreferrer">
-                        ▶ Listen
-                      </a>
+                      <PlayButton song={selSeg.tracks[0]} label="Play preview" />
                       {!selSeg.tracks[0].pinned && (
                         <button type="button" className="btn primary mu-btn" onClick={() => choose(selSeg.tracks[0])}>
                           Keep this song
@@ -398,9 +488,7 @@ export function MusicStudio() {
                         <span className="mu-c-b mu-num">{t.bpm}</span>
                         <span className="mu-num">{clock(start + t.at)}</span>
                         <span className="mu-acts">
-                          <a className="mu-link" href={searchLinks(t).spotify} target="_blank" rel="noreferrer" aria-label={`Listen to ${t.title} on Spotify`}>
-                            ▶
-                          </a>
+                          <PlayButton song={t} />
                           <button type="button" className={`fs-mini ${t.pinned ? 'on' : ''}`} aria-pressed={t.pinned} title={t.pinned ? 'Unpin' : 'Keep this song'} aria-label={`${t.pinned ? 'Unpin' : 'Pin'} ${t.title}`} onClick={() => moment(sel, (m) => void (m.pins = toggle(m.pins, t.id)))}>
                             ★
                           </button>
@@ -440,9 +528,7 @@ export function MusicStudio() {
                         </small>
                         <em>{reason}</em>
                       </span>
-                      <a className="mu-link" href={searchLinks(song).spotify} target="_blank" rel="noreferrer" aria-label={`Listen to ${song.title} on Spotify`}>
-                        ▶
-                      </a>
+                      <PlayButton song={song} />
                       <button type="button" className="mu-add" aria-label={`${M.single ? 'Use' : 'Add'} ${song.title}`} onClick={() => choose(song)}>
                         {M.single ? 'Use' : '+ Add'}
                       </button>
@@ -462,6 +548,7 @@ export function MusicStudio() {
         ) : (
           <p className="mu-hint mu-off">This moment is switched off. Turn it on in the Moments tab.</p>
         )}
+        <NowPlaying fallback={(x) => searchLinks(x).spotify} />
       </div>
 
       <aside className="fs-side glass">

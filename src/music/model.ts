@@ -206,7 +206,7 @@ export function ceremonyMusic(plan: MusicPlan): Partial<Record<'processional' | 
   return out;
 }
 
-export const searchLinks = (s: Song) => {
+export const searchLinks = (s: Pick<Song, 'title' | 'artist'>) => {
   const q = encodeURIComponent(`${s.title} ${s.artist}`);
   return { spotify: `https://open.spotify.com/search/${q}`, youtube: `https://www.youtube.com/results?search_query=${q}` };
 };
