@@ -601,7 +601,7 @@ const metalMat = (k: MetalFinish) => {
 
 registerKind('pearl', () => [new THREE.SphereGeometry(1, 14, 10), new THREE.MeshPhysicalMaterial({ color: '#fff', roughness: 0.18, clearcoat: 1, iridescence: 0.7, iridescenceIOR: 1.6 })]);
 registerKind('dragee', () => [new THREE.SphereGeometry(1, 12, 8), M('#fff', 0.2, 1)]);
-registerKind('goldflake', () => [new THREE.CircleGeometry(1, 5), new THREE.MeshStandardMaterial({ color: '#fff', metalness: 1, roughness: 0.3, side: THREE.DoubleSide })]);
+registerKind('goldflake', () => [new THREE.CircleGeometry(1, 5), new THREE.MeshStandardMaterial({ color: '#fff', metalness: 0.85, roughness: 0.28, emissive: '#6b4a10', emissiveIntensity: 0.35, envMapIntensity: 1.6, side: THREE.DoubleSide })]);
 registerKind('shell', () => {
   // A piped shell: a teardrop swirl lying along +z.
   const g = lathe([[0, -1], [0.55, -0.7], [0.8, -0.2], [0.65, 0.3], [0.35, 0.7], [0, 1]], 12);
@@ -741,6 +741,8 @@ function tierGeometry(t: Tier, r: number, h: number): THREE.BufferGeometry {
       }
       g.computeVertexNormals();
     }
+    // The lathe's seam (where u wraps) starts at the front; turn it to face the back.
+    g.rotateY(Math.PI);
   } else {
     const pts = outline(t.shape, r - bev, 160);
     const shape = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
@@ -769,7 +771,7 @@ function dripGeometry(ring: TierGeo['ring'], y0: number, h: number, r: number, s
   const cap = new THREE.ExtrudeGeometry(new THREE.Shape(capPts.map(([x, z]) => new THREE.Vector2(x, -z))), { depth: 0.004, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.003, bevelSegments: 3 });
   cap.rotateX(-Math.PI / 2);
   cap.translate(0, y0 + h - 0.002, 0);
-  parts.push(cap.toNonIndexed());
+  parts.push(cap.index ? cap.toNonIndexed() : cap);
   const n = Math.max(12, Math.round(ring.length / 3));
   for (let i = 0; i < n; i++) {
     if (rnd() < 0.18) continue;
@@ -780,7 +782,7 @@ function dripGeometry(ring: TierGeo['ring'], y0: number, h: number, r: number, s
     d.scale(1, 1, 0.55);
     d.rotateY(Math.atan2(nx, nz));
     d.translate(x + nx * 0.0025, y0 + h - len / 2 - rad * 0.4, z + nz * 0.0025);
-    parts.push(d.toNonIndexed());
+    parts.push(d.index ? d.toNonIndexed() : d);
   }
   for (const p of parts) for (const k of Object.keys(p.attributes)) if (!['position', 'normal', 'uv'].includes(k)) p.deleteAttribute(k);
   const m = mergeGeometries(parts)!;
@@ -851,6 +853,8 @@ function stemBag(c: CakeDesign) {
   return bag;
 }
 
+const SPIKES = new Set(['lavender', 'delphinium']);
+
 function placeFlowers(B: BuilderT, c: CakeDesign, tiers: TierGeo[]) {
   const bag = stemBag(c);
   if (!bag.length || c.flowers.style === 'none') return;
@@ -881,9 +885,10 @@ function placeFlowers(B: BuilderT, c: CakeDesign, tiers: TierGeo[]) {
         rr = Math.sqrt((i + 0.5) / n) * R;
       const x = Math.sin(a) * rr,
         z = Math.cos(a) * rr;
-      const lift = (1 - rr / R) * 0.02;
+      const out = rr / R;
       const s = next();
-      bloom(B, s.t, s.c, [x, top.y0 + top.h + 0.012 + lift, z], [x * 1.4, 1, z * 1.4], size);
+      // Sit the heads down in the icing; outer ones tilt outward so the crown reads from the front.
+      bloom(B, s.t, s.c, [x, top.y0 + top.h + 0.004 + (1 - out) * 0.006, z], [Math.sin(a) * out * 0.9, 1, Math.cos(a) * out * 0.9], size);
       if (green && i % 2 === 0) leafAt(B, [x * 1.35, top.y0 + top.h + 0.006, z * 1.35], a, 0.028);
     }
   } else if (c.flowers.style === 'cascade') {
@@ -922,7 +927,7 @@ function placeFlowers(B: BuilderT, c: CakeDesign, tiers: TierGeo[]) {
         const px = x * mid + nx * 0.004,
           pz = z * mid + nz * 0.004;
         const s = next();
-        bloom(B, s.t, s.c, [px, ledgeY + 0.012, pz], [nx * 0.8, 1, nz * 0.8], size * (1 - Math.abs(i / (n - 1) - 0.5) * 0.4));
+        bloom(B, s.t, s.c, [px, ledgeY + 0.005, pz], [nx * 0.8, 1, nz * 0.8], size * (1 - Math.abs(i / (n - 1) - 0.5) * 0.4));
         if (green) leafAt(B, [x * 0.98, ledgeY + 0.005, z * 0.98], Math.atan2(nx, nz), 0.03);
       }
     });
@@ -934,7 +939,9 @@ function placeFlowers(B: BuilderT, c: CakeDesign, tiers: TierGeo[]) {
       const [x, z, nx, nz] = sidePoint(T, ang);
       const y = T.y0 + T.h * (0.25 + rnd() * 0.6);
       const s = next();
-      bloom(B, s.t, s.c, [x + nx * 0.008, y, z + nz * 0.008], [nx, 0.15, nz], size * 0.75);
+      // Spikes (lavender, delphinium) lie pressed against the icing, leaning up; round heads face out.
+      if (SPIKES.has(s.t)) bloom(B, s.t, s.c, [x + nx * 0.003, y - 0.02, z + nz * 0.003], [nx * 0.3 + nz * 0.35, 1, nz * 0.3 - nx * 0.35], size * 0.75);
+      else bloom(B, s.t, s.c, [x + nx * 0.008, y, z + nz * 0.008], [nx, 0.15, nz], size * 0.75);
     }
   } else if (c.flowers.style === 'base') {
     const T = tiers[0];

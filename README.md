@@ -92,6 +92,35 @@ Its components are in `src/components/flower/` and its logic in `src/engine/flow
   handoff lists this as a gap in the prototype.
 - The main scene pauses rendering while the studio covers it.
 
+### Cake Studio
+
+Open it from the toolbar (**Cake Studio**), or from **New cake** under My Cakes or Desserts. The editor is in
+`src/components/cake/CakeStudio.tsx`, and the cake model and geometry are in `src/engine/cakes.ts`. It shares a
+3D stage with the Flower Studio (`src/components/studio3d/`).
+
+- **Tiers:**
+  - Up to 5 tiers, each round, square, hexagonal or heart-shaped.
+  - Width is 8–40 cm and height 6–20 cm, set per tier.
+  - Advice flags top-heavy or oversized stacks.
+- **Stands:** a cake board, a wood slice, or a white, gold or glass pedestal.
+- **Finishes:**
+  - Smooth fondant, smooth or rough buttercream (palette-knife texture), semi-naked, ombré, marble, ruffles,
+    quilted, comb stripes, and a ganache drip.
+  - Each finish has its own procedural bump or colour map and an icing colour. Some also take an accent colour.
+  - You can apply a finish to all tiers or to one tier.
+- **Decoration:**
+  - Borders: pearls, gold dragées, shell piping, or ribbon with a bow.
+  - Fresh flowers from the Flower Studio's botanical heads, arranged as a crown, cascade, ledge crescents,
+    scattered or around the base, with optional greenery.
+  - Gold leaf, berries, macarons and sprinkles.
+- **Toppers:** your own script words, Mr & Mrs, monogram initials, a heart or stars, cut out on picks.
+  Each comes in gold, rose gold, silver, or white or black acrylic.
+- **Presets:** 10 designs, rendered as live thumbnails.
+- **Footer:** estimated servings, height and price, with undo/redo.
+- **Saving:** Save to My Cakes or Save & place. A placed cake stacks onto a selected cake table. It re-opens
+  with **Edit in Cake Studio**. Cakes persist in `localStorage` (`vs2_cakes`), and exports and share links
+  carry them.
+
 ### Porting approach
 
 `scripts/port-prototype.py` copies the prototype's item, pack, template, flower-engine and venue builders
