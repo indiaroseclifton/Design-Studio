@@ -3,10 +3,7 @@ import { useFlowerStudioStore } from '../../store/flowerStudioStore';
 import { captureSceneSnapshot } from '../../three/snapshot';
 import { triggerDownload } from '../../lib/download';
 
-const COMING_SOON_BUTTONS = [
-  { key: 'lantern', label: 'Brass Lantern', name: 'Brass Lantern' },
-  { key: 'ar', label: 'View in AR', name: 'View in AR' },
-];
+const COMING_SOON_BUTTONS = [{ key: 'ar', label: 'View in AR', name: 'View in AR' }];
 
 const btnClass = 'rounded-[9px] px-3 py-2 text-[12.5px] font-medium whitespace-nowrap hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed';
 
@@ -56,6 +53,9 @@ export function TopToolbar() {
       </button>
       <button type="button" className={btnClass} onClick={() => openModal('storybook')}>
         Storybook
+      </button>
+      <button type="button" className={btnClass} onClick={() => openModal('brassLantern')}>
+        Brass Lantern
       </button>
       {COMING_SOON_BUTTONS.map((b) => (
         <button key={b.key} type="button" className={btnClass} onClick={() => showComingSoon(b.name)}>

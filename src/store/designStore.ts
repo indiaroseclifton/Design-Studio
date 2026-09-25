@@ -36,7 +36,7 @@ interface PlaceItemInput {
   on?: string;
 }
 
-export type ModalName = 'designs' | 'quote' | 'addons' | 'storybook';
+export type ModalName = 'designs' | 'quote' | 'addons' | 'storybook' | 'brassLantern';
 
 interface StoreState {
   design: Design;

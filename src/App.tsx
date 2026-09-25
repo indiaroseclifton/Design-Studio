@@ -10,6 +10,7 @@ import { DesignsModal } from './components/ui/DesignsModal';
 import { QuoteModal } from './components/ui/QuoteModal';
 import { AddonsModal } from './components/ui/AddonsModal';
 import { StorybookModal } from './components/ui/StorybookModal';
+import { BrassLanternModal } from './components/ui/BrassLanternModal';
 import { FlowerStudioOverlay } from './components/flowerStudio/FlowerStudioOverlay';
 import { useDesignStore } from './store/designStore';
 import { useFlowerStudioStore } from './store/flowerStudioStore';
@@ -34,6 +35,7 @@ export default function App() {
       {modal === 'quote' && <QuoteModal />}
       {modal === 'addons' && <AddonsModal />}
       {modal === 'storybook' && <StorybookModal />}
+      {modal === 'brassLantern' && <BrassLanternModal />}
       {flowerStudioOpen && <FlowerStudioOverlay />}
     </div>
   );
