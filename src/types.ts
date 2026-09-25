@@ -131,6 +131,8 @@ export interface Design {
   menu?: import('./menu/model').MenuPlan;
   /** the Music curator's plan (src/music/model.ts) */
   music?: import('./music/model').MusicPlan;
+  /** the Attire & colour board (src/attire/model.ts) */
+  attire?: import('./attire/model').AttirePlan;
 }
 
 export type Selection = { k: 'item'; id: string } | { k: 'multi'; ids: string[] } | { k: 'table'; idx: number } | { k: 'chairs' } | null;

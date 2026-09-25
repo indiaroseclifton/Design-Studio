@@ -1665,3 +1665,40 @@ body.fs-on .chrome.toolbar {
     display: none;
   }
 }
+
+/* ---------- Attire & colour board ---------- */
+.at-board {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.at-swatches {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  gap: 5px;
+}
+.at-swatches button,
+.at-custom {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 240, 220, 0.2);
+}
+.at-swatches button.on {
+  outline: 2px solid var(--ac);
+  outline-offset: 2px;
+}
+.at-custom {
+  position: relative;
+  overflow: hidden;
+  background: conic-gradient(#e66, #ee6, #6e6, #6ee, #66e, #e6e, #e66);
+  cursor: pointer;
+}
+.at-custom input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}

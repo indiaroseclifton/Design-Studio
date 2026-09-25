@@ -83,6 +83,8 @@ export interface BookContent {
   champagne: THREE.Object3D | null;
   /** courses from the Menu & Bar planner: [course, dish, details] */
   feast?: Array<[string, string, string]>;
+  /** a phrase about the attendants' outfits, e.g. "bridesmaids in blush and rose" (Attire & colour) */
+  attire?: string;
   /** the first-dance song (Music curator) */
   firstDance?: { title: string; artist: string };
 }
@@ -418,7 +420,7 @@ export class Book {
     const lower = (s?: string) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : s);
     const hasT = f.mode === 'round' || f.mode === 'banquet';
     const venueBody = `${c.venueDesc} On ${st.date ? dateStr(st) : 'our day'}, it was ours.`;
-    const cer = `Guests found their seats ${f.layout}. Beneath ${f.backdrop ? 'the ' + lower(f.backdrop) : 'a canopy of blooms'}, two people made their promises in front of everyone they love, and the whole room seemed to hold its breath.`;
+    const cer = `Guests found their seats ${f.layout}. Beneath ${f.backdrop ? 'the ' + lower(f.backdrop) : 'a canopy of blooms'}, two people made their promises in front of everyone they love${c.attire ? `, ${c.attire} at their side` : ''}, and the whole room seemed to hold its breath.`;
     const layList: Array<[string, string]> = [
       ['Guests', String(f.guests)],
       ['Layout', { round: 'Round tables', banquet: 'Banquet tables', ceremony: 'Ceremony rows', none: 'Open floor' }[f.mode]],

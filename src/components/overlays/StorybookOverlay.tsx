@@ -13,6 +13,7 @@ import { CHAIRS, CLOTHS, DECOR, OVERLAYS, hasTbl, palOf } from '../../engine/stu
 import { useDesignStore } from '../../store/designStore';
 import { menuForCards } from '../../menu/model';
 import { firstDanceSong } from '../../music/model';
+import { attirePhrase } from '../../attire/model';
 import type { Design } from '../../types';
 
 /*
@@ -182,6 +183,7 @@ export function StorybookOverlay() {
         champagne,
         // The Feast chapter prints the planned menu (canapés and late-night food aside).
         ...(S.music ? { firstDance: firstDanceSong(S.music) } : {}),
+        ...(S.attire ? { attire: attirePhrase(S.attire) } : {}),
         ...(S.menu ? { feast: menuForCards({ ...S.menu, courses: S.menu.courses.filter((c) => !/canap|late/i.test(c.course)) }).map((m) => [m.course, m.dish, m.desc] as [string, string, string]) } : {}),
       };
       b.setContent(content.current);

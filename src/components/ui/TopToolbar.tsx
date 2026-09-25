@@ -18,6 +18,7 @@ const STUDIOS: MenuEntry[] = [
   { key: 'stationery', label: 'Stationery Studio', note: 'Invitations, menus and signs' },
   { key: 'menu', label: 'Menu & Bar', note: 'Courses, drinks, dietary needs' },
   { key: 'music', label: 'Music', note: 'A playlist for every moment' },
+  { key: 'attire', label: 'Attire & colour', note: 'The wedding party’s outfits' },
 ];
 const MAIN: Array<{ key: ToolbarKey; label: string }> = [
   { key: 'designs', label: 'Designs' },

@@ -12,10 +12,11 @@ import { forgetThumbs } from '../three/thumbnail';
 import type { Suite } from '../stationery/model';
 import type { MenuPlan } from '../menu/model';
 import type { MusicPlan } from '../music/model';
+import type { AttirePlan } from '../attire/model';
 
 export type ModalKind = 'designs' | 'quote' | 'addons';
 /** Full-screen overlays (only one at a time; opening one closes the studios and modals). */
-export type OverlayKind = 'lantern' | 'ar' | 'storybook' | 'stationery' | 'menu' | 'music';
+export type OverlayKind = 'lantern' | 'ar' | 'storybook' | 'stationery' | 'menu' | 'music' | 'attire';
 
 const MAX_HISTORY = 80;
 
@@ -55,6 +56,8 @@ interface StoreState {
   saveMenu: (p: MenuPlan) => void;
   /** Save the Music curator's plan onto the design (undoable). */
   saveMusic: (p: MusicPlan) => void;
+  /** Save the Attire & colour board onto the design (undoable). */
+  saveAttire: (p: AttirePlan) => void;
   search: string;
   activeCategory: string;
   /** true while a drag gesture is live (history already captured at its start) */
@@ -202,6 +205,11 @@ export const useDesignStore = create<StoreState>()(
           commit((d) => void (d.music = plan));
           set({ overlay: null });
           toast('Music saved to the design', true);
+        },
+        saveAttire: (plan) => {
+          commit((d) => void (d.attire = plan));
+          set({ overlay: null });
+          toast('Attire saved to the design', true);
         },
         search: '',
         activeCategory: 'templates',

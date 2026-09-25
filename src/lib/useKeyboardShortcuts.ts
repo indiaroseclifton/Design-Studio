@@ -17,7 +17,7 @@ export function useKeyboardShortcuts() {
 
       // The Flower Studio handles its own keys (Esc with a discard check, and its own undo).
       // The studios and the Storybook handle their own keys.
-      if (s.studio.open || s.cakeStudio.open || s.overlay === 'storybook' || s.overlay === 'stationery' || s.overlay === 'menu' || s.overlay === 'music') return;
+      if (s.studio.open || s.cakeStudio.open || s.overlay === 'storybook' || s.overlay === 'stationery' || s.overlay === 'menu' || s.overlay === 'music' || s.overlay === 'attire') return;
       if (s.overlay) {
         if (e.key === 'Escape') s.closeOverlay();
         return;
