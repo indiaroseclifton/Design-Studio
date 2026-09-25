@@ -54,17 +54,18 @@ function EnergyWave({ segs, start, sel, onSel }: { segs: Segment[]; start: numbe
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const H = 168,
+  const FLOOR = 30; // the dance floor strip under the plot
+  const H = 196,
     L = 56,
     R = 16,
     T = 16,
-    B = 26;
+    B = 26 + FLOOR;
   const total = segs.length ? segs[segs.length - 1].start + segs[segs.length - 1].minutes : 1;
   const pw = Math.max(10, w - L - R),
     ph = H - T - B;
   const X = (m: number) => L + (m / total) * pw;
   const Y = (e: number) => T + ((5 - e) / 4) * ph;
-  const { line, strands, area } = (() => {
+  const { line, strands, area, sm, n } = (() => {
     // Energy every two minutes (the vows are silence), smoothed so the day reads as a wave.
     const n = Math.max(60, Math.round(total / 2));
     const raw = Array.from({ length: n + 1 }, (_, i) => {
@@ -101,7 +102,7 @@ function EnergyWave({ segs, start, sel, onSel }: { segs: Segment[]; start: numbe
     const line = path(main);
     const strands = [-3, -2, -1, 1, 2, 3].map((k) => path(pts((i) => k * 2.4 * (0.6 + 0.4 * Math.sin((i / n) * 9 + k * 1.7)))));
     const area = line + `L${main[main.length - 1][0].toFixed(1)},${T + ph}L${main[0][0].toFixed(1)},${T + ph}Z`;
-    return { line, strands, area };
+    return { line, strands, area, sm, n };
   })();
   const hoursTicks: number[] = [];
   for (let h = Math.ceil(start / 60); h * 60 <= start + total; h++) {
@@ -109,6 +110,17 @@ function EnergyWave({ segs, start, sel, onSel }: { segs: Segment[]; start: numbe
     if (!hoursTicks.length || x - X(hoursTicks[hoursTicks.length - 1] * 60 - start) >= 48) hoursTicks.push(h);
   }
   const selSeg = segs.find((s) => s.id === sel);
+  // The crowd: a dancer every so often along the floor, moving to the energy at that time of day.
+  const floorY = T + ph + FLOOR - 4;
+  const dancers = Array.from({ length: Math.floor(pw / 24) }, (_, i) => {
+    const x = L + 12 + i * 24;
+    const m = ((x - L) / pw) * total;
+    const seg = segs.find((q) => m >= q.start && m < q.start + q.minutes);
+    if (!seg || !seg.tracks.length) return null; // the vows: everyone's sitting quietly
+    const e = sm[Math.round((m / total) * n)];
+    const kind = e >= 3.9 ? 'jump' : e >= 2.6 ? 'bob' : 'sway';
+    return { x, kind, on: seg.id === sel, i };
+  }).filter((d) => !!d);
   return (
     <div
       ref={host}
@@ -148,6 +160,15 @@ function EnergyWave({ segs, start, sel, onSel }: { segs: Segment[]; start: numbe
         <path d={line} fill="none" stroke={LINE} strokeWidth={7} opacity={0.85} filter="url(#mu-glow)" />
         <path d={line} fill="none" stroke={LINE} strokeWidth={2.2} strokeLinecap="round" />
         {selSeg && <line x1={X(selSeg.start)} x2={X(selSeg.start)} y1={T} y2={T + ph} stroke={LINE} strokeWidth={1.5} />}
+        <line x1={L} x2={L + pw} y1={floorY + 0.5} y2={floorY + 0.5} className="mu-floor" />
+        {dancers.map((d) => (
+          <g key={d.i} transform={`translate(${d.x} ${floorY})`} className={`mu-dancer ${d.on ? 'on' : ''}`}>
+            <g className={d.kind} style={{ animationDelay: `${-((d.i * 0.37) % 1.3).toFixed(2)}s` }}>
+              <circle cx={0} cy={-17} r={2.6} />
+              <path d={`M0,-14V-6M0,-6L-3,0M0,-6L3,0${d.kind === 'jump' ? 'M0,-12L-4.5,-18M0,-12L4.5,-18' : d.kind === 'bob' ? 'M0,-12L-4,-9M0,-12L4,-15' : 'M0,-12L-3,-7M0,-12L3,-7'}`} />
+            </g>
+          </g>
+        ))}
         {hoursTicks.map((h) => (
           <text key={'t' + h} x={X(h * 60 - start)} y={H - 7} textAnchor={X(h * 60 - start) > L + pw - 20 ? 'end' : 'middle'} className="mu-axis">
             {h % 24}:00
@@ -320,7 +341,14 @@ export function MusicStudio() {
               </header>
               {M.single && selSeg.tracks[0] ? (
                 <div className="mu-hero">
-                  <Cover t={selSeg.tracks[0]} big />
+                  <div className="mu-deck" aria-hidden>
+                    <Cover t={selSeg.tracks[0]} big />
+                    <svg className="mu-arm" viewBox="0 0 60 120" width="46" height="92">
+                      <circle cx="44" cy="12" r="9" />
+                      <path d="M44,12 L40,78 L26,100" />
+                      <rect x="19" y="97" width="12" height="8" rx="2" transform="rotate(-35 25 101)" />
+                    </svg>
+                  </div>
                   <div className="mu-hero-t">
                     <span className="lbl">{selSeg.tracks[0].pinned ? 'Your choice' : 'Our suggestion'}</span>
                     <b className="serif">{selSeg.tracks[0].title}</b>

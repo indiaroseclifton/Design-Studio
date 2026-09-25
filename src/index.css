@@ -1575,6 +1575,111 @@ body.fs-on .chrome.toolbar {
   font-size: 10.5px;
   font-family: Jost, sans-serif;
 }
+/* The crowd under the wave: sways when it's hushed, bobs when it's lively, jumps at the peaks. */
+.mu-floor {
+  stroke: rgba(var(--acr), 0.35);
+}
+.mu-dancer {
+  stroke: var(--ac);
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: 0.38;
+  transition: opacity 0.3s;
+}
+.mu-dancer circle {
+  fill: var(--ac);
+  stroke: none;
+}
+.mu-dancer.on {
+  opacity: 0.95;
+}
+.mu-dancer > g {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.mu-dancer .sway {
+  animation: mu-sway 2.6s ease-in-out infinite alternate;
+}
+.mu-dancer .bob {
+  animation: mu-bob 0.9s ease-in-out infinite alternate;
+}
+.mu-dancer .jump {
+  animation: mu-jump 0.5s cubic-bezier(0.3, 0, 0.4, 1) infinite alternate;
+}
+@keyframes mu-sway {
+  from {
+    transform: rotate(-5deg);
+  }
+  to {
+    transform: rotate(5deg);
+  }
+}
+@keyframes mu-bob {
+  from {
+    transform: translateY(0) rotate(-3deg);
+  }
+  to {
+    transform: translateY(-2.5px) rotate(3deg);
+  }
+}
+@keyframes mu-jump {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-6px);
+  }
+}
+/* A turntable for the one-song moments: the record spins under the tone arm. */
+.mu-deck {
+  position: relative;
+  flex: none;
+  padding: 10px 26px 10px 10px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #1f1a14, #0f0d0a);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 200, 0.06),
+    0 10px 24px rgba(0, 0, 0, 0.5);
+}
+.mu-deck .mu-cover {
+  animation: mu-spin 1.8s linear infinite;
+}
+.mu-arm {
+  position: absolute;
+  right: -4px;
+  top: 4px;
+  fill: #2a241c;
+  stroke: #c9a46a;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform-origin: 44px 12px;
+  animation: mu-arm-in 0.9s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+.mu-arm path {
+  fill: none;
+}
+@keyframes mu-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes mu-arm-in {
+  from {
+    transform: rotate(-24deg);
+  }
+  to {
+    transform: rotate(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mu-dancer > g,
+  .mu-deck .mu-cover,
+  .mu-arm {
+    animation: none;
+  }
+}
 .mu-chips {
   flex: none;
   position: relative;

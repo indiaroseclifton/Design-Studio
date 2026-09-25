@@ -161,7 +161,8 @@ design, so saved designs, exports and share links carry it, and each feeds the o
     grows to fit it) or picks it for a single-song moment.
   - Pin, remove, reshuffle and add your own songs, with a do-not-play list.
   - A warm black-and-gold look: a glowing energy wave across the day (click it to open a moment), moment
-    chips, and a track table with energy bars, tempo and start times.
+    chips, and a track table with energy bars, tempo and start times. A little crowd dances along the floor
+    under the wave (swaying, bobbing or jumping to the energy), and one-song moments spin on a turntable.
   - Exports: a DJ brief PDF and a playlist CSV for import tools.
   - The order of service names the ceremony music, and the Storybook names the first-dance song.
 - **Attire & colour** (`src/attire/`, `src/components/attire/`):
