@@ -64,6 +64,12 @@ export function CataloguePanel() {
     return Array.from(map.entries());
   }, [filtered]);
 
+  const cardIndex = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach((it, i) => map.set(it.id, i));
+    return map;
+  }, [filtered]);
+
   const setTableChair = useDesignStore((s) => s.setTableChair);
   const currentChairType = design.table.chair?.type;
 
@@ -214,7 +220,15 @@ export function CataloguePanel() {
                     ? !currentChairType
                     : false;
                 return (
-                  <CatalogueCard key={item.id} item={item} palette={palette} disabled={disabled} selected={selected} onClick={() => handlePlace(item)} />
+                  <CatalogueCard
+                    key={item.id}
+                    item={item}
+                    palette={palette}
+                    disabled={disabled}
+                    selected={selected}
+                    index={cardIndex.get(item.id)}
+                    onClick={() => handlePlace(item)}
+                  />
                 );
               })}
             </div>

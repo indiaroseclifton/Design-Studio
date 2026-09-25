@@ -36,7 +36,7 @@ npm run lint      # oxlint
   that wraps all the way around, while any other photo becomes a curved backdrop panel behind the tables.
   The photo persists to `localStorage` and can be swapped via the "Change" link on its venue card
   (`src/store/venuePhotoStore.ts`).
-- **Catalogue** — 152 placeable pieces (up from the original build's 108, ~55% of the way to the handoff's
+- **Catalogue** — 199 placeable pieces (up from the original build's 108, ~72% of the way to the handoff's
   full ~277-item set) across Templates, Linens, Chairs, Tableware, Florals, Candles &
   light, Furniture & lighting, Wedding, Holiday, Faith & culture, Corporate, Parties & kids, Desserts, and
   five add-on packs (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail

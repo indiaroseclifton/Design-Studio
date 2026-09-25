@@ -4,11 +4,11 @@ import { Builder } from './builder';
 import { disposeObject3D } from './utils';
 
 let renderer: THREE.WebGLRenderer | null = null;
-const SIZE = 200;
+const SIZE = 132;
 
 function getRenderer() {
   if (!renderer) {
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, preserveDrawingBuffer: true });
     renderer.setSize(SIZE, SIZE);
     renderer.setPixelRatio(1);
     renderer.outputColorSpace = THREE.SRGBColorSpace;

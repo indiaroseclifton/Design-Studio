@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import type { CatalogueItem, Palette } from '../../types';
 import { captureItemThumbnail } from '../../three/thumbnail';
 
@@ -7,15 +7,28 @@ export function CatalogueCard({
   palette,
   disabled,
   selected,
+  index = 0,
   onClick,
 }: {
   item: CatalogueItem;
   palette: Palette;
   disabled: boolean;
   selected?: boolean;
+  index?: number;
   onClick: () => void;
 }) {
-  const thumb = useMemo(() => captureItemThumbnail(item, palette), [item, palette]);
+  const [thumb, setThumb] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) setThumb(captureItemThumbnail(item, palette));
+    }, index * 8);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [item, palette, index]);
 
   return (
     <button
