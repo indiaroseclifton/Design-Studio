@@ -4,6 +4,7 @@ import { placement } from './designOps';
 import type { Design, VenueDef } from '../types';
 import { PIECES, PIECE_ORDER, pieceQty } from '../stationery/model';
 import { BAR_STYLES, SERVICES, menuCosts } from '../menu/model';
+import { FORMATS } from '../music/model';
 
 export interface QuoteSettings {
   cur: string;
@@ -60,6 +61,8 @@ export function quoteLines(S: Design, venue: VenueDef, prices: Record<string, nu
     add('catering:kids', 'Children’s menu', mp.children, 'Catering', c.kidsPerHead);
     add('catering:bar:' + mp.bar.style, `${BAR_STYLES[mp.bar.style].n} · ${mp.bar.hours} hours`, c.drinksPerHead ? c.adults : 0, 'Catering', c.drinksPerHead);
   }
+  // Music from the Music curator.
+  if (S.music) add('music:' + S.music.format, `Music · ${FORMATS[S.music.format].n}`, 1, 'Entertainment', FORMATS[S.music.format].price);
   // Printing for the Stationery Studio's suite.
   const st = S.stationery;
   if (st) for (const k of PIECE_ORDER) if (st.pieces[k]) add('stationery:' + k, PIECES[k].n, pieceQty(k, st, S.guests, S.tables.length), 'Stationery', PIECES[k].price);

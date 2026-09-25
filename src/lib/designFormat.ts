@@ -4,6 +4,7 @@ import { VENUES } from '../engine/venues.gen';
 import { DEF_TABLE, newId, newSeed } from './designOps';
 import { sanitizeSuite } from '../stationery/model';
 import { sanitizePlan } from '../menu/model';
+import { sanitizeMusic } from '../music/model';
 import type { Design, PlacedItem, TableLayout, TablePos, TimeOfDay, Weather } from '../types';
 
 export const DEFAULT_DESIGN: Design = {
@@ -100,5 +101,6 @@ export function normalizeDesign(raw: unknown): Design | null {
     },
     ...(o.stationery ? { stationery: sanitizeSuite(o.stationery) ?? undefined } : {}),
     ...(o.menu ? { menu: sanitizePlan(o.menu) ?? undefined } : {}),
+    ...(o.music ? { music: sanitizeMusic(o.music) ?? undefined } : {}),
   };
 }

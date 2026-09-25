@@ -17,6 +17,7 @@ const STUDIOS: MenuEntry[] = [
   { key: 'cake', label: 'Cake Studio', note: 'Tiers, finishes and toppers' },
   { key: 'stationery', label: 'Stationery Studio', note: 'Invitations, menus and signs' },
   { key: 'menu', label: 'Menu & Bar', note: 'Courses, drinks, dietary needs' },
+  { key: 'music', label: 'Music', note: 'A playlist for every moment' },
 ];
 const MAIN: Array<{ key: ToolbarKey; label: string }> = [
   { key: 'designs', label: 'Designs' },

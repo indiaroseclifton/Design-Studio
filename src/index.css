@@ -1478,3 +1478,190 @@ body.fs-on .chrome.toolbar {
 .mn-cover small {
   opacity: 0.55;
 }
+
+/* ---------- Music curator ---------- */
+.mu-view {
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(ellipse at 30% 0%, #2c231c, #15110d 70%);
+}
+.mu-top {
+  position: relative;
+  inset: auto;
+  padding: 20px 24px 0;
+}
+.mu-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 24px 20px;
+}
+.mu-chart {
+  position: relative;
+  flex: none;
+  border-radius: 12px;
+  background: #1f1914;
+  border: 1px solid rgba(255, 240, 220, 0.08);
+  outline: none;
+}
+.mu-chart:focus-visible {
+  box-shadow: 0 0 0 2px var(--ac);
+}
+.mu-axis {
+  fill: rgba(244, 236, 224, 0.55);
+  font-size: 10.5px;
+  font-family: Jost, sans-serif;
+}
+.mu-band {
+  fill: rgba(244, 236, 224, 0.6);
+  font-size: 10.5px;
+  font-family: Jost, sans-serif;
+  letter-spacing: 0.04em;
+}
+.mu-band.on {
+  fill: #f4ece0;
+  font-weight: 500;
+}
+.mu-tip {
+  position: absolute;
+  top: 30px;
+  width: 216px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(20, 15, 11, 0.94);
+  border: 1px solid rgba(255, 240, 220, 0.14);
+  font-size: 12px;
+  pointer-events: none;
+}
+.mu-tip b {
+  font-size: 13px;
+}
+.mu-tip-s {
+  opacity: 0.65;
+  font-size: 11.5px;
+}
+.mu-chips {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: none;
+}
+.mu-chips .chip {
+  flex: none;
+}
+.mu-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mu-list header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mu-list h3 {
+  font-size: 28px;
+  line-height: 1.1;
+}
+.mu-list header p {
+  font-size: 12.5px;
+  opacity: 0.65;
+}
+.mu-list ol {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 4px;
+}
+.mu-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255, 240, 220, 0.035);
+}
+.mu-list li.pinned {
+  background: rgba(var(--acr), 0.1);
+}
+.mu-time {
+  width: 40px;
+  font-size: 11.5px;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+.mu-cover {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.85);
+}
+.mu-song {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mu-song b {
+  font-weight: 500;
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mu-song small {
+  font-size: 11.5px;
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mu-energy {
+  display: flex;
+  gap: 2px;
+}
+.mu-energy i {
+  width: 5px;
+  height: 12px;
+  border-radius: 2px;
+  background: rgba(255, 240, 220, 0.12);
+}
+.mu-energy i.on {
+  background: #d95926;
+}
+.mu-link {
+  font-size: 11.5px;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+.mu-link:hover {
+  opacity: 1;
+}
+.fs-mini.on {
+  color: var(--ac);
+}
+@media (max-width: 860px) {
+  .mu-link,
+  .mu-energy {
+    display: none;
+  }
+}

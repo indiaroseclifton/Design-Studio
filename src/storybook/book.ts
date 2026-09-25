@@ -83,6 +83,8 @@ export interface BookContent {
   champagne: THREE.Object3D | null;
   /** courses from the Menu & Bar planner: [course, dish, details] */
   feast?: Array<[string, string, string]>;
+  /** the first-dance song (Music curator) */
+  firstDance?: { title: string; artist: string };
 }
 
 interface Side {
@@ -461,7 +463,7 @@ export class Book {
       ],
       [
         (x) => photoPage(x, photos.close ?? photos.guest, 'The details', 11, { tilt: -0.025 }),
-        ch({ num: 'VI', title: 'The First Dance', body: `When the candles burned low and the first notes began, the room stepped back and gave them the floor. Lights overhead, ${p.name.toLowerCase()} blooms glowing in the dark: one song that felt like forever.`, n: 12 }),
+        ch({ num: 'VI', title: 'The First Dance', body: `When the candles burned low and the first notes ${c.firstDance ? `of “${c.firstDance.title}” ` : ''}began, the room stepped back and gave them the floor. Lights overhead, ${p.name.toLowerCase()} blooms glowing in the dark: one song that felt like forever.`, n: 12 }),
       ],
       [(x) => photoPage(x, photos.wide, 'The first dance', 13, { tilt: 0.02, night: true }), ch({ num: 'VII', title: 'Ever After', body: 'Thank you for being part of our story. For every hand held, every glass raised and every dance — this book is for you.', sign: true, n: 14 })],
       [(x) => drawEnd(x, st), (x) => drawEndpaper(x, 'R', false, st, p)],

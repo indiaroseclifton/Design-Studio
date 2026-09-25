@@ -26,7 +26,7 @@ function clear() {
 
 /** Point the scene's paper pieces at this design's suite. Returns a key that changes whenever they should be rebuilt. */
 export function syncPaper(S: Design): string {
-  const key = S.stationery ? JSON.stringify([S.stationery, S.menu ?? 0, S.palette, S.palette === 'custom' ? S.customPalette : 0, S.venue, S.tables.length, fontsReady]) : '';
+  const key = S.stationery ? JSON.stringify([S.stationery, S.menu ?? 0, S.music ?? 0, S.palette, S.palette === 'custom' ? S.customPalette : 0, S.venue, S.tables.length, fontsReady]) : '';
   if (key !== ctxKey) {
     ctxKey = key;
     clear();

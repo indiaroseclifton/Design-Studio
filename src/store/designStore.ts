@@ -11,10 +11,11 @@ import { cakeKey, loadCakes, registerCake, saveCakeList, type SavedCake } from '
 import { forgetThumbs } from '../three/thumbnail';
 import type { Suite } from '../stationery/model';
 import type { MenuPlan } from '../menu/model';
+import type { MusicPlan } from '../music/model';
 
 export type ModalKind = 'designs' | 'quote' | 'addons';
 /** Full-screen overlays (only one at a time; opening one closes the studios and modals). */
-export type OverlayKind = 'lantern' | 'ar' | 'storybook' | 'stationery' | 'menu';
+export type OverlayKind = 'lantern' | 'ar' | 'storybook' | 'stationery' | 'menu' | 'music';
 
 const MAX_HISTORY = 80;
 
@@ -52,6 +53,8 @@ interface StoreState {
   saveStationery: (s: Suite) => void;
   /** Save the Menu & Bar planner's plan onto the design (undoable). */
   saveMenu: (p: MenuPlan) => void;
+  /** Save the Music curator's plan onto the design (undoable). */
+  saveMusic: (p: MusicPlan) => void;
   search: string;
   activeCategory: string;
   /** true while a drag gesture is live (history already captured at its start) */
@@ -194,6 +197,11 @@ export const useDesignStore = create<StoreState>()(
           commit((d) => void (d.menu = plan));
           set({ overlay: null });
           toast('Menu & bar saved: see the Quote for catering', true);
+        },
+        saveMusic: (plan) => {
+          commit((d) => void (d.music = plan));
+          set({ overlay: null });
+          toast('Music saved to the design', true);
         },
         search: '',
         activeCategory: 'templates',

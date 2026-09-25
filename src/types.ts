@@ -129,6 +129,8 @@ export interface Design {
   stationery?: import('./stationery/model').Suite;
   /** the Menu & Bar planner's plan (src/menu/model.ts) */
   menu?: import('./menu/model').MenuPlan;
+  /** the Music curator's plan (src/music/model.ts) */
+  music?: import('./music/model').MusicPlan;
 }
 
 export type Selection = { k: 'item'; id: string } | { k: 'multi'; ids: string[] } | { k: 'table'; idx: number } | { k: 'chairs' } | null;

@@ -34,6 +34,8 @@ export interface DrawCtx {
   menu?: MenuCourse[];
   /** meal choices guests make on the RSVP card (Menu planner) */
   choices?: Array<{ course: string; options: string[] }>;
+  /** ceremony music for the order of service (Music curator): processional, signing, recessional */
+  ceremony?: Partial<Record<'processional' | 'signing' | 'recessional', string[]>>;
   /** the bar, for the bar menu (Menu planner) */
   bar?: { welcome: string; signatures: Array<{ name: string; desc: string; glass: string; colour: string; zero?: boolean }>; wine: { red: string; white: string; sparkling: string } };
 }
@@ -731,7 +733,24 @@ function blocksFor(k: PieceKind, c: DrawCtx, o: DrawOpts): Block[] {
         .split('\n')
         .map((l) => l.trim())
         .filter(Boolean);
-      return [T('Order of service', 'head', 11, 'foil', 1.5), T(`${w.names} · ${dateShort(w.date)}`, 'italic', 4, 'soft', 3), RULE(4), ...items.map((it) => T(it, 'body', 5, 'ink', 2.6))];
+      // Music from the curator sits under the matching line: “Canon in D” · Johann Pachelbel.
+      const music = (it: string) => {
+        const m = c.ceremony;
+        if (!m) return undefined;
+        if (/process/i.test(it)) return m.processional;
+        if (/sign|register/i.test(it)) return m.signing;
+        if (/recess/i.test(it)) return m.recessional;
+        return undefined;
+      };
+      return [
+        T('Order of service', 'head', 11, 'foil', 1.5),
+        T(`${w.names} · ${dateShort(w.date)}`, 'italic', 4, 'soft', 3),
+        RULE(4),
+        ...items.flatMap((it) => {
+          const songs = music(it);
+          return songs?.length ? [T(it, 'body', 5, 'ink', 0.6), T(songs.join('\n'), 'italic', 3.4, 'soft', 2.6)] : [T(it, 'body', 5, 'ink', 2.6)];
+        }),
+      ];
     }
     case 'favour':
       return [T('Thank you', 'head', 20, 'foil', 2), T(w.names, 'italic', 7, 'soft', 1), T(dateDots(w.date), 'caps', 5.4, 'soft', 0)];
