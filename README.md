@@ -32,13 +32,15 @@ npm run lint      # oxlint
   Woodland, City Rooftop, Desert Oasis, Garden Marquee, French Château, Lakeside Dock, Industrial Loft),
   each with its own sky shader, fog, lighting rig and geometry (`src/data/venues.ts`). Five chair styles
   (cross, chiavari, rattan, bent bistro, ghost acrylic) cover all of them.
-- **Catalogue** — ~80 placeable pieces across Linens, Chairs, Tableware, Florals, Candles & light,
-  Furniture & lighting, Wedding, Holiday, Faith & culture, Corporate, Parties & kids, Desserts, and two
-  add-on packs (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail
-  (`src/three/thumbnail.ts`). The Chairs category is special: placing a chair card sets the table's chair
-  style (any of the 5 styles, or "Match the venue" to reset) instead of adding a piece to the scene.
-- **Add-ons** — toggle packs (Lounge & rooms, Signage & displays) from the Add-ons modal to reveal extra
-  catalogue categories and pieces, persisted to `localStorage` (`src/data/addonPacks.ts`).
+- **Catalogue** — ~98 placeable pieces across Templates, Linens, Chairs, Tableware, Florals, Candles &
+  light, Furniture & lighting, Wedding, Holiday, Faith & culture, Corporate, Parties & kids, Desserts, and
+  five add-on packs (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail
+  (`src/three/thumbnail.ts`). Two categories use special placement mechanics instead of adding a single
+  piece: **Chairs** sets the table's chair style (any of 5 styles, or "Match the venue" to reset), and
+  **Templates** places a whole bundle of table items at once (Rustic, Modern Glam, Boho, Classic).
+- **Add-ons** — toggle packs (Lounge & rooms, Signage & displays, Tabletop shapes, Event lighting, Stage &
+  AV) from the Add-ons modal to reveal extra catalogue categories and pieces, persisted to `localStorage`
+  (`src/data/addonPacks.ts`).
 - **Placement** — click a catalogue card to place it on the table, floor or ceiling; select a "host"
   item (one with a `top` surface) to enter decorating mode and stack stackable pieces on it.
 - **Tables & guests** — Round / Banquet / Ceremony / Empty layouts, a guests slider that adds tables,
@@ -58,10 +60,9 @@ npm run lint      # oxlint
 
 Flower Studio, Storybook, Brass Lantern, and the AR viewer are stubbed with a "coming soon" overlay from
 the toolbar — they're substantial features in their own right and were scoped out by design. Also
-deferred: Templates (quick full-tablescape presets), My Uploads/My Flowers (need file upload and Flower
-Studio), the rest of the ~277-item catalogue, and the "Your Venue" custom photo-upload venue,
-drag-and-drop placement (click-to-place is implemented instead), plan view, multi-select, per-table
-rotation, and the placement-zone/weather visualizations.
+deferred: My Uploads/My Flowers (need file upload and Flower Studio), the rest of the ~277-item catalogue,
+and the "Your Venue" custom photo-upload venue, drag-and-drop placement (click-to-place is implemented
+instead), plan view, multi-select, per-table rotation, and the placement-zone/weather visualizations.
 
 See `docs/design_handoff_event_studio/README.md` (the original handoff bundle) for the full original spec,
 including the working HTML/three.js prototype and screenshots.

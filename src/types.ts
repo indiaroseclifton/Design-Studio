@@ -53,6 +53,8 @@ export interface CatalogueItem {
   chairStyle?: ChairStyle;
   /** marks the "match the venue" chair selector, which clears any chair override */
   resetChair?: boolean;
+  /** presence marks this as a template: placing it places every listed item id (table-surf only) instead of itself */
+  template?: string[];
   build: (group: THREE.Group, ctx: BuildCtx) => void;
 }
 

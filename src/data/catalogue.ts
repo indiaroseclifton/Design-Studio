@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { CatalogueItem } from '../types';
+import type { BuildCtx, CatalogueItem } from '../types';
 import { box, cyl, mesh, M, pick } from '../three/utils';
 import { T, tm, noise } from '../three/textures';
 import { flame } from '../three/builder';
@@ -11,6 +11,7 @@ export interface Category {
 }
 
 export const CATEGORIES: Category[] = [
+  { id: 'templates', label: 'Templates' },
   { id: 'linens', label: 'Linens' },
   { id: 'chairs', label: 'Chairs' },
   { id: 'tableware', label: 'Tableware' },
@@ -69,7 +70,96 @@ function repeatingLogoTexture(text: string, fg: string) {
   );
 }
 
+const TEMPLATE_LAYOUT: [number, number][] = [
+  [-0.16, -0.16],
+  [0.16, -0.16],
+  [-0.16, 0.16],
+  [0.16, 0.16],
+  [0, 0],
+];
+
+function buildTemplatePreview(ids: string[]) {
+  return (g: THREE.Group, ctx: BuildCtx) => {
+    ids.forEach((id, i) => {
+      const def = ITEMS[id];
+      if (!def) return;
+      const sub = new THREE.Group();
+      const [x, z] = TEMPLATE_LAYOUT[i % TEMPLATE_LAYOUT.length];
+      sub.position.set(x, 0, z);
+      g.add(sub);
+      try {
+        def.build(sub, ctx);
+      } catch {
+        // a contained item failing to preview shouldn't blank the whole template thumbnail
+      }
+    });
+  };
+}
+
 export const ITEMS: Record<string, CatalogueItem> = {
+  template_rustic: {
+    id: 'template_rustic',
+    name: 'Rustic tablescape',
+    cat: 'templates',
+    sec: 'Full tablescapes',
+    group: 'template',
+    surf: 'table',
+    fp: 0,
+    price: 0,
+    kw: 'template rustic tablescape preset quick start',
+    note: 'Places a full set',
+    pal: true,
+    template: ['runner_linen', 'charger_gold', 'centerpiece_wildflower', 'pillar_candle'],
+    build: buildTemplatePreview(['runner_linen', 'charger_gold', 'centerpiece_wildflower', 'pillar_candle']),
+  },
+  template_glam: {
+    id: 'template_glam',
+    name: 'Modern glam tablescape',
+    cat: 'templates',
+    sec: 'Full tablescapes',
+    group: 'template',
+    surf: 'table',
+    fp: 0,
+    price: 0,
+    kw: 'template glam modern tablescape preset quick start',
+    note: 'Places a full set',
+    tag: 'Glam',
+    pal: true,
+    template: ['overlay_sequin', 'charger_silver', 'centerpiece_garden', 'taper_candle'],
+    build: buildTemplatePreview(['overlay_sequin', 'charger_silver', 'centerpiece_garden', 'taper_candle']),
+  },
+  template_boho: {
+    id: 'template_boho',
+    name: 'Boho tablescape',
+    cat: 'templates',
+    sec: 'Full tablescapes',
+    group: 'template',
+    surf: 'table',
+    fp: 0,
+    price: 0,
+    kw: 'template boho tablescape preset quick start',
+    note: 'Places a full set',
+    tag: 'Boho',
+    pal: true,
+    template: ['runner_lace', 'charger_gold', 'centerpiece_wildflower', 'votive_cluster'],
+    build: buildTemplatePreview(['runner_lace', 'charger_gold', 'centerpiece_wildflower', 'votive_cluster']),
+  },
+  template_classic: {
+    id: 'template_classic',
+    name: 'Classic place setting',
+    cat: 'templates',
+    sec: 'Full tablescapes',
+    group: 'template',
+    surf: 'table',
+    fp: 0,
+    price: 0,
+    kw: 'template classic place setting tablescape preset quick start',
+    note: 'Places a full set',
+    pal: true,
+    template: ['runner_linen', 'charger_gold', 'dinner_plate', 'stem_glassware', 'pillar_candle'],
+    build: buildTemplatePreview(['runner_linen', 'charger_gold', 'dinner_plate', 'stem_glassware', 'pillar_candle']),
+  },
+
   runner_linen: {
     id: 'runner_linen',
     name: 'Table runner',
@@ -1732,6 +1822,178 @@ export const ITEMS: Record<string, CatalogueItem> = {
           mesh(g, new THREE.SphereGeometry(0.022, 10, 8), M(cols[(tier + i) % cols.length], 0.6), Math.cos(a) * r * 0.7, y + 0.045, Math.sin(a) * r * 0.7);
         }
       }
+    },
+  },
+
+  sweetheart_table: {
+    id: 'sweetheart_table',
+    name: 'Sweetheart table',
+    cat: 'tabletop',
+    sec: 'Tabletop shapes',
+    group: 'tabletop',
+    surf: 'floor',
+    fp: 0.3,
+    price: 180,
+    kw: 'sweetheart table couple wedding reception',
+    addon: 'tabletop-plus',
+    pal: true,
+    top: { h: 0.75, r: 0.4 },
+    build(g, { palette, color }) {
+      cyl(g, 0.4, 0.4, 0.03, M(color ?? palette.f, 0.85), 0, 0.75, 0, 32);
+      cyl(g, 0.03, 0.04, 0.72, M('#5b4634', 0.7), 0, 0.37, 0, 16);
+    },
+  },
+  cocktail_table: {
+    id: 'cocktail_table',
+    name: 'Cocktail high-top',
+    cat: 'tabletop',
+    sec: 'Tabletop shapes',
+    group: 'tabletop',
+    surf: 'floor',
+    fp: 0.2,
+    price: 90,
+    kw: 'cocktail table high top reception lounge',
+    addon: 'tabletop-plus',
+    pal: true,
+    top: { h: 1.1, r: 0.25 },
+    build(g, { palette, color }) {
+      cyl(g, 0.25, 0.25, 0.03, M(color ?? palette.f, 0.85), 0, 1.1, 0, 32);
+      cyl(g, 0.025, 0.025, 1.08, M('#2a2420', 0.6), 0, 0.55, 0, 12);
+      cyl(g, 0.18, 0.18, 0.02, M('#2a2420', 0.6), 0, 0.01, 0, 16);
+    },
+  },
+  head_table: {
+    id: 'head_table',
+    name: 'Head table',
+    cat: 'tabletop',
+    sec: 'Tabletop shapes',
+    group: 'tabletop',
+    surf: 'floor',
+    fp: 0.8,
+    price: 220,
+    kw: 'head table long wedding party reception',
+    addon: 'tabletop-plus',
+    pal: true,
+    top: { h: 0.75, w: 2.4, d: 0.8 },
+    build(g, { palette, color }) {
+      box(g, 2.4, 0.04, 0.8, M(color ?? palette.f, 0.85), 0, 0.75, 0);
+      box(g, 2.36, 0.7, 0.76, M('#5b4634', 0.7), 0, 0.37, 0);
+    },
+  },
+
+  string_curtain_lights: {
+    id: 'string_curtain_lights',
+    name: 'String light curtain',
+    cat: 'lighting-plus',
+    sec: 'Event lighting',
+    group: 'lighting',
+    surf: 'hang',
+    fp: 0.3,
+    price: 60,
+    kw: 'string curtain lights backdrop event lighting',
+    addon: 'lighting-plus',
+    pal: false,
+    build(_g, { builder }) {
+      for (let col = -3; col <= 3; col++) {
+        for (let row = 0; row < 6; row++) {
+          builder.add('glow', [col * 0.12, -row * 0.14, 0], 0.014, '#ffd79a', null, 4);
+        }
+      }
+      builder.flush();
+    },
+  },
+  gobo_light: {
+    id: 'gobo_light',
+    name: 'Gobo pattern light',
+    cat: 'lighting-plus',
+    sec: 'Event lighting',
+    group: 'lighting',
+    surf: 'floor',
+    fp: 0.1,
+    price: 45,
+    kw: 'gobo light pattern projection event lighting',
+    addon: 'lighting-plus',
+    pal: true,
+    build(g, { builder, palette, color }) {
+      cyl(g, 0.06, 0.08, 0.14, M('#222', 0.5, 0.5), 0, 0.07, 0, 16);
+      builder.add('glow', [0, 0.15, 0], [0.04, 0.02, 0.04], color ?? palette.b[0] ?? '#ffb866', null, 5);
+      builder.flush();
+    },
+  },
+  spotlight: {
+    id: 'spotlight',
+    name: 'Spotlight on stand',
+    cat: 'lighting-plus',
+    sec: 'Event lighting',
+    group: 'lighting',
+    surf: 'floor',
+    fp: 0.12,
+    price: 55,
+    kw: 'spotlight stand event lighting stage',
+    addon: 'lighting-plus',
+    pal: false,
+    build(g, { builder }) {
+      cyl(g, 0.02, 0.03, 1.4, M('#1e1e20', 0.6), 0, 0.7, 0, 10);
+      mesh(g, new THREE.CylinderGeometry(0.08, 0.1, 0.18, 16), M('#1e1e20', 0.5, 0.6), 0, 1.45, 0).rotation.z = 0.3;
+      builder.add('glow', [0.06, 1.5, 0], [0.05, 0.03, 0.05], '#fff4dd', null, 4);
+      builder.flush();
+    },
+  },
+
+  dj_booth: {
+    id: 'dj_booth',
+    name: 'DJ booth',
+    cat: 'av',
+    sec: 'Stage & AV',
+    group: 'av',
+    surf: 'floor',
+    fp: 0.4,
+    price: 350,
+    kw: 'dj booth music stage av equipment',
+    addon: 'av-plus',
+    pal: false,
+    build(g, { builder }) {
+      box(g, 1.4, 1, 0.6, M('#1e1e20', 0.5, 0.3), 0, 0.5, 0);
+      box(g, 1.3, 0.05, 0.5, M('#2a2a2e', 0.4, 0.5), 0, 1.02, 0);
+      for (const x of [-0.3, 0.3]) builder.add('glow', [x, 1.03, 0], [0.08, 0.01, 0.15], '#6fb8ff', null, 3);
+      builder.flush();
+    },
+  },
+  speaker_stack: {
+    id: 'speaker_stack',
+    name: 'Speaker stack',
+    cat: 'av',
+    sec: 'Stage & AV',
+    group: 'av',
+    surf: 'floor',
+    fp: 0.2,
+    price: 120,
+    kw: 'speaker stack sound system av equipment',
+    addon: 'av-plus',
+    pal: false,
+    build(g) {
+      box(g, 0.45, 0.9, 0.4, M('#1a1a1c', 0.6), 0, 0.45, 0);
+      box(g, 0.4, 0.55, 0.02, M('#0a0a0c', 0.7), 0, 0.6, 0.21);
+      mesh(g, new THREE.CylinderGeometry(0.13, 0.13, 0.02, 20), M('#2a2a2e', 0.6), 0, 0.75, 0.22).rotation.x = Math.PI / 2;
+    },
+  },
+  moving_head_light: {
+    id: 'moving_head_light',
+    name: 'Moving head light',
+    cat: 'av',
+    sec: 'Stage & AV',
+    group: 'av',
+    surf: 'hang',
+    fp: 0.1,
+    price: 90,
+    kw: 'moving head light dance floor av stage',
+    addon: 'av-plus',
+    pal: true,
+    build(g, { builder, palette, color }) {
+      box(g, 0.14, 0.1, 0.1, M('#1e1e20', 0.5, 0.5), 0, 0, 0);
+      mesh(g, new THREE.CylinderGeometry(0.05, 0.06, 0.14, 12), M('#1e1e20', 0.5, 0.5), 0, -0.1, 0).rotation.z = 0.4;
+      builder.add('glow', [0.04, -0.18, 0], [0.03, 0.16, 0.03], color ?? palette.b[0] ?? '#c9d9b2', null, 5);
+      builder.flush();
     },
   },
 };

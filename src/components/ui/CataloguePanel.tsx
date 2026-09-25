@@ -58,6 +58,14 @@ export function CataloguePanel() {
   const setTableChair = useDesignStore((s) => s.setTableChair);
   const currentChairType = design.table.chair?.type;
 
+  function placeOnTable(typeId: string) {
+    const table = tables[0];
+    const count = design.items.filter((i) => !i.on && ITEMS[i.type]?.surf === 'table' && (i.t ?? 0) === table.index).length;
+    const r = (table.kind === 'round' ? table.radius : Math.min(table.width, table.length) / 2) * 0.55;
+    const a = count * 0.9;
+    placeItem({ type: typeId, x: Math.cos(a) * r, z: Math.sin(a) * r, t: table.index });
+  }
+
   function handlePlace(item: CatalogueItem) {
     if (item.resetChair) {
       setTableChair(undefined);
@@ -67,6 +75,16 @@ export function CataloguePanel() {
     if (item.chairStyle) {
       setTableChair(item.chairStyle);
       showToast(`Chairs switched to ${item.name.toLowerCase()}`);
+      return;
+    }
+
+    if (item.template) {
+      if (!tables.length) {
+        showToast('Choose a table layout first');
+        return;
+      }
+      for (const id of item.template) placeOnTable(id);
+      showToast(`${item.name} applied`);
       return;
     }
 
@@ -85,11 +103,7 @@ export function CataloguePanel() {
         showToast('Choose a table layout first');
         return;
       }
-      const table = tables[0];
-      const count = design.items.filter((i) => !i.on && ITEMS[i.type]?.surf === 'table' && (i.t ?? 0) === table.index).length;
-      const r = (table.kind === 'round' ? table.radius : Math.min(table.width, table.length) / 2) * 0.55;
-      const a = count * 0.9;
-      placeItem({ type: item.id, x: Math.cos(a) * r, z: Math.sin(a) * r, t: table.index });
+      placeOnTable(item.id);
       return;
     }
 
