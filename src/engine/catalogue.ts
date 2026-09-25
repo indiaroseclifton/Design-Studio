@@ -5,6 +5,8 @@ import { Builder } from '../three/builder';
 import { ITEMS, PACKS, TEMPLATES } from './catalogue.gen';
 // Side effect: registers saved Flower Studio arrangements into ITEMS before a persisted design is loaded.
 import './flowers';
+// Same for saved Cake Studio cakes.
+import './cakes';
 import { CHAIRS, CLOTHS, DECOR, OVERLAYS, palOf, tableLen, type Pal } from './studio';
 import type { CatalogueItem, TableLayout } from '../types';
 
@@ -15,6 +17,7 @@ export { ITEMS, PACKS, TEMPLATES };
 export const CATL: Record<string, string> = {
   templates: 'Templates',
   mine: 'My Flowers',
+  mycakes: 'My Cakes',
   linens: 'Linens',
   chairs: 'Chairs',
   florals: 'Florals',
@@ -31,7 +34,7 @@ export const CATL: Record<string, string> = {
 };
 for (const p of PACKS) CATL[p.id] = p.name;
 
-const BASE_ORDER = ['templates', 'mine', 'linens', 'chairs', 'florals', 'tableware', 'desserts', 'light', 'furniture', 'structures', 'wedding', 'holiday', 'faith', 'corporate', 'party'];
+const BASE_ORDER = ['templates', 'mine', 'mycakes', 'linens', 'chairs', 'florals', 'tableware', 'desserts', 'light', 'furniture', 'structures', 'wedding', 'holiday', 'faith', 'corporate', 'party'];
 export const isPack = (cat: string) => PACKS.some((p) => p.id === cat);
 export const CAT_ORDER = [...BASE_ORDER, ...PACKS.map((p) => p.id)];
 

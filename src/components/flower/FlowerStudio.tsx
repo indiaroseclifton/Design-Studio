@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { FCOL, FINS, FL, FS_PRESETS, GR, MAX_GREENS, MAX_STEMS, SHAPES, VESS, loadCustom, type Draft } from '../../engine/flowers';
 import { PALS, palOf } from '../../engine/studio';
 import { newId } from '../../lib/designOps';
-import { cachedArrangementThumb, cachedThumb, requestArrangementThumb, requestStemThumb, stemKey } from '../../three/thumbnail';
+import { cachedArrangementThumb, requestArrangementThumb } from '../../three/thumbnail';
+import { Sec, StemThumb, Stepper } from '../studio3d/ui';
+import { histReducer, useThumb } from '../studio3d/state';
 import { useDesignStore } from '../../store/designStore';
 import { FlowerViewer, type Backdrop, type StudioView } from './FlowerViewer';
 import { SHAPE_NOTE, STEM_RANGE, VESSEL_NOTE, colourHex, colourName, flowerName, priceOf, stemAdvice, stemTotal, widthCm } from './guidance';
@@ -14,68 +16,12 @@ const fromPreset = (i: number, seed = newSeed()): Draft => {
 };
 type Tab = 'style' | 'flowers' | 'greenery';
 
-/* ------------------------------------------------------------------ history */
-
-interface Hist {
-  past: Draft[];
-  now: Draft;
-  future: Draft[];
-}
-type HistAction = { t: 'set'; d: Draft } | { t: 'undo' } | { t: 'redo' };
-function histReducer(h: Hist, a: HistAction): Hist {
-  if (a.t === 'set') return JSON.stringify(a.d) === JSON.stringify(h.now) ? h : { past: [...h.past, h.now].slice(-60), now: a.d, future: [] };
-  if (a.t === 'undo') return h.past.length ? { past: h.past.slice(0, -1), now: h.past[h.past.length - 1], future: [h.now, ...h.future] } : h;
-  return h.future.length ? { past: [...h.past, h.now], now: h.future[0], future: h.future.slice(1) } : h;
-}
-
-/* ------------------------------------------------------------------ thumbnails */
-
-function useThumb(key: string, request: (cb: (url: string) => void) => () => void, cached: () => string | undefined) {
-  const [thumb, setThumb] = useState<{ key: string; url: string } | null>(null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => request((url) => setThumb({ key, url })), [key]);
-  return thumb?.key === key ? thumb.url : cached();
-}
-
-function StemThumb({ kind, t, c, className = 'fs-th' }: { kind: 'flower' | 'green'; t: string; c?: string; className?: string }) {
-  const key = stemKey(kind, t, c);
-  const url = useThumb(key, (cb) => requestStemThumb(kind, t, c, cb), () => cachedThumb(key));
-  return <span className={className} style={url ? { backgroundImage: `url(${url})` } : undefined} aria-hidden />;
-}
-
 function ArrThumb({ id, draft }: { id: string; draft: Draft }) {
   const url = useThumb(id, (cb) => requestArrangementThumb(id, draft, cb), () => cachedArrangementThumb(id));
   return <span className="fs-card-th" style={url ? { backgroundImage: `url(${url})` } : undefined} aria-hidden />;
 }
 
 /* ------------------------------------------------------------------ small pieces */
-
-function Sec({ label, extra, children, hint }: { label: string; extra?: ReactNode; children: ReactNode; hint?: string }) {
-  return (
-    <section className="flex flex-col gap-2">
-      <div className="lbl flex items-baseline justify-between gap-2">
-        <span>{label}</span>
-        {extra && <span className="normal-case tracking-normal opacity-90">{extra}</span>}
-      </div>
-      {hint && <p className="fs-hint-text">{hint}</p>}
-      {children}
-    </section>
-  );
-}
-
-function Stepper({ n, onStep, label, min = 0, max = 99 }: { n: number; onStep: (d: number) => void; label: string; min?: number; max?: number }) {
-  return (
-    <div className="fs-step" role="group" aria-label={`${label} count`}>
-      <button type="button" aria-label={`Fewer ${label}`} disabled={n <= min} onClick={() => onStep(-1)}>
-        −
-      </button>
-      <b aria-live="polite">{n}</b>
-      <button type="button" aria-label={`More ${label}`} disabled={n >= max} onClick={() => onStep(1)}>
-        +
-      </button>
-    </div>
-  );
-}
 
 /** Colour swatches for one stem, shown in a popover under the row. */
 function ColourPicker({ value, onPick }: { value: string; onPick: (c: string) => void }) {
@@ -128,7 +74,7 @@ export function FlowerStudio() {
   }, [existing]);
   const initialName = existing?.name ?? `My ${FS_PRESETS[0].name.toLowerCase()}`;
 
-  const [hist, dispatch] = useReducer(histReducer, { past: [], now: initial, future: [] });
+  const [hist, dispatch] = useReducer(histReducer<Draft>, { past: [], now: initial, future: [] });
   const draft = hist.now;
   const [name, setName] = useState(initialName);
   const [tab, setTab] = useState<Tab>('style');

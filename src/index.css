@@ -835,3 +835,43 @@ body.fs-on .chrome.toolbar {
   opacity: 1 !important;
   pointer-events: auto !important;
 }
+
+/* ---------- Cake Studio (shares the fs-* studio styles) ---------- */
+.fs-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 240, 220, 0.08);
+}
+.fs-opt {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 240, 220, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.fs-opt:hover {
+  border-color: rgba(var(--acr), 0.5);
+}
+.fs-opt.on {
+  border-color: var(--ac);
+  background: rgba(var(--acr), 0.1);
+}
+.fs-opt b {
+  font-weight: 500;
+  font-size: 12.5px;
+}
+.fs-opt small {
+  font-size: 11px;
+  opacity: 0.6;
+  text-align: right;
+}

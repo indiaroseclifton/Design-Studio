@@ -49,12 +49,14 @@ export function CataloguePanel() {
   const openModal = useDesignStore((s) => s.openModal);
   const openStudio = useDesignStore((s) => s.openStudio);
   const flowersVersion = useDesignStore((s) => s.flowersVersion);
+  const cakesVersion = useDesignStore((s) => s.cakesVersion);
+  const openCakeStudio = useDesignStore((s) => s.openCakeStudio);
   const [editPal, setEditPal] = useState(false);
 
   const packSet = useMemo(() => new Set(packsOn), [packsOn]);
   // flowersVersion: saved arrangements live in ITEMS, so re-list them when they change.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const entries = useMemo(() => buildEntries(packSet), [packSet, flowersVersion]);
+  const entries = useMemo(() => buildEntries(packSet), [packSet, flowersVersion, cakesVersion]);
   const tabs = CAT_ORDER.filter((k) => !isPack(k) || packSet.has(k));
   const curCat = tabs.includes(cat) ? cat : 'templates';
 
@@ -186,7 +188,18 @@ export function CataloguePanel() {
             </button>
           </div>
         )}
-        {sections.length === 0 && (q || curCat !== 'mine') && <div className="px-1 py-5 text-[13px] opacity-60">Nothing matches that search.</div>}
+        {!q && (curCat === 'mycakes' || curCat === 'desserts') && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button type="button" className="card text-left" onClick={() => openCakeStudio()}>
+              <div className="th flex items-center justify-center text-[34px] font-light" style={{ color: 'var(--ac)' }}>
+                +
+              </div>
+              <b>{curCat === 'mycakes' ? 'New cake' : 'Design your own cake'}</b>
+              <small>Tiers, finishes, flowers and a topper in the Cake Studio. It saves to My Cakes, ready to place.</small>
+            </button>
+          </div>
+        )}
+        {sections.length === 0 && (q || (curCat !== 'mine' && curCat !== 'mycakes')) && <div className="px-1 py-5 text-[13px] opacity-60">Nothing matches that search.</div>}
         {sections.map(([sec, items]) => (
           <div key={sec}>
             <div className="lbl mb-2 mt-3.5">{sec}</div>

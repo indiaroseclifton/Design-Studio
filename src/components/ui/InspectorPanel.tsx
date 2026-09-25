@@ -5,6 +5,7 @@ import { arrange, linked, recolor, setOpt, swapItem } from '../../lib/designOps'
 import { useDesignStore } from '../../store/designStore';
 import type { Design, PlacedItem } from '../../types';
 import { customIdOf } from '../../engine/flowers';
+import { cakeIdOf } from '../../engine/cakes';
 
 function Chips({ list, active, onPick }: { list: Array<[string, string]>; active: string | null | undefined; onPick: (id: string) => void }) {
   return (
@@ -73,6 +74,7 @@ export function InspectorPanel() {
   const endGesture = useDesignStore((s) => s.endGesture);
   const live = useDesignStore((s) => s.live);
   const openStudio = useDesignStore((s) => s.openStudio);
+  const openCakeStudio = useDesignStore((s) => s.openCakeStudio);
   const [applyAll, setApplyAll] = useState(false);
 
   if (!selection) return null;
@@ -239,6 +241,11 @@ export function InspectorPanel() {
       {customIdOf(item.type) && (
         <button type="button" className="btn" onClick={() => openStudio(customIdOf(item.type))}>
           ✿ Edit in Flower Studio
+        </button>
+      )}
+      {cakeIdOf(item.type) && (
+        <button type="button" className="btn" onClick={() => openCakeStudio(cakeIdOf(item.type))}>
+          Edit in Cake Studio
         </button>
       )}
       {d.top && <div className="text-[11px] leading-[1.4] opacity-60">While this is selected, catalogue pieces you click are set on top of it.</div>}

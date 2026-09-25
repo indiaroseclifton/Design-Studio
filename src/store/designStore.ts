@@ -7,6 +7,7 @@ import { CHAIRS } from '../engine/studio';
 import { DEFAULT_DESIGN, normalizeDesign } from '../lib/designFormat';
 import * as ops from '../lib/designOps';
 import { customKey, loadCustom, registerCustom, saveCustomList, type SavedArrangement } from '../engine/flowers';
+import { cakeKey, loadCakes, registerCake, saveCakeList, type SavedCake } from '../engine/cakes';
 import { forgetThumbs } from '../three/thumbnail';
 
 export type ModalKind = 'designs' | 'quote' | 'addons';
@@ -52,6 +53,13 @@ interface StoreState {
   /** Save an arrangement to My Flowers; with `place`, also add it to the scene. */
   saveArrangement: (r: SavedArrangement, place: boolean) => void;
   deleteArrangement: (id: string) => void;
+  /** Cake Studio: open, and which saved cake is being edited (null = new) */
+  cakeStudio: { open: boolean; editId: string | null };
+  cakesVersion: number;
+  openCakeStudio: (editId?: string | null) => void;
+  closeCakeStudio: () => void;
+  saveCake: (c: SavedCake, place: boolean) => void;
+  deleteCake: (id: string) => void;
 
   /** Apply a named design operation to a draft copy and record it in undo history. */
   edit: (fn: (d: Design) => void, toast?: string, undoable?: boolean) => void;
@@ -167,7 +175,8 @@ export const useDesignStore = create<StoreState>()(
         studio: { open: false, editId: null },
         flowersVersion: 0,
 
-        openStudio: (editId = null) => set({ studio: { open: true, editId }, selection: null, modal: null, comingSoon: null }),
+        openStudio: (editId = null) =>
+          set({ studio: { open: true, editId }, cakeStudio: { open: false, editId: null }, selection: null, modal: null, comingSoon: null }),
         closeStudio: () => set({ studio: { open: false, editId: null } }),
         saveArrangement: (r, place) => {
           const list = loadCustom().filter((x) => x.id !== r.id);
@@ -206,6 +215,50 @@ export const useDesignStore = create<StoreState>()(
           forgetThumbs(`item:${key}`);
           set((s) => ({ flowersVersion: s.flowersVersion + 1, studio: { open: false, editId: null }, selection: null }));
           toast('Arrangement deleted');
+        },
+
+        cakeStudio: { open: false, editId: null },
+        cakesVersion: 0,
+        openCakeStudio: (editId = null) =>
+          set({ cakeStudio: { open: true, editId }, studio: { open: false, editId: null }, selection: null, modal: null, comingSoon: null }),
+        closeCakeStudio: () => set({ cakeStudio: { open: false, editId: null } }),
+        saveCake: (c, place) => {
+          const list = loadCakes().filter((x) => x.id !== c.id);
+          list.push(c);
+          if (!saveCakeList(list)) {
+            toast('Browser storage is full — delete a cake first');
+            return;
+          }
+          registerCake(c);
+          const key = cakeKey(c.id);
+          forgetThumbs(`item:${key}`);
+          set((s) => ({
+            cakesVersion: s.cakesVersion + 1,
+            cakeStudio: { open: false, editId: null },
+            activeCategory: 'mycakes',
+            search: '',
+            design: s.design.items.some((i) => i.type === key) ? clone(s.design) : s.design,
+          }));
+          if (!place) {
+            toast(`Saved “${c.name}” to My Cakes`);
+            return;
+          }
+          // A selected cake table (or other host) takes the cake on top; otherwise it goes on the first table.
+          let placed: PlacedItem | null = null;
+          commit((d) => void (placed = ops.addItem(d, key, { host: selectedHost(get()), mirror: false })));
+          const it = placed as PlacedItem | null;
+          if (it) set({ selection: { k: 'item', id: it.id } });
+          toast(it ? `Saved “${c.name}” and placed it` : `Saved “${c.name}” — add a table or a cake table to place it`, !!it);
+        },
+        deleteCake: (id) => {
+          const key = cakeKey(id);
+          saveCakeList(loadCakes().filter((x) => x.id !== id));
+          commit((d) => void ops.removeItems(d, d.items.filter((i) => i.type === key).map((i) => i.id)));
+          // Keep the definition (hidden from the catalogue) so undo can bring deleted pieces back safely.
+          if (ITEMS[key]) ITEMS[key].cat = 'deleted';
+          forgetThumbs(`item:${key}`);
+          set((s) => ({ cakesVersion: s.cakesVersion + 1, cakeStudio: { open: false, editId: null }, selection: null }));
+          toast('Cake deleted');
         },
 
         edit: (fn, msg, undoable = true) => {

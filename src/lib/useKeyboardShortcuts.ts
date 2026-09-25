@@ -16,7 +16,7 @@ export function useKeyboardShortcuts() {
       const s = useDesignStore.getState();
 
       // The Flower Studio handles its own keys (Esc with a discard check, and its own undo).
-      if (s.studio.open) return;
+      if (s.studio.open || s.cakeStudio.open) return;
       if (e.key === 'Escape') {
         if (s.modal) s.closeModal();
         else if (s.comingSoon) s.dismissComingSoon();

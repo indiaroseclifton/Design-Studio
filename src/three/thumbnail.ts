@@ -182,6 +182,16 @@ export function requestArrangementThumb(key: string, r: Arrangement, cb: (url: s
     return shoot(g, new THREE.Vector3(0.55, 0.3, 1), 0.9);
   }, cb);
 }
+/** Queue a thumbnail of any studio model (Cake Studio presets and designs). */
+export function requestModelThumb(key: string, build: (g: THREE.Group) => void, cb: (url: string) => void): () => void {
+  return enqueue(`model:${key}`, () => {
+    const g = new THREE.Group();
+    build(g);
+    return shoot(g, new THREE.Vector3(0.5, 0.35, 1), 0.92);
+  }, cb);
+}
+export const cachedModelThumb = (key: string) => cache.get(`model:${key}`);
+
 export const cachedArrangementThumb = (key: string) => cache.get(`arr:${key}`);
 
 function pump() {
