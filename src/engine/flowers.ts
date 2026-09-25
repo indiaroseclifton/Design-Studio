@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { FCOL, FINS, FL, GR, I4, ITEMS, SHAPES, VESS, buildArrangement, fc, frame, stemTo, type Arrangement } from './catalogue.gen';
-import { Builder } from '../three/builder';
-import { getSeedState, jit, rnd, seed, setSeedState } from '../three/utils';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { Builder, registerKind } from '../three/builder';
+import { petalMaterial } from './botany';
+import { disposeObject3D, getSeedState, jit, rnd, seed, setSeedState, shared } from '../three/utils';
 
 export { FCOL, FINS, FL, GR, SHAPES, VESS };
 
@@ -162,3 +164,60 @@ export function cutStem(kind: 'flower' | 'green', t: string, c?: string): THREE.
   setSeedState(keep);
   return g;
 }
+
+/*
+ * One flower model everywhere: the catalogue's clustered "rose", "peony" and "ranun" kinds (used by every
+ * centrepiece, garland and arch) are baked from the same Flower Studio heads, so tables match the studio.
+ */
+function bakeHead(t: string, seedN: number): THREE.BufferGeometry {
+  const keep = getSeedState();
+  seed(seedN);
+  const g = new THREE.Group(),
+    B = Builder(g);
+  FL[t].h(B, I4, 1, '#ffffff');
+  B.flush();
+  setSeedState(keep);
+  const parts: THREE.BufferGeometry[] = [];
+  const m = new THREE.Matrix4(),
+    c = new THREE.Color();
+  g.traverse((o) => {
+    if (!(o instanceof THREE.InstancedMesh)) return;
+    for (let i = 0; i < o.count; i++) {
+      o.getMatrixAt(i, m);
+      if (o.instanceColor) o.getColorAt(i, c);
+      else c.set('#ffffff');
+      const geo = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(m);
+      // Fold the instance colour into vertex colours so everything merges under one material.
+      const n = geo.attributes.position.count,
+        src = geo.attributes.color,
+        col = new Float32Array(n * 3);
+      for (let v = 0; v < n; v++) {
+        col[v * 3] = (src ? src.getX(v) : 1) * c.r;
+        col[v * 3 + 1] = (src ? src.getY(v) : 1) * c.g;
+        col[v * 3 + 2] = (src ? src.getZ(v) : 1) * c.b;
+      }
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      for (const k of Object.keys(geo.attributes)) if (!['position', 'normal', 'color'].includes(k)) geo.deleteAttribute(k);
+      parts.push(geo);
+    }
+  });
+  disposeObject3D(g);
+  const merged = mergeGeometries(parts)!;
+  parts.forEach((p) => p.dispose());
+  merged.computeBoundingSphere();
+  const bs = merged.boundingSphere!;
+  merged.translate(-bs.center.x, -bs.center.y, -bs.center.z);
+  merged.scale(1 / bs.radius, 1 / bs.radius, 1 / bs.radius);
+  return shared(merged);
+}
+
+const baked = new Map<string, THREE.BufferGeometry>();
+const headKind = (kind: string, t: string, seedN: number) =>
+  registerKind(kind, () => {
+    let geo = baked.get(kind);
+    if (!geo) baked.set(kind, (geo = bakeHead(t, seedN)));
+    return [geo, petalMaterial()];
+  });
+headKind('rose', 'rose', 3);
+headKind('peony', 'peony', 5);
+headKind('ranun', 'ranunculus', 9);

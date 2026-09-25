@@ -66,15 +66,30 @@ npm run lint      # oxlint
 Open it from the toolbar (**✿ Flower Studio**), the catalogue header, or **New arrangement** under My Flowers.
 Its components are in `src/components/flower/` and its logic in `src/engine/flowers.ts`.
 
-- A full-screen editor with its own orbiting 3D viewer, and an editable name field.
-- Controls: 7 presets, 7 vessels, 5 finishes, 5 shapes, size (60–160%), 17 flower types with 17 colours and
-  − n + steppers, and 7 kinds of greenery. Each row has a cut-stem thumbnail rendered in 3D.
-- **Shuffle placement** reseeds the arrangement. **Save to catalogue** and **Save & place** add it under **My
-  Flowers** as a normal catalogue piece. It can be placed, dragged, stacked, quoted, and edited later via
-  **✿ Edit in Flower Studio** in the inspector.
-- Arrangements persist in `localStorage` (`vs2_custom`), and saved data is validated on load.
-- Arrangements now travel with designs: exports, share links and saved designs embed the ones they use, which
-  are registered on import. The handoff lists this as a gap in the prototype.
+- **Realistic flowers** (`src/engine/botany.ts`):
+  - Petals are thin parametric surfaces: a narrow claw base, widest past the middle, a rounded tip, cupped
+    edges, a rolled-back tip and a slight ruffle. They're shaded from a deeper, green-tinged base to a light edge.
+  - Leaves are blades with a petiole, a pointed tip, a folded midrib and an arch.
+  - These replace the prototype's squashed spheres and flat-shaded blobs. Elongated foliage everywhere is
+    upgraded automatically, including catalogue centrepieces, palms and ferns.
+  - The catalogue's roses, peonies and ranunculus are baked from the same Flower Studio heads, so tables
+    match the studio.
+- **Viewer:** a soft fading studio surface with contact shadows, and key, rim and fill lighting. A toolbar has
+  Shuffle, Front / ¾ / Top views, Turntable, and a light or dark backdrop.
+- **Editor:**
+  - Style / Flowers / Greenery tabs, with a sticky footer showing stems, estimated price and use, plus
+    in-studio undo/redo (Ctrl+Z).
+  - Recipes and vessels as rendered 3D cards, finish swatches, shape notes, and size in centimetres.
+  - Compact stem rows with a colour popover (17 named colours or any colour; custom colours are labelled by
+    their nearest named colour), and a recipe colour bar.
+  - Vessel-aware stem-count advice, a one-click **colour story** from any event palette, and a searchable
+    flower grid showing what's already in the recipe.
+  - Cancel and Esc ask before discarding unsaved changes.
+- **Saving:** Save to My Flowers or Save & place. A saved arrangement is a normal catalogue piece: it can be
+  placed, dragged, stacked, quoted and re-edited via **✿ Edit in Flower Studio**. Arrangements persist in
+  `localStorage` (`vs2_custom`) and are validated on load.
+- **Travelling with designs:** exports, share links and saved designs embed the arrangements they use. The
+  handoff lists this as a gap in the prototype.
 - The main scene pauses rendering while the studio covers it.
 
 ### Porting approach

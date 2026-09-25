@@ -4,40 +4,6 @@ import { M, jit, mesh, noSh, pick, rnd, shared, cyl } from '../three/utils';
 import { flame, registerKind, type Builder, type Vec3Tuple } from '../three/builder';
 import { brass, china, chargerGeo, dinnerPlateGeo, forkGeo, glassM, knifeGeo, saladPlateGeo, silver, spoonGeo, tumblerGeo, wax, wineGeo } from './materials';
 import type { Pal } from './studio';
-import { petalGeometry, petalMaterial } from './botany';
-
-/*
- * Flower heads for the catalogue's centrepieces: real petals (engine/botany.ts) arranged on a golden-angle
- * spiral from a tight centre to open outer petals, merged into one geometry normalised to a unit sphere.
- */
-function petalFlower(n: number, r0: number, r1: number, t0: number, t1: number, s0: number, s1: number, dep = 0.12, cup = 1.2, round = 0.85) {
-  const proto = petalGeometry({ cup, round, reflex: 0.7 });
-  const parts: THREE.BufferGeometry[] = [];
-  for (let i = 0; i < n; i++) {
-    const t = i / (n - 1),
-      a = i * 2.39996,
-      sx = s0 + (s1 - s0) * t,
-      sy = sx * 1.25;
-    const g = proto.clone();
-    // Base of the petal at the origin, length sy, cup depth growing as petals open.
-    g.translate(0, 1, 0);
-    g.scale(sx, sy / 2, dep * (0.6 + t));
-    g.rotateX(t0 + (t1 - t0) * t);
-    g.rotateY(a);
-    const r = r0 + (r1 - r0) * t;
-    g.translate(Math.sin(a) * r, 0, Math.cos(a) * r);
-    parts.push(g);
-  }
-  proto.dispose();
-  const m = mergeGeometries(parts)!;
-  parts.forEach((p) => p.dispose());
-  m.computeBoundingSphere();
-  const bs = m.boundingSphere!;
-  m.translate(-bs.center.x, -bs.center.y, -bs.center.z);
-  m.scale(1 / bs.radius, 1 / bs.radius, 1 / bs.radius);
-  m.computeVertexNormals();
-  return shared(m);
-}
 
 function hydraGeo() {
   const parts: THREE.BufferGeometry[] = [],
@@ -64,13 +30,8 @@ const lazy = <T,>(f: () => T) => {
   let v: T | undefined;
   return () => (v ??= f());
 };
-const roseG = lazy(() => petalFlower(18, 0.02, 0.34, 0.12, 1.1, 0.2, 0.42, 0.5, 1.3, 0.9));
-const peonyG = lazy(() => petalFlower(30, 0.05, 0.5, 0.3, 1.4, 0.28, 0.5, 0.45, 1.1, 0.7));
-const ranunG = lazy(() => petalFlower(36, 0.01, 0.34, 0.06, 1.0, 0.12, 0.3, 0.55, 1.4, 1));
 const hydraG = lazy(hydraGeo);
-registerKind('rose', () => [roseG(), petalMaterial()]);
-registerKind('peony', () => [peonyG(), petalMaterial()]);
-registerKind('ranun', () => [ranunG(), petalMaterial()]);
+// The 'rose', 'peony' and 'ranun' kinds are baked from the Flower Studio heads in engine/flowers.ts.
 registerKind('hydra', () => [hydraG(), new THREE.MeshPhysicalMaterial({ color: '#fff', roughness: 0.7, sheen: 0.8, sheenRoughness: 0.5, side: THREE.DoubleSide })]);
 
 const BK = ['rose', 'rose', 'rose', 'peony', 'peony', 'ranun', 'ranun', 'hydra'];

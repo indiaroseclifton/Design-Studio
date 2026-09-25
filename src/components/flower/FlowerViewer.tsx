@@ -81,7 +81,7 @@ function surfaceMaterial(color: string) {
   return shared(new THREE.MeshStandardMaterial({ color, roughness: 0.95, alphaMap: fade, transparent: true, depthWrite: false }));
 }
 const SURFACES = {
-  table: { dark: surfaceMaterial('#e9e1d3'), light: surfaceMaterial('#f4efe7') },
+  table: { dark: surfaceMaterial('#b9ad9b'), light: surfaceMaterial('#efe8de') },
   floor: { dark: surfaceMaterial('#6b5a48'), light: surfaceMaterial('#b8a48c') },
 };
 
@@ -129,7 +129,7 @@ function Arrangement({ draft, turntable, view, viewNonce, backdrop }: { draft: D
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frameKey, camera]);
 
-  const scale = surf === 'floor' ? 2.8 : 1.5;
+  const scale = surf === 'floor' ? 2.2 : 1.05;
   return (
     <>
       <primitive object={group} />

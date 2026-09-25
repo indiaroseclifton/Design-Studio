@@ -54,5 +54,23 @@ export function stemAdvice(d: Draft): string | null {
 }
 
 export const colourHex = (c: string) => FCOL[c]?.[1] ?? c;
-export const colourName = (c: string) => FCOL[c]?.[0] ?? 'Custom';
+/** A colour's name, or for a custom hex (a colour story, "Any colour…") the nearest named colour. */
+export function colourName(c: string) {
+  if (FCOL[c]) return FCOL[c][0];
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  if (!/^#[0-9a-f]{6}$/i.test(c)) return 'Custom';
+  const [r, g, b] = rgb(c);
+  let best = 'Custom',
+    bd = Infinity;
+  for (const [name, hex] of Object.values(FCOL)) {
+    const [r2, g2, b2] = rgb(hex);
+    // Weighted RGB distance, close enough to perceived difference for naming.
+    const d = 2 * (r - r2) ** 2 + 4 * (g - g2) ** 2 + 3 * (b - b2) ** 2;
+    if (d < bd) {
+      bd = d;
+      best = name;
+    }
+  }
+  return `≈ ${best}`;
+}
 export const flowerName = (t: string) => FL[t]?.n ?? t;

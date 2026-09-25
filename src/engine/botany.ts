@@ -132,7 +132,8 @@ export const petalMaterial = () =>
     color: '#fff',
     vertexColors: true,
     roughness: 0.62,
-    sheen: 1,
+    // Enough sheen for a velvety petal edge without washing deep colours (burgundy, plum) out to pink.
+    sheen: 0.45,
     sheenRoughness: 0.45,
     sheenColor: new THREE.Color('#ffffff'),
     specularIntensity: 0.35,
