@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { CatalogueItem } from '../types';
-import { box, cyl, mesh, M } from '../three/utils';
+import { box, cyl, mesh, M, pick } from '../three/utils';
 import { T, tm, noise } from '../three/textures';
 import { flame } from '../three/builder';
 import { buildChair } from './chairs';
@@ -17,6 +17,11 @@ export const CATEGORIES: Category[] = [
   { id: 'florals', label: 'Florals' },
   { id: 'candles', label: 'Candles & light' },
   { id: 'furniture', label: 'Furniture & lighting' },
+  { id: 'wedding', label: 'Wedding' },
+  { id: 'holiday', label: 'Holiday' },
+  { id: 'faith', label: 'Faith & culture' },
+  { id: 'corporate', label: 'Corporate' },
+  { id: 'parties', label: 'Parties & kids' },
   { id: 'desserts', label: 'Desserts' },
 ];
 
@@ -37,6 +42,32 @@ function textTexture(text: string, opts: { bg?: string; fg?: string; size?: numb
 }
 
 const glass = () => M('#eef4f2', 0.05, 0, { transparent: true, opacity: 0.35 });
+
+const angle = (i: number, n: number) => (i / n) * Math.PI * 2;
+
+function repeatingLogoTexture(text: string, fg: string) {
+  return T(
+    (ctx, w, h) => {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = fg;
+      ctx.font = "600 34px Jost,sans-serif";
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 2; col++) {
+          ctx.save();
+          ctx.translate((col + 0.5) * (w / 2), (row + 0.5) * (h / 4));
+          if (row % 2) ctx.rotate(Math.PI);
+          ctx.fillText(text, 0, 0, w * 0.45);
+          ctx.restore();
+        }
+      }
+    },
+    [1, 1],
+    512,
+  );
+}
 
 export const ITEMS: Record<string, CatalogueItem> = {
   runner_linen: {
@@ -1058,6 +1089,649 @@ export const ITEMS: Record<string, CatalogueItem> = {
           box(g, 0.02, 0.02, 0.03, M('#8a6a4a', 0.6), x, y, 0.05);
           mesh(g, new THREE.TorusGeometry(0.09, 0.035, 8, 16), M(['#e2a06a', '#e88ba0', '#c98e5a'][(row + col) % 3], 0.6), x, y, 0.09).rotation.y = Math.PI / 2;
         }
+    },
+  },
+
+  unity_candle_set: {
+    id: 'unity_candle_set',
+    name: 'Unity candle set',
+    cat: 'wedding',
+    sec: 'Ceremony',
+    group: 'wedding',
+    surf: 'table',
+    fp: 0.08,
+    price: 45,
+    kw: 'unity candle ceremony wedding set',
+    pal: false,
+    build(g, { builder }) {
+      cyl(g, 0.03, 0.03, 0.26, M('#f7f0dd', 0.6), 0, 0.13, 0, 16);
+      flame(builder, 0, 0.27, 0, 0.6);
+      for (const x of [-0.09, 0.09]) {
+        cyl(g, 0.018, 0.018, 0.16, M('#f7f0dd', 0.6), x, 0.08, 0, 12);
+        flame(builder, x, 0.17, 0, 0.4);
+      }
+      builder.flush();
+    },
+  },
+  ring_pillow: {
+    id: 'ring_pillow',
+    name: 'Ring bearer pillow',
+    cat: 'wedding',
+    sec: 'Ceremony',
+    group: 'wedding',
+    surf: 'table',
+    fp: 0.05,
+    price: 20,
+    kw: 'ring bearer pillow cushion wedding',
+    pal: true,
+    build(g, { palette, color }) {
+      box(g, 0.16, 0.04, 0.16, M(color ?? palette.f, 0.85), 0, 0.02, 0);
+      box(g, 0.16, 0.008, 0.16, M(palette.b[0] ?? '#c9a25a', 0.5, 0.6), 0, 0.045, 0);
+    },
+  },
+  flower_girl_basket: {
+    id: 'flower_girl_basket',
+    name: 'Flower girl basket',
+    cat: 'wedding',
+    sec: 'Ceremony',
+    group: 'wedding',
+    surf: 'table',
+    fp: 0.06,
+    price: 25,
+    kw: 'flower girl basket petals wedding',
+    pal: true,
+    build(g, { builder, palette }) {
+      cyl(g, 0.06, 0.05, 0.08, M('#c9a877', 0.8), 0, 0.04, 0, 16);
+      const cols = palette.b;
+      for (let i = 0; i < 6; i++) {
+        const a = angle(i, 6);
+        builder.rose(Math.cos(a) * 0.02, Math.sin(a) * 0.02, cols[i % cols.length], 0.05, 0.08);
+      }
+      builder.flush();
+    },
+  },
+  guest_book_stand: {
+    id: 'guest_book_stand',
+    name: 'Guest book stand',
+    cat: 'wedding',
+    sec: 'Reception',
+    group: 'wedding',
+    surf: 'table',
+    fp: 0.08,
+    price: 55,
+    kw: 'guest book stand wedding reception',
+    hasText: true,
+    pal: true,
+    build(g, { palette, color, text }) {
+      const frame = M(color ?? palette.f, 0.7);
+      cyl(g, 0.015, 0.015, 0.32, frame, -0.09, 0.16, 0);
+      cyl(g, 0.015, 0.015, 0.32, frame, 0.09, 0.16, 0);
+      box(g, 0.24, 0.02, 0.16, M('#fff', 0.6, 0, { map: textTexture(text ?? 'Guest Book', { size: 40 }) }), 0, 0.32, 0).rotation.x = -0.4;
+    },
+  },
+  cake_topper: {
+    id: 'cake_topper',
+    name: 'Cake topper',
+    cat: 'wedding',
+    sec: 'Reception',
+    group: 'wedding',
+    surf: 'table',
+    fp: 0.02,
+    price: 18,
+    kw: 'cake topper monogram wedding',
+    hasText: true,
+    pal: false,
+    build(g, { text }) {
+      box(g, 0.1, 0.06, 0.006, M('#c9a25a', 0.3, 0.9, { map: textTexture(text ?? 'M+R', { size: 44, serif: true, bg: 'transparent' }) }), 0, 0.05, 0);
+    },
+  },
+  aisle_runner: {
+    id: 'aisle_runner',
+    name: 'Aisle runner',
+    cat: 'wedding',
+    sec: 'Ceremony',
+    group: 'wedding',
+    surf: 'floor',
+    fp: 0.5,
+    price: 60,
+    kw: 'aisle runner fabric ceremony wedding',
+    pal: true,
+    build(g, { palette, color }) {
+      box(g, 1, 0.006, 6, M(color ?? palette.f, 0.85), 0, 0.003, 0);
+    },
+  },
+  seating_chart_easel: {
+    id: 'seating_chart_easel',
+    name: 'Seating chart easel',
+    cat: 'wedding',
+    sec: 'Reception',
+    group: 'wedding',
+    surf: 'floor',
+    fp: 0.2,
+    price: 70,
+    kw: 'seating chart easel sign wedding',
+    hasText: true,
+    pal: true,
+    build(g, { palette, color, text }) {
+      const frame = M(color ?? palette.f, 0.7);
+      box(g, 0.05, 1.3, 0.05, frame, -0.4, 0.65, 0);
+      box(g, 0.05, 1.3, 0.05, frame, 0.4, 0.65, 0);
+      box(g, 0.85, 0.02, 0.6, M('#fff', 0.6, 0, { map: textTexture(text ?? 'Find your seat', { size: 40, serif: true }) }), 0, 1, 0).rotation.x = -0.12;
+    },
+  },
+  ceremony_bells: {
+    id: 'ceremony_bells',
+    name: 'Ceremony bell cluster',
+    cat: 'wedding',
+    sec: 'Ceremony',
+    group: 'wedding',
+    surf: 'hang',
+    fp: 0.1,
+    price: 30,
+    kw: 'ceremony bells hanging wedding decor',
+    pal: false,
+    build(g, { builder }) {
+      const gold = M('#c9a25a', 0.3, 0.9);
+      for (let i = -1; i <= 1; i++) {
+        mesh(g, new THREE.ConeGeometry(0.03, 0.05, 12), gold, i * 0.06, -0.05 - Math.abs(i) * 0.03, 0);
+        builder.wire([i * 0.06, 0, 0], [i * 0.06, -0.03 - Math.abs(i) * 0.03, 0]);
+      }
+      builder.flush();
+    },
+  },
+
+  christmas_tree: {
+    id: 'christmas_tree',
+    name: 'Christmas tree',
+    cat: 'holiday',
+    sec: 'Christmas',
+    group: 'holiday',
+    surf: 'floor',
+    fp: 0.4,
+    price: 180,
+    kw: 'christmas tree holiday decor',
+    pal: false,
+    build(g, { builder }) {
+      cyl(g, 0.1, 0.14, 0.2, M('#6b4a30', 0.7), 0, 0.1, 0, 12);
+      for (let i = 0; i < 4; i++) {
+        const y = 0.3 + i * 0.35,
+          r = 0.5 - i * 0.11;
+        mesh(g, new THREE.ConeGeometry(r, 0.4, 12), M('#2d4a2a', 0.8), 0, y, 0);
+      }
+      for (let i = 0; i < 14; i++) {
+        const a = angle(i, 14),
+          y = 0.35 + (i % 4) * 0.35;
+        builder.add('glow', [Math.cos(a) * (0.35 - (i % 4) * 0.08), y, Math.sin(a) * (0.35 - (i % 4) * 0.08)], 0.025, pick(['#ffd79a', '#f2bcc0', '#c9d9b2']), null, 4);
+      }
+      mesh(g, new THREE.OctahedronGeometry(0.06, 0), M('#f3d9a4', 0.3, 0.8), 0, 1.85, 0);
+      builder.flush();
+    },
+  },
+  string_lights_wrap: {
+    id: 'string_lights_wrap',
+    name: 'Wrapped string lights',
+    cat: 'holiday',
+    sec: 'Christmas',
+    group: 'holiday',
+    surf: 'hang',
+    fp: 0.1,
+    price: 25,
+    kw: 'string lights fairy holiday hanging',
+    pal: false,
+    build(_g, { builder }) {
+      for (let i = 0; i < 10; i++) {
+        const t = i / 9;
+        builder.add('glow', [(t - 0.5) * 0.6, -Math.sin(t * Math.PI) * 0.1, 0], 0.02, '#ffd79a', null, 4);
+      }
+      builder.wire([-0.3, 0, 0], [0.3, 0, 0]);
+      builder.flush();
+    },
+  },
+  ornament_centerpiece: {
+    id: 'ornament_centerpiece',
+    name: 'Ornament centerpiece',
+    cat: 'holiday',
+    sec: 'Christmas',
+    group: 'holiday',
+    surf: 'table',
+    fp: 0.12,
+    price: 35,
+    kw: 'ornament centerpiece bowl christmas glass',
+    pal: true,
+    build(g, { palette }) {
+      cyl(g, 0.1, 0.08, 0.05, glass(), 0, 0.025, 0, 24);
+      const cols = palette.b.length ? palette.b : ['#c9a25a', '#5e1b26', '#f3d9a4'];
+      for (let i = 0; i < 9; i++) {
+        const a = angle(i, 9),
+          r = 0.02 + (i % 3) * 0.025;
+        mesh(g, new THREE.SphereGeometry(0.025, 12, 10), M(cols[i % cols.length], 0.3, 0.6), Math.cos(a) * r, 0.06, Math.sin(a) * r);
+      }
+    },
+  },
+  wreath: {
+    id: 'wreath',
+    name: 'Holiday wreath',
+    cat: 'holiday',
+    sec: 'Christmas',
+    group: 'holiday',
+    surf: 'hang',
+    fp: 0.15,
+    price: 40,
+    kw: 'wreath holiday hanging christmas',
+    pal: false,
+    build(_g, { builder }) {
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        builder.add('leaf', [Math.cos(a) * 0.2, Math.sin(a) * 0.2, 0], 0.06, '#2d4a2a', null, 1);
+      }
+      builder.add('ball', [0, -0.2, 0.02], [0.03, 0.05, 0.02], '#8a2030');
+      builder.flush();
+    },
+  },
+  pumpkin_centerpiece: {
+    id: 'pumpkin_centerpiece',
+    name: 'Pumpkin centerpiece',
+    cat: 'holiday',
+    sec: 'Autumn',
+    group: 'holiday',
+    surf: 'table',
+    fp: 0.1,
+    price: 30,
+    kw: 'pumpkin autumn fall centerpiece harvest',
+    pal: false,
+    build(g) {
+      for (const [x, s] of [
+        [-0.06, 0.7],
+        [0.06, 0.8],
+        [0, 1],
+      ] as [number, number][]) {
+        mesh(g, new THREE.SphereGeometry(0.06 * s, 16, 12), M('#c9702e', 0.7), x, 0.06 * s, 0);
+        cyl(g, 0.008, 0.008, 0.03, M('#5b4634', 0.8), x, 0.11 * s, 0);
+      }
+    },
+  },
+  snowflake_hanging: {
+    id: 'snowflake_hanging',
+    name: 'Hanging snowflake',
+    cat: 'holiday',
+    sec: 'Christmas',
+    group: 'holiday',
+    surf: 'hang',
+    fp: 0.08,
+    price: 20,
+    kw: 'snowflake hanging ornament winter',
+    pal: false,
+    build(g) {
+      const mat = M('#eef4f9', 0.3, 0.6);
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI;
+        box(g, 0.01, 0.01, 0.24, mat, 0, 0, 0).rotation.y = a;
+      }
+    },
+  },
+
+  menorah: {
+    id: 'menorah',
+    name: 'Menorah',
+    cat: 'faith',
+    sec: 'Judaica',
+    group: 'faith',
+    surf: 'table',
+    fp: 0.14,
+    price: 65,
+    kw: 'menorah hanukkah judaica candles',
+    pal: false,
+    build(g, { builder }) {
+      const gold = M('#c9a25a', 0.3, 0.9);
+      box(g, 0.28, 0.02, 0.04, gold, 0, 0.1, 0);
+      for (let i = -4; i <= 4; i++) {
+        const h = i === 0 ? 0.16 : 0.11;
+        cyl(g, 0.006, 0.006, h, gold, i * 0.03, 0.1 + h / 2, 0);
+        cyl(g, 0.012, 0.012, 0.05, M('#f7f0dd', 0.6), i * 0.03, 0.1 + h + 0.005, 0);
+        flame(builder, i * 0.03, 0.1 + h + 0.05, 0, 0.35);
+      }
+      builder.flush();
+    },
+  },
+  chuppah: {
+    id: 'chuppah',
+    name: 'Chuppah',
+    cat: 'faith',
+    sec: 'Ceremony structures',
+    group: 'faith',
+    surf: 'floor',
+    fp: 1.4,
+    price: 480,
+    kw: 'chuppah canopy jewish wedding ceremony structure',
+    pal: true,
+    build(g, { builder, palette, color }) {
+      const wood = M('#6b4a30', 0.7);
+      const posts: [number, number][] = [
+        [-1.1, -1.1],
+        [1.1, -1.1],
+        [-1.1, 1.1],
+        [1.1, 1.1],
+      ];
+      for (const [x, z] of posts) cyl(g, 0.05, 0.05, 2.4, wood, x, 1.2, z, 12);
+      box(g, 2.3, 0.06, 0.06, wood, 0, 2.4, -1.1);
+      box(g, 2.3, 0.06, 0.06, wood, 0, 2.4, 1.1);
+      box(g, 0.06, 0.06, 2.3, wood, -1.1, 2.4, 0);
+      box(g, 0.06, 0.06, 2.3, wood, 1.1, 2.4, 0);
+      const canopy = mesh(g, new THREE.PlaneGeometry(2.4, 2.4, 6, 6), M(color ?? palette.f, 0.9, 0, { side: THREE.DoubleSide }), 0, 2.35, 0);
+      canopy.rotation.x = Math.PI / 2;
+      const pos = canopy.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) pos.setZ(i, -Math.sin((pos.getX(i) / 2.4 + 0.5) * Math.PI) * 0.15);
+      canopy.geometry.computeVertexNormals();
+      const cols = palette.b;
+      if (cols.length) for (const [x, z] of posts) builder.rose(x, z, cols[0], 0.14, 2.4);
+      builder.flush();
+    },
+  },
+  unity_cross: {
+    id: 'unity_cross',
+    name: 'Unity cross',
+    cat: 'faith',
+    sec: 'Christian',
+    group: 'faith',
+    surf: 'table',
+    fp: 0.05,
+    price: 40,
+    kw: 'unity cross christian wedding ceremony',
+    pal: false,
+    build(g) {
+      const wood = M('#8a6a4a', 0.7);
+      box(g, 0.02, 0.24, 0.02, wood, 0, 0.12, 0);
+      box(g, 0.14, 0.02, 0.02, wood, 0, 0.17, 0);
+    },
+  },
+  prayer_candle_stand: {
+    id: 'prayer_candle_stand',
+    name: 'Prayer candle stand',
+    cat: 'faith',
+    sec: 'General',
+    group: 'faith',
+    surf: 'table',
+    fp: 0.09,
+    price: 30,
+    kw: 'prayer candle stand votive faith',
+    pal: false,
+    build(g, { builder }) {
+      cyl(g, 0.06, 0.07, 0.02, M('#c9a25a', 0.3, 0.8), 0, 0.01, 0, 20);
+      for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * Math.PI * 2;
+        cyl(g, 0.015, 0.015, 0.03, glass(), Math.cos(a) * 0.04, 0.035, Math.sin(a) * 0.04, 10);
+        flame(builder, Math.cos(a) * 0.04, 0.055, Math.sin(a) * 0.04, 0.35);
+      }
+      builder.flush();
+    },
+  },
+  paper_lantern_string: {
+    id: 'paper_lantern_string',
+    name: 'Paper lantern string',
+    cat: 'faith',
+    sec: 'Celebration',
+    group: 'faith',
+    surf: 'hang',
+    fp: 0.15,
+    price: 35,
+    kw: 'paper lantern string asian celebration hanging',
+    pal: true,
+    build(g, { palette, color }) {
+      const cols = [color ?? palette.b[0] ?? '#e2506a', palette.b[1] ?? '#f2bcc0', palette.b[2] ?? '#f3d9a4'];
+      for (let i = 0; i < 3; i++) {
+        const x = (i - 1) * 0.22;
+        mesh(g, new THREE.SphereGeometry(0.09, 16, 12), M(cols[i % cols.length], 0.6, 0, { emissive: cols[i % cols.length], emissiveIntensity: 0.4 }), x, -0.1 + Math.abs(i - 1) * 0.05, 0);
+      }
+    },
+  },
+  mandap_pillar: {
+    id: 'mandap_pillar',
+    name: 'Mandap pillar',
+    cat: 'faith',
+    sec: 'Ceremony structures',
+    group: 'faith',
+    surf: 'floor',
+    fp: 0.15,
+    price: 140,
+    kw: 'mandap pillar indian wedding ceremony decor',
+    pal: true,
+    build(g, { builder, palette, color }) {
+      const c = color ?? palette.f;
+      cyl(g, 0.08, 0.1, 2.2, M(c, 0.7), 0, 1.1, 0, 16);
+      for (let y = 0.3; y < 2.1; y += 0.3) builder.rose(0.1, y, palette.b[0] ?? '#f2bcc0', 0.08, y - 1.1);
+      builder.flush();
+    },
+  },
+
+  podium: {
+    id: 'podium',
+    name: 'Podium',
+    cat: 'corporate',
+    sec: 'Staging',
+    group: 'corporate',
+    surf: 'floor',
+    fp: 0.15,
+    price: 220,
+    kw: 'podium lectern speaker stage corporate',
+    pal: true,
+    build(g, { palette, color }) {
+      const c = color ?? palette.f;
+      box(g, 0.5, 1.1, 0.4, M(c, 0.6), 0, 0.55, 0);
+      box(g, 0.52, 0.06, 0.42, M('#2a2420', 0.6), 0, 1.13, 0).rotation.x = -0.15;
+    },
+  },
+  projector_screen: {
+    id: 'projector_screen',
+    name: 'Projector screen',
+    cat: 'corporate',
+    sec: 'Staging',
+    group: 'corporate',
+    surf: 'floor',
+    fp: 0.9,
+    price: 150,
+    kw: 'projector screen presentation corporate av',
+    pal: false,
+    build(g) {
+      cyl(g, 0.03, 0.03, 2.2, M('#2a2a2e', 0.6), -1.6, 1.1, 0, 8);
+      cyl(g, 0.03, 0.03, 2.2, M('#2a2a2e', 0.6), 1.6, 1.1, 0, 8);
+      box(g, 3.2, 1.8, 0.03, M('#f2f2ee', 0.8), 0, 1.8, 0);
+    },
+  },
+  step_repeat_banner: {
+    id: 'step_repeat_banner',
+    name: 'Step & repeat banner',
+    cat: 'corporate',
+    sec: 'Branding',
+    group: 'corporate',
+    surf: 'floor',
+    fp: 0.3,
+    price: 180,
+    kw: 'step repeat banner backdrop logo branding corporate',
+    hasText: true,
+    pal: true,
+    build(g, { palette, color, text }) {
+      const frame = M('#2a2420', 0.6);
+      cyl(g, 0.03, 0.03, 2.6, frame, -1, 1.3, 0, 8);
+      cyl(g, 0.03, 0.03, 2.6, frame, 1, 1.3, 0, 8);
+      box(g, 2, 2.4, 0.03, M('#fff', 0.6, 0, { map: repeatingLogoTexture(text ?? 'LOGO', color ?? palette.f) }), 0, 1.5, 0);
+    },
+  },
+  registration_desk: {
+    id: 'registration_desk',
+    name: 'Registration desk',
+    cat: 'corporate',
+    sec: 'Logistics',
+    group: 'corporate',
+    surf: 'floor',
+    fp: 0.4,
+    price: 220,
+    kw: 'registration desk check-in corporate logistics',
+    pal: true,
+    top: { h: 0.75, w: 1.4, d: 0.5 },
+    build(g, { palette, color }) {
+      box(g, 1.4, 0.75, 0.5, M(color ?? palette.f, 0.7), 0, 0.375, 0);
+    },
+  },
+  charging_station: {
+    id: 'charging_station',
+    name: 'Charging station',
+    cat: 'corporate',
+    sec: 'Logistics',
+    group: 'corporate',
+    surf: 'floor',
+    fp: 0.15,
+    price: 60,
+    kw: 'charging station kiosk phone corporate logistics',
+    pal: false,
+    build(g, { builder }) {
+      box(g, 0.3, 1, 0.3, M('#2a2a2e', 0.6), 0, 0.5, 0);
+      builder.add('glow', [0, 1.02, 0], [0.28, 0.02, 0.28], '#6fb8ff', null, 2);
+      builder.flush();
+    },
+  },
+  branded_centerpiece: {
+    id: 'branded_centerpiece',
+    name: 'Branded centerpiece',
+    cat: 'corporate',
+    sec: 'Branding',
+    group: 'corporate',
+    surf: 'table',
+    fp: 0.09,
+    price: 40,
+    kw: 'branded centerpiece logo corporate event',
+    hasText: true,
+    pal: true,
+    build(g, { palette, color, text }) {
+      cyl(g, 0.08, 0.08, 0.16, glass(), 0, 0.08, 0, 20);
+      box(g, 0.1, 0.1, 0.004, M('#fff', 0.6, 0, { map: textTexture(text ?? 'LOGO', { size: 40, fg: color ?? palette.f }) }), 0, 0.16, 0.081);
+    },
+  },
+
+  balloon_arch: {
+    id: 'balloon_arch',
+    name: 'Balloon arch',
+    cat: 'parties',
+    sec: 'Decor',
+    group: 'parties',
+    surf: 'floor',
+    fp: 1,
+    price: 220,
+    kw: 'balloon arch birthday party decor colorful',
+    tag: 'Fun',
+    pal: true,
+    build(g, { palette, color }) {
+      const cols = palette.b.length ? palette.b : [color ?? '#f2bcc0'];
+      for (let i = 0; i <= 20; i++) {
+        const a = Math.PI - (i / 20) * Math.PI;
+        mesh(g, new THREE.SphereGeometry(0.11, 12, 10), M(cols[i % cols.length], 0.4), Math.cos(a) * 1.1, 1.6 + Math.sin(a) * 1.1, 0);
+      }
+    },
+  },
+  pinata: {
+    id: 'pinata',
+    name: 'Piñata',
+    cat: 'parties',
+    sec: 'Decor',
+    group: 'parties',
+    surf: 'hang',
+    fp: 0.15,
+    price: 35,
+    kw: 'pinata birthday party fiesta colorful hanging',
+    tag: 'Fun',
+    pal: true,
+    build(g, { palette }) {
+      const cols = palette.b.length ? palette.b : ['#f2bcc0', '#c9d9b2', '#f3d9a4'];
+      mesh(g, new THREE.SphereGeometry(0.14, 16, 12), M(cols[0], 0.7), 0, 0, 0);
+      for (let ring = 0; ring < 3; ring++) {
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2,
+            y = -0.05 + ring * 0.08;
+          box(g, 0.03, 0.02, 0.03, M(cols[(ring + i) % cols.length], 0.7), Math.cos(a) * 0.13, y, Math.sin(a) * 0.13);
+        }
+      }
+    },
+  },
+  kids_table_chairs: {
+    id: 'kids_table_chairs',
+    name: 'Kids table & chairs',
+    cat: 'parties',
+    sec: 'Seating',
+    group: 'parties',
+    surf: 'floor',
+    fp: 0.4,
+    price: 120,
+    kw: 'kids table chairs mini party seating',
+    pal: true,
+    build(g, { palette, color }) {
+      const c = color ?? palette.f;
+      cyl(g, 0.3, 0.3, 0.35, M(c, 0.8), 0, 0.175, 0, 24);
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2;
+        box(g, 0.16, 0.2, 0.16, M(palette.b[i % palette.b.length] ?? c, 0.8), Math.cos(a) * 0.42, 0.1, Math.sin(a) * 0.42);
+      }
+    },
+  },
+  cotton_candy_cart: {
+    id: 'cotton_candy_cart',
+    name: 'Cotton candy cart',
+    cat: 'parties',
+    sec: 'Treats',
+    group: 'parties',
+    surf: 'floor',
+    fp: 0.3,
+    price: 180,
+    kw: 'cotton candy cart treats party sweets',
+    tag: 'Fun',
+    pal: false,
+    build(g) {
+      box(g, 0.6, 0.7, 0.4, M('#f2bcc0', 0.7), 0, 0.35, 0);
+      cyl(g, 0.02, 0.02, 0.4, M('#c9a25a', 0.4, 0.7), 0, 0.9, 0);
+      mesh(g, new THREE.SphereGeometry(0.18, 16, 12), M('#f7e6ee', 0.9), 0, 1.15, 0);
+    },
+  },
+  photo_booth_sign: {
+    id: 'photo_booth_sign',
+    name: 'Photo booth sign',
+    cat: 'parties',
+    sec: 'Decor',
+    group: 'parties',
+    surf: 'floor',
+    fp: 0.12,
+    price: 50,
+    kw: 'photo booth sign party props decor',
+    hasText: true,
+    pal: true,
+    build(g, { palette, color, text }) {
+      const frame = M(color ?? palette.f, 0.7);
+      box(g, 0.03, 0.9, 0.03, frame, -0.28, 0.45, 0);
+      box(g, 0.03, 0.9, 0.03, frame, 0.28, 0.45, 0);
+      box(g, 0.6, 0.02, 0.4, M('#fff', 0.6, 0, { map: textTexture(text ?? 'Smile!', { size: 44, serif: true }) }), 0, 0.75, 0).rotation.x = -0.12;
+    },
+  },
+  cupcake_tower: {
+    id: 'cupcake_tower',
+    name: 'Cupcake tower',
+    cat: 'parties',
+    sec: 'Treats',
+    group: 'parties',
+    surf: 'table',
+    fp: 0.1,
+    price: 60,
+    kw: 'cupcake tower treats party dessert',
+    pal: true,
+    build(g, { palette }) {
+      const cols = palette.b.length ? palette.b : ['#f2bcc0', '#f3d9a4', '#c9d9b2'];
+      for (let tier = 0; tier < 3; tier++) {
+        const r = 0.18 - tier * 0.05,
+          y = 0.03 + tier * 0.08;
+        cyl(g, r, r, 0.01, M('#fff', 0.6), 0, y, 0, 24);
+        const n = 8 - tier * 2;
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2;
+          mesh(g, new THREE.CylinderGeometry(0.025, 0.02, 0.03, 10), M('#f7ecd8', 0.6), Math.cos(a) * r * 0.7, y + 0.02, Math.sin(a) * r * 0.7);
+          mesh(g, new THREE.SphereGeometry(0.022, 10, 8), M(cols[(tier + i) % cols.length], 0.6), Math.cos(a) * r * 0.7, y + 0.045, Math.sin(a) * r * 0.7);
+        }
+      }
     },
   },
 };

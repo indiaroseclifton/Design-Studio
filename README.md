@@ -32,11 +32,11 @@ npm run lint      # oxlint
   Woodland, City Rooftop, Desert Oasis, Garden Marquee, French Château, Lakeside Dock, Industrial Loft),
   each with its own sky shader, fog, lighting rig and geometry (`src/data/venues.ts`). Five chair styles
   (cross, chiavari, rattan, bent bistro, ghost acrylic) cover all of them.
-- **Catalogue** — ~48 placeable pieces across Linens, Chairs, Tableware, Florals, Candles & light,
-  Furniture & lighting, Desserts, and two add-on packs (`src/data/catalogue.ts`), each with a live
-  three.js-rendered thumbnail (`src/three/thumbnail.ts`). The Chairs category is special: placing a chair
-  card sets the table's chair style (any of the 5 styles, or "Match the venue" to reset) instead of adding
-  a piece to the scene.
+- **Catalogue** — ~80 placeable pieces across Linens, Chairs, Tableware, Florals, Candles & light,
+  Furniture & lighting, Wedding, Holiday, Faith & culture, Corporate, Parties & kids, Desserts, and two
+  add-on packs (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail
+  (`src/three/thumbnail.ts`). The Chairs category is special: placing a chair card sets the table's chair
+  style (any of the 5 styles, or "Match the venue" to reset) instead of adding a piece to the scene.
 - **Add-ons** — toggle packs (Lounge & rooms, Signage & displays) from the Add-ons modal to reveal extra
   catalogue categories and pieces, persisted to `localStorage` (`src/data/addonPacks.ts`).
 - **Placement** — click a catalogue card to place it on the table, floor or ceiling; select a "host"
@@ -58,7 +58,8 @@ npm run lint      # oxlint
 
 Flower Studio, Storybook, Brass Lantern, and the AR viewer are stubbed with a "coming soon" overlay from
 the toolbar — they're substantial features in their own right and were scoped out by design. Also
-deferred: the rest of the ~277-item catalogue and the "Your Venue" custom photo-upload venue (needs its own upload UI),
+deferred: Templates (quick full-tablescape presets), My Uploads/My Flowers (need file upload and Flower
+Studio), the rest of the ~277-item catalogue, and the "Your Venue" custom photo-upload venue,
 drag-and-drop placement (click-to-place is implemented instead), plan view, multi-select, per-table
 rotation, and the placement-zone/weather visualizations.
 
