@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
 :root {
+  /* height reserved for the venue strip along the bottom */
+  --strip: 130px;
   --bg: #15120f;
   --text: #f4ede2;
   --text-on-accent: #221a10;
@@ -1116,4 +1118,69 @@ body.fs-on .chrome.toolbar {
 .tb-menu small {
   font-size: 11px;
   opacity: 0.6;
+}
+
+/* ---------- Small screens (≤860px): side panels become drawers ---------- */
+@media (max-width: 860px) {
+  :root {
+    --strip: 92px;
+  }
+  .cat-panel {
+    display: none !important;
+    left: 8px !important;
+    right: 8px;
+    top: 60px !important;
+    width: auto !important;
+    z-index: 6;
+  }
+  .cat-panel.open {
+    display: flex !important;
+  }
+  .right-col {
+    display: none !important;
+    left: 8px;
+    right: 8px !important;
+    top: auto !important;
+    bottom: var(--strip);
+    width: auto !important;
+    max-height: min(58vh, calc(100vh - var(--strip) - 70px)) !important;
+    z-index: 6;
+  }
+  .right-col.open {
+    display: flex !important;
+  }
+  .hint-pill {
+    display: none;
+  }
+  .venue-strip {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    padding: 6px !important;
+    gap: 4px !important;
+  }
+  .vs-card {
+    flex: 0 0 92px !important;
+    gap: 3px !important;
+    padding: 4px 4px 5px !important;
+  }
+  .vs-sky {
+    height: 24px !important;
+  }
+  .vs-num {
+    display: none;
+  }
+  .vs-name {
+    font-size: 13px !important;
+  }
+  .chrome.toolbar button {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+/* Short screens: drop descriptions and hints (handoff). */
+@media (max-height: 760px) {
+  .hint-pill {
+    display: none;
+  }
 }

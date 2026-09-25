@@ -24,7 +24,64 @@ const KINDS: Record<string, KindFactory> = {
   metal: () => [new THREE.CylinderGeometry(1, 1, 1, 16), M('#fff', 0.3, 0.9)],
   crystal: () => [new THREE.OctahedronGeometry(1, 0), new THREE.MeshPhysicalMaterial({ color: '#fff', roughness: 0.02, metalness: 0.2, clearcoat: 1, iridescence: 0.4 })],
   glow: () => [new THREE.SphereGeometry(1, 10, 8), new THREE.MeshBasicMaterial({ color: '#fff', toneMapped: false })],
+  flame: () => [flameGeo(), flameMat()],
 };
+
+/*
+ * Candle flames: a teardrop (base at y=0, tip at y=1, radius ~0.5) drawn additively with a white-hot core,
+ * an orange rim that fades at the silhouette, and a blue base, so a flame reads as light rather than as a
+ * solid egg. The instance colour carries the flame's tint times its brightness, which feeds the bloom.
+ */
+let _flameGeo: THREE.BufferGeometry | null = null;
+const flameGeo = () => {
+  if (_flameGeo) return _flameGeo;
+  const pts: THREE.Vector2[] = [];
+  for (let i = 0; i <= 16; i++) {
+    const t = i / 16;
+    pts.push(new THREE.Vector2(0.5 * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.62)), 1.1) * (1 - 0.15 * t), t));
+  }
+  _flameGeo = new THREE.LatheGeometry(pts, 14);
+  return _flameGeo;
+};
+const flameMat = () =>
+  new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+    vertexShader: `
+      varying float vY; varying float vRim; varying vec3 vTint;
+      void main(){
+        vY = position.y;
+        vec4 wp = vec4(position, 1.0);
+        #ifdef USE_INSTANCING
+          wp = instanceMatrix * wp;
+        #endif
+        vec4 mv = modelViewMatrix * wp;
+        vec3 n = normal;
+        #ifdef USE_INSTANCING
+          n = mat3(instanceMatrix) * n;
+        #endif
+        vec3 vn = normalize(normalMatrix * n);
+        vRim = abs(dot(vn, normalize(-mv.xyz)));
+        #ifdef USE_INSTANCING_COLOR
+          vTint = instanceColor;
+        #else
+          vTint = vec3(1.0);
+        #endif
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      varying float vY; varying float vRim; varying vec3 vTint;
+      void main(){
+        float core = pow(vRim, 3.0) * (1.0 - smoothstep(0.35, 0.95, vY));
+        vec3 hot = vec3(1.0, 0.97, 0.86);
+        vec3 col = mix(vTint * 0.55, hot * (0.6 + 0.4 * length(vTint) / 1.7), core);
+        col = mix(vec3(0.25, 0.4, 1.0) * 0.9, col, smoothstep(0.0, 0.16, vY));
+        float a = pow(vRim, 1.4) * smoothstep(0.0, 0.08, vY) * (1.0 - smoothstep(0.75, 1.0, vY) * 0.7);
+        gl_FragColor = vec4(col * a, a);
+      }`,
+  });
 
 /** Register an extra instanced kind (flower heads, baubles…); later builders can `add` it by name. */
 export function registerKind(name: string, factory: KindFactory) {
@@ -197,8 +254,8 @@ export function Builder(g: THREE.Object3D): Builder {
           if (e !== 1) color.multiplyScalar(e);
           im.setColorAt(i, color);
         });
-        im.castShadow = k !== 'glow' && k !== 'hill';
-        im.receiveShadow = k !== 'glow';
+        im.castShadow = k !== 'glow' && k !== 'hill' && k !== 'flame';
+        im.receiveShadow = k !== 'glow' && k !== 'flame';
         g.add(im);
       }
       if (wires.length) {
@@ -228,6 +285,8 @@ export const flick = (tk: Array<(t: number) => void>, l: THREE.PointLight, base:
 };
 
 export function flame(B: Builder, x: number, y: number, z: number, s = 1) {
-  B.add('glow', [x, y, z], [0.07 * s, 0.13 * s, 0.07 * s], '#ffb050', null, 6);
-  B.add('glow', [x, y - 0.03 * s, z], [0.1 * s, 0.1 * s, 0.1 * s], '#ff7a2a', null, 3);
+  // A teardrop 0.24·s tall and ~0.1·s wide whose base sits where the prototype's glow blob began.
+  B.add('flame', [x, y - 0.12 * s, z], [0.11 * s, 0.26 * s, 0.11 * s], '#ffa040', null, 2.2);
+  // A faint halo around it so the bloom has something to spread.
+  B.add('glow', [x, y - 0.02 * s, z], 0.012 * s + 0.004, '#ffb866', null, 3);
 }

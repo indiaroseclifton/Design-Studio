@@ -41,6 +41,9 @@ interface StoreState {
   modal: ModalKind | null;
   toast: ToastState | null;
   overlay: OverlayKind | null;
+  /** small screens: which side panel is open as a drawer */
+  drawer: 'catalogue' | 'panel' | null;
+  setDrawer: (d: 'catalogue' | 'panel' | null) => void;
   openOverlay: (o: OverlayKind) => void;
   closeOverlay: () => void;
   search: string;
@@ -81,7 +84,8 @@ interface StoreState {
   setTableCfg: (p: Partial<TableConfig>, msg?: string) => void;
   setPalette: (id: string) => void;
   setCustomPalette: (p: Design['customPalette']) => void;
-  activate: (e: Entry) => void;
+  /** Use a catalogue entry; `at` places a piece where it was dropped (world x/z, and the piece under it). */
+  activate: (e: Entry, at?: { x: number; z: number; itemId?: string }) => void;
   setAllPlaces: () => void;
   clearAll: () => void;
   loadDesign: (d: Design) => void;
@@ -171,6 +175,8 @@ export const useDesignStore = create<StoreState>()(
         modal: null,
         toast: null,
         overlay: null,
+        drawer: null,
+        setDrawer: (d) => set({ drawer: d }),
         openOverlay: (o) => set({ overlay: o, studio: { open: false, editId: null }, cakeStudio: { open: false, editId: null }, modal: null }),
         closeOverlay: () => set({ overlay: null }),
         search: '',
@@ -316,14 +322,14 @@ export const useDesignStore = create<StoreState>()(
             d.palette = 'custom';
           }),
 
-        activate: (e) => {
+        activate: (e, at) => {
           const n = e.name;
           const s = get();
           if (e.k === 'item') {
             let placed: PlacedItem | null = null;
-            const host = selectedHost(s);
+            const host = at ? null : selectedHost(s);
             const d = commit((dd) => {
-              placed = ops.addItem(dd, e.id, { host });
+              placed = ops.addItem(dd, e.id, at ? ops.dropOpts(dd, e.id, at) : { host });
               if (placed && ITEMS[e.id].group === 'place') dd.table.place = e.id;
             });
             const it = placed as PlacedItem | null;

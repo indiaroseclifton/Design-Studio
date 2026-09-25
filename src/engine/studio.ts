@@ -234,7 +234,9 @@ export function fabricMat(d: FabricDef): THREE.Material {
   if (d.velvet)
     return new THREE.MeshPhysicalMaterial({ color: d.c, roughness: 0.85, sheen: 1, sheenColor: new THREE.Color(d.velvet), sheenRoughness: 0.35, side });
   if (d.tex === 'lace')
-    return new THREE.MeshStandardMaterial({ color: '#fff', roughness: 0.9, map: clothTex('lace', d.c || '#fbf6ea'), transparent: true, alphaTest: 0.3, side });
+    // Alpha-to-coverage (the composer renders with MSAA) softens the lace's cut-outs instead of the hard
+    // alpha test, which shimmered as the camera moved.
+    return new THREE.MeshStandardMaterial({ color: '#fff', roughness: 0.9, map: clothTex('lace', d.c || '#fbf6ea'), alphaTest: 0.35, alphaToCoverage: true, side });
   if (d.op) return new THREE.MeshStandardMaterial({ color: d.c, roughness: 0.9, transparent: true, opacity: d.op, side, depthWrite: false });
   // Woven cloth gets a faint sheen so folds read under raking light.
   const m = new THREE.MeshPhysicalMaterial({

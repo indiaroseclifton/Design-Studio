@@ -22,7 +22,7 @@ export function VenueStrip() {
 
   return (
     <>
-      <nav ref={stripRef} className="glass scroll fixed bottom-4 left-4 right-4 z-[3] flex gap-2 overflow-x-auto p-2" aria-label="Venues">
+      <nav ref={stripRef} className="venue-strip glass scroll fixed bottom-4 left-4 right-4 z-[3] flex gap-2 overflow-x-auto p-2" aria-label="Venues">
         {VENUES.map((v, i) => {
           const active = i === venueIndex;
           const bg = v.custom && photo ? `url(${photo.url}) center/cover` : `linear-gradient(180deg, ${v.env.sky[0]}, ${v.env.sky[1]} 70%, ${v.env.sky[2]})`;
@@ -30,7 +30,7 @@ export function VenueStrip() {
             <button
               key={v.name}
               type="button"
-              className="flex shrink-0 flex-col gap-1.5 rounded-[10px] p-1.5 pb-2 text-left transition-colors hover:bg-white/[0.07]"
+              className="vs-card flex shrink-0 flex-col gap-1.5 rounded-[10px] p-1.5 pb-2 text-left transition-colors hover:bg-white/[0.07]"
               style={{
                 flex: '1 0 118px',
                 border: `1px solid ${active ? 'rgba(var(--acr),.7)' : 'transparent'}`,
@@ -41,14 +41,14 @@ export function VenueStrip() {
                 setVenue(i);
               }}
             >
-              <span className="flex h-[34px] items-center justify-center rounded-[6px] text-[11px] font-medium" style={{ background: bg }}>
+              <span className="vs-sky flex h-[34px] items-center justify-center rounded-[6px] text-[11px] font-medium" style={{ background: bg }}>
                 {v.custom && !photo ? '+ Upload' : ''}
               </span>
-              <span className="lbl">
+              <span className="lbl vs-num">
                 {String(i + 1).padStart(2, '0')}
                 {v.indoor ? ' · Indoor' : ''}
               </span>
-              <span className="serif text-[16px] leading-[1.05]">{v.name}</span>
+              <span className="vs-name serif text-[16px] leading-[1.05]">{v.name}</span>
             </button>
           );
         })}

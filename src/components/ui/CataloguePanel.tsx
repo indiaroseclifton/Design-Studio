@@ -4,6 +4,7 @@ import { PALS, hasTbl, palOf } from '../../engine/studio';
 import { selectedHost, useDesignStore } from '../../store/designStore';
 import { CatalogueCard } from './CatalogueCard';
 import { setThumbCustomPalette } from '../../three/thumbnail';
+import { SMALL } from '../../lib/useMedia';
 
 const PAL_LABELS = ['1', '2', '3', '4', '5'];
 
@@ -44,6 +45,7 @@ export function CataloguePanel() {
   const setCategory = useDesignStore((s) => s.setCategory);
   const setPalette = useDesignStore((s) => s.setPalette);
   const activate = useDesignStore((s) => s.activate);
+  const drawerOpen = useDesignStore((s) => s.drawer === 'catalogue');
   const select = useDesignStore((s) => s.select);
   const packsOn = useDesignStore((s) => s.packsOn);
   const openModal = useDesignStore((s) => s.openModal);
@@ -106,11 +108,18 @@ export function CataloguePanel() {
               ? design.table.place === e.id
               : false;
 
-  const onActivate = useCallback((e: Entry) => activate(e), [activate]);
+  // On small screens the catalogue is a drawer; placing a piece closes it so the result is visible.
+  const onActivate = useCallback(
+    (e: Entry) => {
+      activate(e);
+      if (window.matchMedia(SMALL).matches) useDesignStore.getState().setDrawer(null);
+    },
+    [activate],
+  );
   const pieceCount = entries.filter((e) => e.k !== 'tpl').length;
 
   return (
-    <aside className="glass chrome fixed left-4 top-4 z-[3] flex w-[330px] flex-col overflow-hidden max-[1100px]:w-[290px]" style={{ bottom: 130 }}>
+    <aside className={`cat-panel glass chrome fixed left-4 top-4 z-[3] flex w-[330px] flex-col overflow-hidden max-[1100px]:w-[290px] ${drawerOpen ? 'open' : ''}`} style={{ bottom: 'var(--strip)' }}>
       <div className="flex flex-col gap-[9px] p-3.5 pb-2.5" style={{ borderBottom: '1px solid var(--hairline)' }}>
         <div className="flex items-baseline justify-between gap-2.5">
           <div className="flex min-w-0 flex-col gap-1">

@@ -12,6 +12,31 @@ export function registerCapture(c: CaptureCtx | null) {
   ctx = c;
 }
 
+/**
+ * Where a screen point lands in the studio: the world x/z on the floor (or on a table top), and the id of
+ * the placed piece under it, if any. Used when a catalogue card is dropped onto the scene.
+ */
+export function pickWorld(clientX: number, clientY: number): { x: number; z: number; itemId?: string } | null {
+  if (!ctx) return null;
+  const r = ctx.gl.domElement.getBoundingClientRect();
+  const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+  const ray = new THREE.Raycaster();
+  ray.setFromCamera(ndc, ctx.camera);
+  const targets = ['design-items', 'design-tables'].map((n) => ctx!.scene.getObjectByName(n)).filter((o): o is THREE.Object3D => !!o);
+  const hit = ray.intersectObjects(targets, true)[0];
+  if (hit) {
+    let o: THREE.Object3D | null = hit.object,
+      itemId: string | undefined;
+    while (o && !itemId) {
+      itemId = o.userData.itemId;
+      o = o.parent;
+    }
+    return { x: hit.point.x, z: hit.point.z, itemId };
+  }
+  const p = new THREE.Vector3();
+  return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), p) ? { x: p.x, z: p.z } : null;
+}
+
 /** The live studio scene, for exporters (AR) that need the built tables and pieces. */
 export const liveScene = () => ctx?.scene ?? null;
 

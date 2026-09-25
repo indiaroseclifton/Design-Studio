@@ -1,29 +1,44 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { M, jit, mesh, noSh, pick, rnd, shared, cyl } from '../three/utils';
 import { flame, registerKind, type Builder, type Vec3Tuple } from '../three/builder';
 import { brass, china, chargerGeo, dinnerPlateGeo, forkGeo, glassM, knifeGeo, saladPlateGeo, silver, spoonGeo, tumblerGeo, wax, wineGeo } from './materials';
 import type { Pal } from './studio';
+import { petalGeometry, petalMaterial } from './botany';
 
+/**
+ * A hydrangea head: a dome of ~40 florets, each four small cupped petals around a tiny centre, so the head
+ * reads as a mass of little flowers instead of a faceted ball.
+ */
 function hydraGeo() {
   const parts: THREE.BufferGeometry[] = [],
-    up = new THREE.Vector3(0, 1, 0);
-  for (let i = 0; i < 22; i++) {
+    up = new THREE.Vector3(0, 1, 0),
+    petal = petalGeometry({ res: [4, 5], cup: 0.5, reflex: 0.2, ruffle: 0, round: 1 });
+  petal.deleteAttribute('uv');
+  const N = 40;
+  for (let i = 0; i < N; i++) {
     const u = i * 2.39996,
-      v = Math.acos(1 - ((i + 0.5) / 22) * 1.4),
+      v = Math.acos(1 - ((i + 0.5) / N) * 1.45),
       n = new THREE.Vector3(Math.sin(v) * Math.cos(u), Math.cos(v), Math.sin(v) * Math.sin(u)),
-      q = new THREE.Quaternion().setFromUnitVectors(up, n);
+      q = new THREE.Quaternion().setFromUnitVectors(up, n),
+      tw = (i * 0.7) % (Math.PI / 2);
     for (let k = 0; k < 4; k++) {
-      const g = new THREE.SphereGeometry(1, 6, 4);
-      g.scale(0.13, 0.03, 0.2);
-      g.translate(0, 0, 0.14);
-      g.rotateY((k * Math.PI) / 2);
+      const g = petal.clone();
+      // Petal lies in its own x-y plane pointing +y; lay it flat and out from the floret's centre.
+      g.translate(0, 1, 0);
+      g.scale(0.085, 0.1, 0.085);
+      g.rotateX(-Math.PI / 2 + 0.25);
+      g.rotateY(tw + (k * Math.PI) / 2);
       g.applyQuaternion(q);
-      g.translate(n.x * 0.75, n.y * 0.75, n.z * 0.75);
+      g.translate(n.x * 0.78, n.y * 0.78, n.z * 0.78);
       parts.push(g);
     }
   }
-  return shared(mergeGeometries(parts)!);
+  petal.dispose();
+  const m = mergeGeometries(parts)!;
+  parts.forEach((p) => p.dispose());
+  return shared(m);
 }
 
 const lazy = <T,>(f: () => T) => {
@@ -32,7 +47,7 @@ const lazy = <T,>(f: () => T) => {
 };
 const hydraG = lazy(hydraGeo);
 // The 'rose', 'peony' and 'ranun' kinds are baked from the Flower Studio heads in engine/flowers.ts.
-registerKind('hydra', () => [hydraG(), new THREE.MeshPhysicalMaterial({ color: '#fff', roughness: 0.7, sheen: 0.8, sheenRoughness: 0.5, side: THREE.DoubleSide })]);
+registerKind('hydra', () => [hydraG(), petalMaterial()]);
 
 const BK = ['rose', 'rose', 'rose', 'peony', 'peony', 'ranun', 'ranun', 'hydra'];
 
@@ -132,6 +147,9 @@ export interface PlaceOpts {
   gm?: THREE.Material;
 }
 
+const napBase = lazy(() => shared(new RoundedBoxGeometry(0.13, 0.008, 0.075, 2, 0.0035)));
+const napFlap = lazy(() => shared(new RoundedBoxGeometry(0.122, 0.005, 0.05, 2, 0.0025)));
+
 /** Flatware laid either side of the plate: forks left, knife and spoon right. */
 export function flatware(g: THREE.Object3D, cm: THREE.Material) {
   const put = (geo: THREE.BufferGeometry, x: number) => noSh(mesh(g, geo, cm, x, 0.002, 0));
@@ -153,10 +171,17 @@ export function placeB(g: THREE.Object3D, B: Builder, p: Pal, o: PlaceOpts) {
   }
   const nm = new THREE.MeshPhysicalMaterial({ color: p.f, roughness: 0.95, sheen: 0.5 });
   if (o.nap === 'fold') {
-    const n = mesh(g, new THREE.BoxGeometry(0.13, 0.018, 0.075), nm, 0, 0.049, 0.01);
+    // A folded napkin: a soft rectangle with its top layer turned back to show the fold.
+    const n = new THREE.Group();
+    n.position.set(0, 0.041, 0.01);
     n.rotation.y = 0.25;
-    B.add('leaf', [0.035, 0.064, 0], 0.016, pick(p.b));
-    B.add('leaf', [0.012, 0.061, 0.012], [0.008, 0.003, 0.028], p.g, [0, 0.8, 0]);
+    g.add(n);
+    mesh(n, napBase(), nm, 0, 0.004, 0);
+    const flap = mesh(n, napFlap(), nm, 0.004, 0.0105, -0.006);
+    flap.rotation.y = 0.04;
+    // A single rose and a leaf tucked on the fold.
+    B.add('rose', [0.035, 0.066, 0.004], 0.014, pick(p.b));
+    B.add('leaf', [0.014, 0.059, 0.014], [0.008, 0.003, 0.028], p.g, [0, 0.8, 0]);
   } else {
     B.add('ball', [0, 0.052, 0], [0.055, 0.018, 0.035], p.f);
     B.add('ball', [0, 0.058, 0], 0.02, jit(p.f, 0.1));

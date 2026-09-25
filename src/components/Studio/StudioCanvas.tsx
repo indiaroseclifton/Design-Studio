@@ -12,7 +12,8 @@ import { ItemsLayer } from './ItemsLayer';
 import { Interaction } from './Interaction';
 import { CameraRig } from './CameraRig';
 import { envFor, hexMix } from '../../lib/environment';
-import { registerCapture } from '../../lib/capture';
+import { pickWorld, registerCapture } from '../../lib/capture';
+import { DRAG_MIME, dragEntry, setDragEntry } from '../../lib/dragEntry';
 import { useVenuePhoto } from '../../lib/venuePhoto';
 import { useDesignStore } from '../../store/designStore';
 import type { Mood } from '../../types';
@@ -117,7 +118,23 @@ export function StudioCanvas() {
   const high = quality === 'high';
 
   return (
-    <div className="absolute inset-0" style={{ filter: MOOD_FILTER[mood] }}>
+    <div
+      className="absolute inset-0"
+      style={{ filter: MOOD_FILTER[mood] }}
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes(DRAG_MIME)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      }}
+      onDrop={(e) => {
+        const entry = dragEntry();
+        if (!entry || !e.dataTransfer.types.includes(DRAG_MIME)) return;
+        e.preventDefault();
+        setDragEntry(null);
+        const at = entry.k === 'item' ? pickWorld(e.clientX, e.clientY) : null;
+        useDesignStore.getState().activate(entry, at ?? undefined);
+      }}
+    >
       <Canvas
         frameloop={paused ? 'never' : 'always'}
         shadows="percentage"

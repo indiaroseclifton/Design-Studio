@@ -275,6 +275,26 @@ export interface AddOpts extends Partial<PlacedItem> {
 }
 
 /**
+ * Placement for a piece dropped at world (x, z): onto the piece under the pointer if it's a surface that
+ * takes it, onto the nearest table for tabletop pieces, otherwise on the floor where it landed.
+ */
+export function dropOpts(S: Design, type: string, at: { x: number; z: number; itemId?: string }): AddOpts {
+  const d = ITEMS[type];
+  const under = at.itemId ? S.items.find((i) => i.id === at.itemId) : undefined;
+  const H = under && (ITEMS[under.type]?.top ? under : under.on ? S.items.find((i) => i.id === under.on) : undefined);
+  if (H && canStack(d) && ITEMS[H.type]?.top && (d.surf === 'table' || d.fp * 0.8 <= topE(ITEMS[H.type].top!))) {
+    const [lx, lz] = hL(H, at.x, at.z);
+    return { host: H, x: lx, z: lz };
+  }
+  if (d.surf === 'table' && hasTbl(md(S))) {
+    const t = nearestTable(S, at.x, at.z);
+    const [lx, lz] = tLocal(S, t, at.x, at.z);
+    return { host: null, t, x: lx, z: lz };
+  }
+  return { host: null, x: at.x, z: at.z };
+}
+
+/**
  * Add a piece (the prototype's `addItem`). Returns the item to select, or null if it can't be placed
  * (a table piece with no tables and no host).
  */

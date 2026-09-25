@@ -1,6 +1,7 @@
 import { VENUES } from '../../engine/venues.gen';
 import { captureScene, downloadUrl, slug } from '../../lib/capture';
 import { useEffect, useRef, useState } from 'react';
+import { useSmall } from '../../lib/useMedia';
 import { useDesignStore, type ModalKind, type OverlayKind } from '../../store/designStore';
 
 type ToolbarKey = ModalKind | OverlayKind | 'flower' | 'cake' | 'snapshot';
@@ -11,6 +12,13 @@ const MAIN: Array<{ key: ToolbarKey; label: string; title?: string }> = [
   { key: 'designs', label: 'Designs' },
   { key: 'quote', label: 'Quote' },
   { key: 'storybook', label: 'Storybook' },
+];
+// On small screens the toolbar keeps the drawers and the Flower Studio; everything else moves under More.
+const SMALL_MORE: Array<{ key: ToolbarKey; label: string; note: string }> = [
+  { key: 'cake', label: 'Cake Studio', note: 'Design a cake' },
+  { key: 'designs', label: 'Designs', note: 'Save, load and share designs' },
+  { key: 'quote', label: 'Quote', note: 'Prices for everything placed' },
+  { key: 'storybook', label: 'Storybook', note: 'Your day as a pop-up book' },
 ];
 const MORE: Array<{ key: ToolbarKey; label: string; note: string }> = [
   { key: 'snapshot', label: 'Snapshot', note: 'Save this view as an image' },
@@ -42,6 +50,11 @@ export function TopToolbar() {
   const openCakeStudio = useDesignStore((s) => s.openCakeStudio);
   const closeCakeStudio = useDesignStore((s) => s.closeCakeStudio);
   const [menu, setMenu] = useState(false);
+  const small = useSmall();
+  const drawer = useDesignStore((s) => s.drawer);
+  const setDrawer = useDesignStore((s) => s.setDrawer);
+  const main = small ? MAIN.filter((b) => b.key === 'flower') : MAIN;
+  const more = small ? [...SMALL_MORE, ...MORE] : MORE;
   const menuRef = useRef<HTMLDivElement>(null);
 
   // The More menu closes on an outside click or Esc.
@@ -78,6 +91,7 @@ export function TopToolbar() {
 
   function onClick(key: ToolbarKey) {
     setMenu(false);
+    setDrawer(null);
     if (key === 'flower') return studioOpen ? closeStudio() : openStudio();
     if (key === 'cake') return cakeOpen ? closeCakeStudio() : openCakeStudio();
     if (key === 'snapshot') {
@@ -101,7 +115,12 @@ export function TopToolbar() {
     else openOverlay(key);
   }
 
-  const moreOn = MORE.some((m) => isOn(m.key));
+  const moreOn = more.some((m) => isOn(m.key));
+  const drawerBtn = (d: 'catalogue' | 'panel', label: string) => (
+    <button type="button" className={btnClass} aria-pressed={drawer === d} style={drawer === d ? onStyle : undefined} onClick={() => setDrawer(drawer === d ? null : d)}>
+      {label}
+    </button>
+  );
 
   return (
     <div
@@ -110,7 +129,9 @@ export function TopToolbar() {
       aria-label="Studio"
       // max-width keeps it inside the gap between the side panels.
       style={
-        studioOpen || cakeOpen || overlay
+        small
+          ? { left: 8, right: 8, width: 'max-content', maxWidth: 'calc(100vw - 16px)', marginInline: 'auto', top: 8 }
+          : studioOpen || cakeOpen || overlay
           ? { left: 16, right: 16, width: 'max-content', maxWidth: 'calc(100vw - 32px)', marginInline: 'auto' }
           : { left: 358, right: 304, width: 'max-content', maxWidth: 'calc(100vw - 662px)', marginInline: 'auto' }
       }
@@ -122,7 +143,13 @@ export function TopToolbar() {
         ↷
       </button>
       <span className="mx-1 h-[18px] w-px" style={{ background: 'rgba(255,240,220,.15)' }} />
-      {MAIN.map((b) => (
+      {small && !studioOpen && !cakeOpen && (
+        <>
+          {drawerBtn('catalogue', 'Catalogue')}
+          {drawerBtn('panel', 'Venue')}
+        </>
+      )}
+      {main.map((b) => (
         <button key={b.key} type="button" className={btnClass} title={b.title} aria-pressed={isOn(b.key)} style={isOn(b.key) ? onStyle : undefined} onClick={() => onClick(b.key)}>
           {b.label}
         </button>
@@ -134,7 +161,7 @@ export function TopToolbar() {
         </button>
         {menu && (
           <div className="tb-menu glass" role="menu">
-            {MORE.map((m) => (
+            {more.map((m) => (
               <button key={m.key} type="button" role="menuitem" className={isOn(m.key) ? 'on' : ''} onClick={() => onClick(m.key)}>
                 <b>{m.label}</b>
                 <small>{m.note}</small>

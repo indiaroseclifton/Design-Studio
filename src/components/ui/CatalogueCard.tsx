@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from 'react';
 import type { Entry } from '../../engine/catalogue';
 import { cachedThumb, requestThumb, thumbKey } from '../../three/thumbnail';
+import { DRAG_MIME, setDragEntry } from '../../lib/dragEntry';
 
 interface Props {
   entry: Entry;
@@ -32,6 +33,15 @@ function CardInner({ entry, pal, chair, active, disabled, dim, onActivate }: Pro
       disabled={disabled}
       title={disabled ? 'Not available for the current layout' : entry.name}
       onClick={() => onActivate(entry)}
+      // Pieces can also be dragged onto the scene and dropped where they should go.
+      draggable={!disabled}
+      onDragStart={(ev) => {
+        setDragEntry(entry);
+        ev.dataTransfer.setData(DRAG_MIME, entry.key);
+        ev.dataTransfer.setData('text/plain', entry.name);
+        ev.dataTransfer.effectAllowed = 'copy';
+      }}
+      onDragEnd={() => setDragEntry(null)}
     >
       <div className="th" style={url ? { backgroundImage: `url(${url})` } : undefined} />
       <b>{entry.name}</b>
