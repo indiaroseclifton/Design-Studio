@@ -16,13 +16,7 @@ function getRenderer() {
   return renderer;
 }
 
-const cache = new Map<string, string>();
-
-export function captureItemThumbnail(item: CatalogueItem, palette: Palette, color?: string): string {
-  const key = `${item.id}:${item.pal === false ? '' : palette.id}:${color ?? ''}`;
-  const cached = cache.get(key);
-  if (cached) return cached;
-
+function renderGroupThumbnail(build: (group: THREE.Group) => void): string {
   const r = getRenderer();
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight('#fff', '#443322', 1.6));
@@ -32,10 +26,8 @@ export function captureItemThumbnail(item: CatalogueItem, palette: Palette, colo
 
   const group = new THREE.Group();
   scene.add(group);
-  const builder = Builder(group);
   try {
-    item.build(group, { builder, palette, color, chairStyle: item.chairStyle });
-    builder.flush();
+    build(group);
   } catch {
     // Some builders may fail on malformed data; leave group empty rather than crash the panel.
   }
@@ -61,6 +53,52 @@ export function captureItemThumbnail(item: CatalogueItem, palette: Palette, colo
   const url = r.domElement.toDataURL('image/png');
 
   disposeObject3D(scene);
+  return url;
+}
+
+const cache = new Map<string, string>();
+
+export function captureItemThumbnail(item: CatalogueItem, palette: Palette, color?: string): string {
+  const key = `${item.id}:${item.pal === false ? '' : palette.id}:${color ?? ''}`;
+  const cached = cache.get(key);
+  if (cached) return cached;
+
+  const url = renderGroupThumbnail((group) => {
+    const builder = Builder(group);
+    item.build(group, { builder, palette, color, chairStyle: item.chairStyle });
+    builder.flush();
+  });
+
+  cache.set(key, url);
+  return url;
+}
+
+export function captureFlowerThumbnail(color: string, scale: number): string {
+  const key = `flower:${color}:${scale}`;
+  const cached = cache.get(key);
+  if (cached) return cached;
+
+  const url = renderGroupThumbnail((group) => {
+    const builder = Builder(group);
+    builder.rose(0, 0, color, 0.28 * scale, 0);
+    builder.flush();
+  });
+
+  cache.set(key, url);
+  return url;
+}
+
+export function captureGreeneryThumbnail(color: string): string {
+  const key = `greenery:${color}`;
+  const cached = cache.get(key);
+  if (cached) return cached;
+
+  const url = renderGroupThumbnail((group) => {
+    const builder = Builder(group);
+    builder.fern(0, 0, 1, color, 0);
+    builder.flush();
+  });
+
   cache.set(key, url);
   return url;
 }

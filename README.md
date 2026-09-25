@@ -32,12 +32,22 @@ npm run lint      # oxlint
   Woodland, City Rooftop, Desert Oasis, Garden Marquee, French Château, Lakeside Dock, Industrial Loft),
   each with its own sky shader, fog, lighting rig and geometry (`src/data/venues.ts`). Five chair styles
   (cross, chiavari, rattan, bent bistro, ghost acrylic) cover all of them.
-- **Catalogue** — ~98 placeable pieces across Templates, Linens, Chairs, Tableware, Florals, Candles &
+- **Catalogue** — 108 placeable pieces across Templates, Linens, Chairs, Tableware, Florals, Candles &
   light, Furniture & lighting, Wedding, Holiday, Faith & culture, Corporate, Parties & kids, Desserts, and
   five add-on packs (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail
   (`src/three/thumbnail.ts`). Two categories use special placement mechanics instead of adding a single
   piece: **Chairs** sets the table's chair style (any of 5 styles, or "Match the venue" to reset), and
   **Templates** places a whole bundle of table items at once (Rustic, Modern Glam, Boho, Classic).
+- **Flower Studio** — a full-screen custom floral-arrangement builder (`src/components/flowerStudio/`,
+  `src/data/flowerStudio.ts`, `src/store/flowerStudioStore.ts`) opened from the toolbar or the catalogue
+  panel. Pick a starting preset (Garden Rose, Modern White, Boho Wild, Simple Bud) or build from scratch:
+  choose a vessel (compote, cylinder vase, urn, bud vase, low bowl), finish (glass, gold, matte white/black,
+  terracotta) and shape (round & lush, cascading, tall & elegant, compact posy), then add/remove flower
+  types (8 varieties) and greenery (4 varieties) with per-stem counts and colour swatches, resize the whole
+  arrangement, and shuffle the procedural placement seed. A live three.js preview updates as you edit.
+  "Save to catalogue" adds the arrangement as a new item under a "My Flowers" category (persisted to
+  `localStorage`); "Save & place" also drops it straight onto the active table. Placed arrangements can be
+  reopened for editing from the inspector panel's "Edit in Flower Studio" button.
 - **Add-ons** — toggle packs (Lounge & rooms, Signage & displays, Tabletop shapes, Event lighting, Stage &
   AV) from the Add-ons modal to reveal extra catalogue categories and pieces, persisted to `localStorage`
   (`src/data/addonPacks.ts`).
@@ -58,11 +68,11 @@ npm run lint      # oxlint
 
 ## Deferred
 
-Flower Studio, Storybook, Brass Lantern, and the AR viewer are stubbed with a "coming soon" overlay from
-the toolbar — they're substantial features in their own right and were scoped out by design. Also
-deferred: My Uploads/My Flowers (need file upload and Flower Studio), the rest of the ~277-item catalogue,
-and the "Your Venue" custom photo-upload venue, drag-and-drop placement (click-to-place is implemented
-instead), plan view, multi-select, per-table rotation, and the placement-zone/weather visualizations.
+Storybook, Brass Lantern, and the AR viewer are stubbed with a "coming soon" overlay from the toolbar —
+they're substantial features in their own right and were scoped out by design. Also deferred: My Uploads
+(needs file upload), the rest of the ~277-item catalogue, and the "Your Venue" custom photo-upload venue,
+drag-and-drop placement (click-to-place is implemented instead), plan view, multi-select, per-table
+rotation, and the placement-zone/weather visualizations.
 
 See `docs/design_handoff_event_studio/README.md` (the original handoff bundle) for the full original spec,
 including the working HTML/three.js prototype and screenshots.

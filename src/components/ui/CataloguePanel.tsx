@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { CATEGORIES, ITEM_LIST, ITEMS } from '../../data/catalogue';
 import { ADDON_PACKS } from '../../data/addonPacks';
 import { PALETTES, getPalette } from '../../data/palettes';
+import { arrangementToItem } from '../../data/flowerStudio';
 import { isStackable, useDesignStore } from '../../store/designStore';
+import { useFlowerStudioStore } from '../../store/flowerStudioStore';
 import { useTableLayout } from '../../lib/useTableLayout';
 import { CatalogueCard } from './CatalogueCard';
 import type { CatalogueItem } from '../../types';
@@ -28,18 +30,25 @@ export function CataloguePanel() {
   const packsOn = useDesignStore((s) => s.packsOn);
   const openModal = useDesignStore((s) => s.openModal);
   const { tables } = useTableLayout();
+  const customFlowers = useFlowerStudioStore((s) => s.customFlowers);
+  const openFlowerStudio = useFlowerStudioStore((s) => s.open);
 
   const palette = getPalette(design.palette);
   const hostItem = selection?.k === 'item' ? design.items.find((i) => i.id === selection.id) : null;
   const hostDef = hostItem ? ITEMS[hostItem.type] : null;
   const decorating = Boolean(hostDef?.top);
 
-  const availableItems = useMemo(() => ITEM_LIST.filter((it) => !it.addon || packsOn.includes(it.addon)), [packsOn]);
+  const availableItems = useMemo(() => {
+    const base = ITEM_LIST.filter((it) => !it.addon || packsOn.includes(it.addon));
+    const myFlowers = customFlowers.map(arrangementToItem);
+    return [...base, ...myFlowers];
+  }, [packsOn, customFlowers]);
 
   const categoryChips = useMemo(() => {
     const addonChips = ADDON_PACKS.filter((p) => packsOn.includes(p.id)).map((p) => ({ id: p.categoryId, label: p.categoryLabel, addon: true }));
-    return [...CATEGORIES.map((c) => ({ ...c, addon: false })), ...addonChips];
-  }, [packsOn]);
+    const myFlowersChip = customFlowers.length ? [{ id: 'myflowers', label: 'My Flowers', addon: false }] : [];
+    return [...CATEGORIES.map((c) => ({ ...c, addon: false })), ...myFlowersChip, ...addonChips];
+  }, [packsOn, customFlowers]);
 
   const filtered = useMemo(
     () => availableItems.filter((it) => (!activeCategory || it.cat === activeCategory) && matchesSearch(it, search)),
@@ -125,7 +134,7 @@ export function CataloguePanel() {
             <h2 className="serif text-[28px] leading-none">Catalogue</h2>
             <span className="lbl">{filtered.length} pieces</span>
           </div>
-          <button type="button" className="btn shrink-0 whitespace-nowrap px-2.5 py-1.5" onClick={() => showComingSoon('Flower Studio')}>
+          <button type="button" className="btn shrink-0 whitespace-nowrap px-2.5 py-1.5" onClick={() => openFlowerStudio()}>
             Flower Studio
           </button>
         </div>

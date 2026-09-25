@@ -1,7 +1,8 @@
-import type { Design } from '../types';
+import type { Arrangement, Design } from '../types';
 
 const DESIGNS_KEY = 'design-studio:saved-designs';
 const PACKS_KEY = 'design-studio:packs';
+const FLOWERS_KEY = 'design-studio:custom-flowers';
 
 export interface SavedDesign {
   id: string;
@@ -44,6 +45,25 @@ export function loadEnabledPacks(): string[] {
 export function persistEnabledPacks(packs: string[]) {
   try {
     localStorage.setItem(PACKS_KEY, JSON.stringify(packs));
+  } catch {
+    // ignore
+  }
+}
+
+export function loadCustomFlowers(): Arrangement[] {
+  try {
+    const raw = localStorage.getItem(FLOWERS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function persistCustomFlowers(arrangements: Arrangement[]) {
+  try {
+    localStorage.setItem(FLOWERS_KEY, JSON.stringify(arrangements));
   } catch {
     // ignore
   }

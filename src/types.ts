@@ -55,6 +55,8 @@ export interface CatalogueItem {
   resetChair?: boolean;
   /** presence marks this as a template: placing it places every listed item id (table-surf only) instead of itself */
   template?: string[];
+  /** id of the source Arrangement, present on catalogue items generated from a saved Flower Studio arrangement */
+  arrangementId?: string;
   build: (group: THREE.Group, ctx: BuildCtx) => void;
 }
 
@@ -123,6 +125,29 @@ export interface VenueEnv {
   exp: number;
   env?: number;
   bloom?: number;
+}
+
+export interface StemEntry {
+  type: string;
+  color?: string;
+  n: number;
+}
+
+export interface GreeneryEntry {
+  type: string;
+  n: number;
+}
+
+export interface Arrangement {
+  id: string;
+  name: string;
+  vessel: string;
+  finish: string;
+  shape: string;
+  size: number;
+  stems: StemEntry[];
+  greenery: GreeneryEntry[];
+  seed: number;
 }
 
 export interface VenueDef {

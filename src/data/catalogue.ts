@@ -1996,6 +1996,203 @@ export const ITEMS: Record<string, CatalogueItem> = {
       builder.flush();
     },
   },
+
+  tablecloth_full: {
+    id: 'tablecloth_full',
+    name: 'Floor-length tablecloth',
+    cat: 'linens',
+    sec: 'Tablecloths',
+    group: 'tablecloth',
+    surf: 'table',
+    fp: 0.4,
+    price: 35,
+    kw: 'tablecloth full floor length linen base',
+    pal: true,
+    build(g, { palette, color }) {
+      const c = color ?? palette.f;
+      cyl(g, 0.72, 0.72, 0.008, M(c, 0.9), 0, 0.751, 0, 40);
+      cyl(g, 0.71, 0.73, 0.75, M(c, 0.92), 0, 0.375, 0, 40);
+    },
+  },
+  bread_plate: {
+    id: 'bread_plate',
+    name: 'Bread plate',
+    cat: 'tableware',
+    sec: 'Place settings',
+    group: 'plate',
+    surf: 'table',
+    fp: 0.04,
+    price: 3,
+    kw: 'bread plate side setting',
+    pal: false,
+    build(g) {
+      cyl(g, 0.07, 0.07, 0.008, M('#f7f2e8', 0.4), 0, 0.014, 0, 24);
+    },
+  },
+  salt_pepper_set: {
+    id: 'salt_pepper_set',
+    name: 'Salt & pepper set',
+    cat: 'tableware',
+    sec: 'Place settings',
+    group: 'condiment',
+    surf: 'table',
+    fp: 0.02,
+    price: 4,
+    kw: 'salt pepper shaker set condiment',
+    pal: false,
+    build(g) {
+      cyl(g, 0.014, 0.016, 0.05, glass(), -0.02, 0.025, 0, 12);
+      cyl(g, 0.014, 0.016, 0.05, M('#2a2420', 0.6), 0.02, 0.025, 0, 12);
+    },
+  },
+  coffee_cup_saucer: {
+    id: 'coffee_cup_saucer',
+    name: 'Coffee cup & saucer',
+    cat: 'tableware',
+    sec: 'Glassware',
+    group: 'coffee',
+    surf: 'table',
+    fp: 0.03,
+    price: 4,
+    kw: 'coffee cup saucer tea service',
+    pal: false,
+    build(g) {
+      cyl(g, 0.06, 0.06, 0.006, M('#f7f2e8', 0.4), 0, 0.003, 0, 20);
+      cyl(g, 0.032, 0.026, 0.03, M('#f7f2e8', 0.4), 0, 0.021, 0, 16);
+    },
+  },
+  candelabra: {
+    id: 'candelabra',
+    name: 'Candelabra',
+    cat: 'candles',
+    sec: 'Candles',
+    group: 'candle',
+    surf: 'table',
+    fp: 0.1,
+    price: 55,
+    kw: 'candelabra multi arm elegant candles',
+    tag: 'Statement',
+    pal: false,
+    top: { h: 0.4, r: 0.14 },
+    build(g, { builder }) {
+      const gold = M('#c9a25a', 0.3, 0.9);
+      cyl(g, 0.05, 0.07, 0.02, gold, 0, 0.01, 0, 20);
+      cyl(g, 0.012, 0.012, 0.32, gold, 0, 0.17, 0, 10);
+      for (const [x, z] of [
+        [-0.11, 0],
+        [0.11, 0],
+        [0, -0.11],
+        [0, 0.11],
+      ] as [number, number][]) {
+        builder.wire([0, 0.32, 0], [x, 0.34, z]);
+        cyl(g, 0.008, 0.008, 0.02, gold, x, 0.35, z, 8);
+        cyl(g, 0.012, 0.012, 0.16, M('#f7f0dd', 0.6), x, 0.44, z, 10);
+        flame(builder, x, 0.53, z, 0.5);
+      }
+      cyl(g, 0.012, 0.012, 0.16, M('#f7f0dd', 0.6), 0, 0.4, 0, 10);
+      flame(builder, 0, 0.49, 0, 0.5);
+      builder.flush();
+    },
+  },
+
+  balloon_centerpiece: {
+    id: 'balloon_centerpiece',
+    name: 'Balloon centerpiece',
+    cat: 'parties',
+    sec: 'Decor',
+    group: 'parties',
+    surf: 'table',
+    fp: 0.12,
+    price: 45,
+    kw: 'balloon centerpiece table weighted party',
+    tag: 'Fun',
+    pal: true,
+    build(g, { palette }) {
+      const cols = palette.b.length ? palette.b : ['#f2bcc0', '#c9d9b2', '#f3d9a4'];
+      cyl(g, 0.06, 0.08, 0.03, M('#2a2420', 0.6), 0, 0.015, 0, 20);
+      for (let i = 0; i < 5; i++) {
+        const a = angle(i, 5);
+        const h = 0.3 + (i % 2) * 0.12;
+        mesh(g, new THREE.SphereGeometry(0.09, 16, 12), M(cols[i % cols.length], 0.4), Math.cos(a) * 0.05, h, Math.sin(a) * 0.05);
+      }
+    },
+  },
+
+  grazing_table: {
+    id: 'grazing_table',
+    name: 'Grazing table spread',
+    cat: 'desserts',
+    sec: 'Catering',
+    group: 'catering',
+    surf: 'floor',
+    fp: 0.5,
+    price: 320,
+    kw: 'grazing table cheese board catering spread',
+    pal: false,
+    build(g) {
+      box(g, 1.6, 0.05, 0.7, M('#6b4a30', 0.6), 0, 0.75, 0);
+      const foods = ['#e8c98a', '#c9702e', '#8a2a2a', '#e6dcc4', '#4c7a34'];
+      for (let i = 0; i < 10; i++) {
+        const x = -0.65 + (i % 5) * 0.32,
+          z = i < 5 ? -0.18 : 0.18;
+        mesh(g, new THREE.SphereGeometry(0.05, 10, 8), M(foods[i % foods.length], 0.7), x, 0.8, z);
+      }
+    },
+  },
+  cocktail_sign: {
+    id: 'cocktail_sign',
+    name: 'Signature cocktail sign',
+    cat: 'furniture',
+    sec: 'Signage',
+    group: 'signage',
+    surf: 'floor',
+    fp: 0.12,
+    price: 55,
+    kw: 'signature cocktail sign bar menu',
+    hasText: true,
+    pal: true,
+    build(g, { palette, color, text }) {
+      const frame = M(color ?? palette.f, 0.7);
+      box(g, 0.04, 0.9, 0.04, frame, -0.26, 0.45, 0);
+      box(g, 0.04, 0.9, 0.04, frame, 0.26, 0.45, 0);
+      box(g, 0.56, 0.02, 0.4, M('#fff', 0.6, 0, { map: textTexture(text ?? 'Signature Cocktail', { size: 34, serif: true }) }), 0, 0.75, 0).rotation.x = -0.12;
+    },
+  },
+  table_number: {
+    id: 'table_number',
+    name: 'Table number',
+    cat: 'tableware',
+    sec: 'Paper goods',
+    group: 'paper',
+    surf: 'table',
+    fp: 0.02,
+    price: 5,
+    kw: 'table number sign reception',
+    hasText: true,
+    pal: true,
+    build(g, { palette, color, text }) {
+      const frame = M(color ?? palette.b[0] ?? '#c9a25a', 0.4, 0.6);
+      cyl(g, 0.02, 0.02, 0.08, frame, 0, 0.04, 0, 10);
+      box(g, 0.08, 0.11, 0.004, M('#fff', 0.6, 0, { map: textTexture(text ?? '1', { size: 60, serif: true }) }), 0, 0.13, 0);
+    },
+  },
+
+  favor_box: {
+    id: 'favor_box',
+    name: 'Guest favor box',
+    cat: 'wedding',
+    sec: 'Reception',
+    group: 'wedding',
+    surf: 'table',
+    fp: 0.025,
+    price: 4,
+    kw: 'favor box guest gift wedding reception',
+    pal: true,
+    build(g, { palette, color }) {
+      box(g, 0.06, 0.05, 0.06, M(color ?? palette.f, 0.85), 0, 0.025, 0);
+      box(g, 0.062, 0.008, 0.062, M(palette.b[0] ?? '#c9a25a', 0.5, 0.6), 0, 0.054, 0);
+    },
+  },
 };
 
 export const ITEM_LIST: CatalogueItem[] = Object.values(ITEMS);

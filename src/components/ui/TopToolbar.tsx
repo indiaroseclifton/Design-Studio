@@ -1,4 +1,5 @@
 import { useDesignStore } from '../../store/designStore';
+import { useFlowerStudioStore } from '../../store/flowerStudioStore';
 import { captureSceneSnapshot } from '../../three/snapshot';
 import { triggerDownload } from '../../lib/download';
 
@@ -18,6 +19,7 @@ export function TopToolbar() {
   const showComingSoon = useDesignStore((s) => s.showComingSoon);
   const openModal = useDesignStore((s) => s.openModal);
   const showToast = useDesignStore((s) => s.showToast);
+  const openFlowerStudio = useFlowerStudioStore((s) => s.open);
 
   function handleSnapshot() {
     const url = captureSceneSnapshot();
@@ -41,7 +43,7 @@ export function TopToolbar() {
         ↷ Redo
       </button>
       <span className="mx-1 h-[18px] w-px" style={{ background: 'rgba(255,240,220,.15)' }} />
-      <button type="button" className={btnClass} onClick={() => showComingSoon('Flower Studio')}>
+      <button type="button" className={btnClass} onClick={() => openFlowerStudio()}>
         ✿ Flower Studio
       </button>
       <button type="button" className={btnClass} onClick={() => openModal('designs')}>

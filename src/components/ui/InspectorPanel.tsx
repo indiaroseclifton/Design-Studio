@@ -1,6 +1,7 @@
 import { ITEMS } from '../../data/catalogue';
 import { PALETTES, getPalette } from '../../data/palettes';
 import { useDesignStore } from '../../store/designStore';
+import { useFlowerStudioStore } from '../../store/flowerStudioStore';
 
 export function InspectorPanel() {
   const selection = useDesignStore((s) => s.selection);
@@ -12,6 +13,8 @@ export function InspectorPanel() {
   const duplicateSelected = useDesignStore((s) => s.duplicateSelected);
   const removeSelected = useDesignStore((s) => s.removeSelected);
   const select = useDesignStore((s) => s.select);
+  const customFlowers = useFlowerStudioStore((s) => s.customFlowers);
+  const openFlowerStudio = useFlowerStudioStore((s) => s.open);
 
   if (!selection) return null;
 
@@ -98,6 +101,19 @@ export function InspectorPanel() {
           Remove
         </button>
       </div>
+
+      {def.arrangementId && (
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            const arrangement = customFlowers.find((a) => a.id === def.arrangementId);
+            if (arrangement) openFlowerStudio(arrangement);
+          }}
+        >
+          Edit in Flower Studio
+        </button>
+      )}
     </section>
   );
 }
