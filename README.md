@@ -152,8 +152,7 @@ design, so saved designs, exports and share links carry it, and each feeds the o
   - The stationery menu, the bar menu (with illustrated glasses) and the Storybook's Feast chapter all
     print from it.
 - **Music** (`src/music/`, `src/components/music/`):
-  - The day's moments, from guests arriving to the last song, timed from the ceremony and shown as a
-    row of cards (time, moment, and the chosen song or set length).
+  - The day's moments, from guests arriving to the last song, timed from the ceremony.
   - A library of about 195 wedding songs, with approximate tempo and energy. Curation scores energy fit,
     genre and era preferences and must-plays, never repeats a song, and shapes the party with a warm-up,
     peaks and breathers.
@@ -161,7 +160,8 @@ design, so saved designs, exports and share links carry it, and each feeds the o
     and eras, and songs like the ones you've pinned, each with its reason. One tap adds a song (a set
     grows to fit it) or picks it for a single-song moment.
   - Pin, remove, reshuffle and add your own songs, with a do-not-play list.
-  - A neutral charcoal look with the studio's champagne accent.
+  - A warm black-and-gold look: a glowing energy wave across the day (click it to open a moment), moment
+    chips, and a track table with energy bars, tempo and start times.
   - Exports: a DJ brief PDF and a playlist CSV for import tools.
   - The order of service names the ceremony music, and the Storybook names the first-dance song.
 - **Attire & colour** (`src/attire/`, `src/components/attire/`):
