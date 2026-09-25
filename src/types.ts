@@ -24,6 +24,7 @@ export interface BuildCtx {
   palette: Palette;
   color?: string;
   text?: string;
+  chairStyle?: ChairStyle;
 }
 
 export interface CatalogueItem {
@@ -48,6 +49,10 @@ export interface CatalogueItem {
   addon?: string;
   /** true if the inspector should show an editable text field (signs, menu cards) */
   hasText?: boolean;
+  /** presence marks this as a chair-style selector: placing it sets the table's chair style rather than adding a piece */
+  chairStyle?: ChairStyle;
+  /** marks the "match the venue" chair selector, which clears any chair override */
+  resetChair?: boolean;
   build: (group: THREE.Group, ctx: BuildCtx) => void;
 }
 
@@ -75,6 +80,8 @@ export interface TableConfig {
   guests: number;
   mirror: boolean;
   linen?: string;
+  /** overrides the venue's default chair style when set */
+  chair?: ChairStyle;
   rot: number;
 }
 

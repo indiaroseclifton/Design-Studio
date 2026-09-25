@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Accent, CameraPreset, Design, Mood, PlacedItem, Selection, TableLayout, TimeOfDay, UIMode, Weather } from '../types';
+import type { Accent, CameraPreset, ChairStyle, Design, Mood, PlacedItem, Selection, TableLayout, TimeOfDay, UIMode, Weather } from '../types';
 import { ITEMS } from '../data/catalogue';
 import { captureSceneSnapshot } from '../three/snapshot';
 import {
@@ -65,6 +65,7 @@ interface StoreState {
   setGuests: (n: number) => void;
   toggleMirror: () => void;
   setPalette: (id: string) => void;
+  setTableChair: (chair: ChairStyle | undefined) => void;
 
   placeItem: (input: PlaceItemInput) => string;
   removeItem: (id: string) => void;
@@ -151,6 +152,7 @@ export const useDesignStore = create<StoreState>((set, get) => {
     setGuests: (n) => commit((d) => ({ ...d, table: { ...d.table, guests: n } })),
     toggleMirror: () => commit((d) => ({ ...d, table: { ...d.table, mirror: !d.table.mirror } })),
     setPalette: (id) => commit((d) => ({ ...d, palette: id })),
+    setTableChair: (chair) => commit((d) => ({ ...d, table: { ...d.table, chair } })),
 
     placeItem: (input) => {
       const id = crypto.randomUUID();

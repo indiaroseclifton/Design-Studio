@@ -34,7 +34,7 @@ export function captureItemThumbnail(item: CatalogueItem, palette: Palette, colo
   scene.add(group);
   const builder = Builder(group);
   try {
-    item.build(group, { builder, palette, color });
+    item.build(group, { builder, palette, color, chairStyle: item.chairStyle });
     builder.flush();
   } catch {
     // Some builders may fail on malformed data; leave group empty rather than crash the panel.

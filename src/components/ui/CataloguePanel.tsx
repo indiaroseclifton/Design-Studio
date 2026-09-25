@@ -55,7 +55,21 @@ export function CataloguePanel() {
     return Array.from(map.entries());
   }, [filtered]);
 
+  const setTableChair = useDesignStore((s) => s.setTableChair);
+  const currentChairType = design.table.chair?.type;
+
   function handlePlace(item: CatalogueItem) {
+    if (item.resetChair) {
+      setTableChair(undefined);
+      showToast('Chairs match the venue again');
+      return;
+    }
+    if (item.chairStyle) {
+      setTableChair(item.chairStyle);
+      showToast(`Chairs switched to ${item.name.toLowerCase()}`);
+      return;
+    }
+
     if (decorating && hostItem && hostDef?.top) {
       if (!isStackable(item.id)) return;
       const siblings = design.items.filter((i) => i.on === hostItem.id).length;
@@ -171,7 +185,14 @@ export function CataloguePanel() {
             <div className="grid grid-cols-2 gap-2">
               {items.map((item) => {
                 const disabled = decorating ? !isStackable(item.id) : item.surf === 'table' && !tables.length;
-                return <CatalogueCard key={item.id} item={item} palette={palette} disabled={disabled} onClick={() => handlePlace(item)} />;
+                const selected = item.chairStyle
+                  ? currentChairType === item.chairStyle.type
+                  : item.resetChair
+                    ? !currentChairType
+                    : false;
+                return (
+                  <CatalogueCard key={item.id} item={item} palette={palette} disabled={disabled} selected={selected} onClick={() => handlePlace(item)} />
+                );
               })}
             </div>
           </div>

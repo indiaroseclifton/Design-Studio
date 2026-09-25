@@ -6,11 +6,13 @@ export function CatalogueCard({
   item,
   palette,
   disabled,
+  selected,
   onClick,
 }: {
   item: CatalogueItem;
   palette: Palette;
   disabled: boolean;
+  selected?: boolean;
   onClick: () => void;
 }) {
   const thumb = useMemo(() => captureItemThumbnail(item, palette), [item, palette]);
@@ -18,7 +20,7 @@ export function CatalogueCard({
   return (
     <button
       type="button"
-      className="card text-left"
+      className={`card text-left ${selected ? 'on' : ''}`}
       style={disabled ? { opacity: 0.35, pointerEvents: 'none' } : undefined}
       onClick={onClick}
       title={`${item.name} · $${item.price}`}

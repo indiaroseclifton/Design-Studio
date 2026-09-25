@@ -19,12 +19,14 @@ export function TableSystem({
   const select = useDesignStore((s) => s.select);
   const selection = useDesignStore((s) => s.selection);
   const linen = useDesignStore((s) => s.design.table.linen) ?? venue.cloth;
+  const chairOverride = useDesignStore((s) => s.design.table.chair);
+  const chairStyle = chairOverride ?? venue.chair;
 
   const chairProto = useMemo(() => {
     const g = new THREE.Group();
-    buildChair(g, venue.chair);
+    buildChair(g, chairStyle);
     return g;
-  }, [venue.chair]);
+  }, [chairStyle]);
   useEffect(() => () => disposeObject3D(chairProto), [chairProto]);
 
   const chairClones = useMemo(() => {
