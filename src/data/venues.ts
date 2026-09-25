@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import type { VenueDef } from '../types';
-import { box, cyl, ground, mesh, jit, rnd, M } from '../three/utils';
-import { T, tm, planks, tiles } from '../three/textures';
-import { flick, plight, flame } from '../three/builder';
+import { box, cyl, ground, mesh, jit, pick, rnd, M, noSh } from '../three/utils';
+import { T, tm, planks, tiles, noise, bricks, kilim, winTex } from '../three/textures';
+import { flick, plight, flame, stars } from '../three/builder';
 
 const RUSTIC_BARN: VenueDef = {
   name: 'Rustic Barn',
@@ -104,6 +104,332 @@ const RUSTIC_BARN: VenueDef = {
   },
 };
 
+const TUSCAN_VILLA: VenueDef = {
+  name: 'Tuscan Villa',
+  sub: 'Terracotta terrace & pergola · Golden hour',
+  desc: 'A hilltop loggia beneath a wisteria-draped pergola, framed by ochre stucco, lemon trees and rows of cypress rolling toward the valley.',
+  env: {
+    sky: ['#6b8fc4', '#f7c98b', '#c9a27a'],
+    fog: ['#f0cfa0', 50, 260],
+    hemi: ['#cfe0ff', '#a0704a', 0.8],
+    sun: ['#ffc583', 3.2, [-30, 13, 22]],
+    exp: 1,
+    env: 0.35,
+  },
+  cam: [6.2, 2.4, 7.6],
+  chair: { type: 'chiavari', color: '#b98a5a', seat: '#efe6d6' },
+  cloth: '#f4efe6',
+  build(g, B, tk) {
+    void tk;
+    box(g, 22, 2.4, 16, tm(T(tiles(['#b8653f', '#c4724a', '#a95a37', '#c9805a'], 8, '#8a5a40'), [8, 6]), 0.9), 0, -1.2, 0);
+    ground(g, M('#8c8a4e', 1), 700, -2.4);
+    const st = tm(T(noise('#e2b57c', ['#d9a86c', '#ecc592', '#cf9d62'], 9000, 3), [4, 3]), 0.95);
+    box(g, 24, 9.4, 1, st, 0, 4.3, -8.5);
+    box(g, 25, 0.5, 3.4, M('#b35a36', 0.9), 0, 9.2, -8.2).rotation.x = 0.12;
+    box(g, 24.4, 0.3, 1.3, M('#eadcc2'), 0, 8.85, -8.1);
+    const dark = M('#2a2019', 0.8),
+      shut = M('#5c6b48', 0.85),
+      stone = M('#e6d9bf', 0.9),
+      wood = M('#6b4a30', 0.8);
+    const arch = (x: number, w: number, h: number) => {
+      box(g, w, h, 0.12, dark, x, h / 2, -7.95);
+      mesh(g, new THREE.CylinderGeometry(w / 2, w / 2, 0.12, 28), dark, x, h, -7.95).rotation.x = Math.PI / 2;
+      box(g, w + 0.3, h, 0.06, stone, x, h / 2, -7.97);
+      mesh(g, new THREE.CylinderGeometry(w / 2 + 0.15, w / 2 + 0.15, 0.06, 28), stone, x, h, -7.97).rotation.x = Math.PI / 2;
+    };
+    arch(0, 1.9, 2.8);
+    for (const x of [-9, -4.5, 4.5, 9]) arch(x, 1.4, 2.3);
+    for (const x of [-9, -4.5, 0, 4.5, 9]) {
+      box(g, 1.05, 1.5, 0.12, dark, x, 6.1, -7.95);
+      box(g, 1.3, 0.12, 0.3, stone, x, 5.3, -7.85);
+      for (const s of [-1, 1]) box(g, 0.5, 1.55, 0.08, shut, x + s * 0.8, 6.1, -7.9);
+    }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) cyl(g, 0.13, 0.16, 3.2, stone, sx * 2.6, 1.6, sz * 2.6);
+    for (const z of [-2.6, 2.6]) box(g, 6.2, 0.22, 0.24, wood, 0, 3.3, z);
+    for (let x = -2.7; x <= 2.75; x += 0.6) box(g, 0.12, 0.18, 6.2, wood, x, 3.5, 0);
+    for (let i = 0; i < 150; i++) B.add('leaf', [(rnd() - 0.5) * 5.8, 3.6 + rnd() * 0.25, (rnd() - 0.5) * 5.8], 0.2 + rnd() * 0.25, jit('#5e7a3a', 0.12));
+    for (let i = 0; i < 70; i++) {
+      const e = rnd() < 0.5,
+        s = rnd() < 0.5 ? -1 : 1,
+        t = (rnd() - 0.5) * 5.6;
+      B.add('leaf', [e ? t : s * 2.75, 3.05 - rnd() * 0.4, e ? s * 2.75 : t], [0.1, 0.32 + rnd() * 0.2, 0.1], jit(pick(['#a58fd0', '#b9a4e0', '#8f78c0']), 0.08));
+    }
+    for (const sx of [-1, 1])
+      for (const sz of [-1, 1])
+        for (let y = 0.4; y < 3.2; y += 0.35)
+          B.add('leaf', [sx * 2.6 + (rnd() - 0.5) * 0.3, y, sz * 2.6 + (rnd() - 0.5) * 0.3], 0.14 + rnd() * 0.1, jit('#56733a', 0.1));
+    for (const sx of [-1, 1])
+      for (const sz of [-1, 1]) {
+        B.wire([sx * 1.3, 3.4, sz * 1.3], [sx * 1.3, 2.75, sz * 1.3]);
+        B.add('box', [sx * 1.3, 2.65, sz * 1.3], [0.16, 0.22, 0.16], '#3a3028');
+        flame(B, sx * 1.3, 2.66, sz * 1.3, 0.8);
+      }
+    const bal = (x1: number, z1: number, x2: number, z2: number) => {
+      const L = Math.hypot(x2 - x1, z2 - z1),
+        n = Math.floor(L / 0.34),
+        a = Math.atan2(x2 - x1, z2 - z1);
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        B.add('rod', [x1 + (x2 - x1) * t, 0.45, z1 + (z2 - z1) * t], [0.06, 0.8, 0.06], '#e2d6bf');
+      }
+      const r = box(g, 0.22, 0.12, L + 0.2, stone, (x1 + x2) / 2, 0.92, (z1 + z2) / 2);
+      r.rotation.y = a;
+      const b = box(g, 0.26, 0.1, L + 0.2, stone, (x1 + x2) / 2, 0.05, (z1 + z2) / 2);
+      b.rotation.y = a;
+    };
+    bal(-10.8, -7.8, -10.8, 7.8);
+    bal(10.8, -7.8, 10.8, 7.8);
+    bal(-10.8, 7.8, 10.8, 7.8);
+    for (const [x, z] of [
+      [-9.4, 6.4],
+      [9.4, 6.4],
+      [-9.4, -6.4],
+      [9.4, -6.4],
+      [-3.8, -7.2],
+      [3.8, -7.2],
+    ] as [number, number][]) {
+      B.add('trunk', [x, 0.35, z], [0.42, 0.7, 0.42], '#b4623c', [Math.PI, 0, 0]);
+      B.add('trunk', [x, 1, z], [0.05, 0.8, 0.05], '#5a4632');
+      B.add('leaf', [x, 1.7, z], 0.6, jit('#4d6b32', 0.08));
+      for (let i = 0; i < 9; i++) {
+        const u = rnd() * 6.28,
+          v = 0.3 + rnd() * 1.4;
+        B.add('ball', [x + Math.cos(u) * Math.sin(v) * 0.6, 1.7 + Math.cos(v) * 0.6, z + Math.sin(u) * Math.sin(v) * 0.6], 0.07, '#f2cf3a');
+      }
+    }
+    for (let z = -6; z < 30; z += 3.4) {
+      B.cypress(-13.5, z, 8 + rnd() * 3, -2.4);
+      B.cypress(13.5, z, 8 + rnd() * 3, -2.4);
+    }
+    for (let i = 0; i < 40; i++) {
+      const x = (rnd() < 0.5 ? -1 : 1) * (16 + rnd() * 40),
+        z = -10 + rnd() * 70;
+      B.tree(x, z, { h: 1.6, s: 0.8, y: -2.4, leaf: '#8a9a6a', n: 4, bark: '#6a5a48' });
+    }
+    for (let i = 0; i < 28; i++) {
+      const a = rnd() * 6.28,
+        r = 80 + rnd() * 80;
+      B.cypress(Math.sin(a) * r, Math.cos(a) * r, 9, 1);
+    }
+    B.hills(26, ['#9aa05a', '#b8a860', '#7f8a4a', '#c4a86a'], 90, 220, -4);
+  },
+};
+
+const BEACH_AT_SUNSET: VenueDef = {
+  name: 'Beach at Sunset',
+  sub: 'Bamboo canopy on the sand · Sunset',
+  desc: 'Barefoot on the shoreline under a bamboo canopy hung with sheer voile, tiki torches lighting the path to the water.',
+  env: {
+    sky: ['#3b3f78', '#ff9a62', '#e8b58a'],
+    fog: ['#f3a877', 70, 320],
+    hemi: ['#ffc6a0', '#d8b48a', 0.95],
+    sun: ['#ff9c5a', 2.4, [5, 7, -60]],
+    exp: 1,
+    env: 0.4,
+    bloom: 0.7,
+  },
+  cam: [0.5, 2.1, 8.6],
+  chair: { type: 'cross', color: '#e6ddcc', seat: '#f4efe6' },
+  cloth: '#fbf7f0',
+  build(g, B, tk) {
+    const sand = mesh(g, new THREE.PlaneGeometry(600, 300), tm(T(noise('#e6c9a0', ['#d9b98c', '#f1dcb8', '#cfae82'], 14000, 2), [80, 40]), 1), 0, 0, 142);
+    sand.rotation.x = -Math.PI / 2;
+    sand.castShadow = false;
+    const wet = mesh(g, new THREE.PlaneGeometry(600, 8), M('#a98b66', 0.4), 0, -0.12, -11.5);
+    wet.rotation.x = -Math.PI / 2 + 0.035;
+    wet.castShadow = false;
+    const oc = new THREE.PlaneGeometry(600, 300, 140, 70);
+    oc.rotateX(-Math.PI / 2);
+    const ocean = mesh(g, oc, M('#1f5a6c', 0.16, 0.3), 0, -0.08, -158);
+    ocean.castShadow = false;
+    const base = oc.attributes.position.array.slice();
+    tk.push((t) => {
+      const p = oc.attributes.position.array as Float32Array;
+      for (let i = 0; i < p.length; i += 3) {
+        const x = base[i],
+          z = base[i + 2];
+        p[i + 1] = Math.sin(x * 0.16 + t * 0.9) * 0.07 + Math.sin(z * 0.33 + t * 1.3 + x * 0.04) * 0.09;
+      }
+      oc.attributes.position.needsUpdate = true;
+      oc.computeVertexNormals();
+    });
+    const foamM = new THREE.MeshBasicMaterial({ color: '#fff8ee', transparent: true, opacity: 0.5, depthWrite: false });
+    const foam = mesh(g, new THREE.PlaneGeometry(600, 0.9), foamM, 0, 0.0, -8.3);
+    foam.rotation.x = -Math.PI / 2;
+    foam.castShadow = false;
+    tk.push((t) => {
+      foamM.opacity = 0.25 + 0.25 * Math.sin(t * 0.8);
+      foam.position.z = -8.4 + Math.sin(t * 0.8) * 0.5;
+    });
+    const sd = mesh(g, new THREE.SphereGeometry(14, 32, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffb070').multiplyScalar(2.2), fog: false }), 30, 10, -420);
+    sd.castShadow = false;
+    const bam = M('#b89a64', 0.6);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) cyl(g, 0.07, 0.08, 3.3, bam, sx * 2.35, 1.65, sz * 2.35, 10);
+    for (const z of [-2.35, 2.35]) {
+      const b = cyl(g, 0.06, 0.06, 5, bam, 0, 3.3, z, 10);
+      b.rotation.z = Math.PI / 2;
+    }
+    for (const x of [-2.35, 2.35]) {
+      const b = cyl(g, 0.06, 0.06, 5, bam, x, 3.3, 0, 10);
+      b.rotation.x = Math.PI / 2;
+    }
+    const vo = new THREE.MeshStandardMaterial({ color: '#fffaf2', roughness: 0.9, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
+    const top = new THREE.PlaneGeometry(5, 5, 12, 12),
+      tp = top.attributes.position;
+    for (let i = 0; i < tp.count; i++) {
+      const x = tp.getX(i) / 2.5,
+        y = tp.getY(i) / 2.5;
+      tp.setZ(i, -0.35 * (1 - x * x) * (1 - y * y));
+    }
+    top.computeVertexNormals();
+    const tpm = mesh(g, top, vo, 0, 3.35, 0);
+    tpm.rotation.x = -Math.PI / 2;
+    tpm.castShadow = false;
+    let k = 0;
+    for (const sx of [-1, 1])
+      for (const sz of [-1, 1]) {
+        const pv = new THREE.Group();
+        pv.position.set(sx * 2.45, 3.3, sz * 2.45);
+        pv.rotation.y = Math.atan2(sx, sz);
+        g.add(pv);
+        const d = mesh(pv, new THREE.PlaneGeometry(1.1, 3.2, 1, 8), vo, 0, -1.6, 0);
+        d.castShadow = false;
+        const ph = k++;
+        tk.push((t) => {
+          pv.rotation.x = Math.sin(t * 1.1 + ph) * 0.07;
+          pv.rotation.z = Math.sin(t * 0.7 + ph * 2) * 0.04;
+        });
+      }
+    const torches: [number, number][] = [
+      [-3.6, -3.6],
+      [3.6, -3.6],
+      [-1.6, -6],
+      [1.6, -6],
+      [-3.6, 3.6],
+      [3.6, 3.6],
+    ];
+    torches.forEach(([x, z], i) => {
+      B.add('rod', [x, 0.9, z], [0.035, 1.8, 0.035], '#8a6a42');
+      B.add('trunk', [x, 1.85, z], [0.09, 0.22, 0.09], '#5a4228', [Math.PI, 0, 0]);
+      flame(B, x, 2.05, z, 1.4);
+      if (i < 4) flick(tk, plight(g, '#ff9a48', 5, 9, x, 2.2, z), 5);
+    });
+    (
+      [
+        [-9, -4, 6.5, 1.2],
+        [-12, 2, 7.5, 1.6],
+        [10, -3, 7, -1.2],
+        [13, 4, 6, -1.4],
+        [-7, 9, 5.5, 0.9],
+        [16, -9, 8, -1],
+      ] as [number, number, number, number][]
+    ).forEach(([x, z, h, dx]) => B.palm(x, z, h, dx, 0.3));
+    for (let i = 0; i < 12; i++) {
+      const x = (rnd() - 0.5) * 30;
+      B.add('leaf', [x, 0.1, -7 - rnd() * 2], [0.3 + rnd() * 0.5, 0.2 + rnd() * 0.2, 0.3 + rnd() * 0.3], jit('#6d6358', 0.1));
+    }
+    for (let i = 0; i < 30; i++) {
+      const a = rnd() * 6.28,
+        r = 3.5 + rnd() * 2;
+      B.add('ball', [Math.sin(a) * r, 0.02, Math.cos(a) * r], [0.04, 0.01, 0.04], pick(['#fff4f0', '#f4b8c0', '#ffe0d0']));
+    }
+  },
+};
+
+const ENGLISH_GARDEN: VenueDef = {
+  name: 'English Garden',
+  sub: 'Walled rose garden & gazebo · Morning',
+  desc: 'Clipped box hedges, blowsy rose beds and lavender borders inside an old brick wall, with a white gazebo at the end of the gravel walk.',
+  env: {
+    sky: ['#5d93d6', '#d7e8f3', '#9bb87a'],
+    fog: ['#d6e6ef', 45, 200],
+    hemi: ['#dbeaff', '#5a7a3a', 1.05],
+    sun: ['#fff1d6', 3.2, [14, 24, 10]],
+    exp: 1,
+    env: 0.35,
+  },
+  cam: [6, 2.3, 7.4],
+  chair: { type: 'chiavari', color: '#f2efe9', seat: '#f7f3ec' },
+  cloth: '#f6f1ea',
+  build(g, B, tk) {
+    void tk;
+    ground(g, tm(T(noise('#5f8a3c', ['#6f9a45', '#557f34', '#7aa650', '#4a722e'], 16000, 3), [70, 70]), 1), 500);
+    const grav = tm(T(noise('#cfc4ae', ['#b9ad96', '#e0d7c4', '#a89c86'], 12000, 2), [1, 4]), 1);
+    box(g, 2.2, 0.04, 7, grav, 0, 0.02, -6.4);
+    box(g, 2.2, 0.04, 6, grav, 0, 0.02, 6.2);
+    const hedge = (x1: number, z1: number, x2: number, z2: number) => {
+      const L = Math.hypot(x2 - x1, z2 - z1);
+      B.add('box', [(x1 + x2) / 2, 0.4, (z1 + z2) / 2], [0.55, 0.8, L], jit('#2f4d26', 0.04), [0, Math.atan2(x2 - x1, z2 - z1), 0]);
+    };
+    hedge(-6.5, -8, -6.5, 8);
+    hedge(6.5, -8, 6.5, 8);
+    hedge(-6.5, -8, -1.3, -8);
+    hedge(1.3, -8, 6.5, -8);
+    hedge(-6.5, 8, -1.3, 8);
+    hedge(1.3, 8, 6.5, 8);
+    const rc = ['#f2a6b8', '#e8768e', '#fff4ec', '#c73a4f', '#f7c9b0'];
+    for (let z = -7; z <= 7.1; z += 1.05) {
+      B.rose(-5.6, z, pick(rc), 0.45);
+      B.rose(5.6, z, pick(rc), 0.45);
+    }
+    for (let x = -5; x <= 5; x += 0.35) {
+      if (Math.abs(x) < 1.5) continue;
+      for (const z of [-7.2, 7.2]) {
+        B.add('leaf', [x, 0.25, z], [0.18, 0.28, 0.18], '#6f8a5a');
+        for (let j = 0; j < 4; j++) B.add('cone', [x + (rnd() - 0.5) * 0.25, 0.55 + rnd() * 0.15, z + (rnd() - 0.5) * 0.25], [0.03, 0.22, 0.03], jit('#8a72c0', 0.08));
+      }
+    }
+    for (const [x, z] of [
+      [-6.5, -8],
+      [6.5, -8],
+      [-6.5, 8],
+      [6.5, 8],
+      [-1.4, -8],
+      [1.4, -8],
+      [-1.4, 8],
+      [1.4, 8],
+    ] as [number, number][]) {
+      B.add('box', [x, 0.45, z], [0.7, 0.9, 0.7], '#2c4824');
+      B.add('leaf', [x, 1.3, z], 0.5, jit('#2f5227', 0.04));
+    }
+    const wh = M('#f4f1ea', 0.6);
+    const gz = new THREE.Group();
+    gz.position.set(0, 0, -12.5);
+    g.add(gz);
+    cyl(gz, 3.1, 3.2, 0.35, M('#e3ddd0', 0.9), 0, 0.17, 0, 8);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+      cyl(gz, 0.07, 0.08, 2.8, wh, Math.sin(a) * 2.8, 1.75, Math.cos(a) * 2.8, 10);
+    }
+    cyl(gz, 3, 3, 0.22, wh, 0, 3.2, 0, 8);
+    const rf = mesh(gz, new THREE.ConeGeometry(3.5, 1.9, 8), M('#dcd6cc', 0.7), 0, 4.25, 0);
+    rf.rotation.y = Math.PI / 8;
+    mesh(gz, new THREE.SphereGeometry(0.16, 12, 8), wh, 0, 5.3, 0);
+    const brick = tm(T(bricks(['#9a4a36', '#a8563e', '#8a3f2e', '#b0634a'], '#c9b9a0'), [10, 1.2]), 0.95);
+    box(g, 44, 3.4, 0.6, brick, 0, 1.7, -20);
+    box(g, 44.4, 0.2, 0.9, M('#c8bca6'), 0, 3.45, -20);
+    for (let i = 0; i < 60; i++) {
+      const x = (rnd() - 0.5) * 42;
+      B.add('leaf', [x, 0.5 + rnd() * 2.6, -19.6], 0.35 + rnd() * 0.35, jit('#3f6230', 0.1));
+      if (rnd() < 0.6) B.add('ball', [x + (rnd() - 0.5) * 0.4, 0.6 + rnd() * 2.6, -19.35], 0.1, pick(rc));
+    }
+    for (let i = 0; i < 26; i++) {
+      const a = rnd() * 6.28,
+        r = 16 + rnd() * 26,
+        x = Math.sin(a) * r,
+        z = Math.cos(a) * r;
+      if (z < -18 && z > -24) continue;
+      B.tree(x, z, { h: 5 + rnd() * 3, s: 1.4 + rnd() * 0.6, leaf: pick(['#4f6b35', '#5d7a3a', '#3f5e2e']) });
+    }
+    for (const x of [-1.5, 1.5]) {
+      B.add('trunk', [x, 0.35, -9], [0.3, 0.7, 0.3], '#cfc8b8', [Math.PI, 0, 0]);
+      B.add('box', [x, 0.05, -9], [0.5, 0.1, 0.5], '#cfc8b8');
+      B.rose(x, -9, '#f2a6b8', 0.35, 0.55);
+    }
+    box(g, 1.8, 0.08, 0.5, M('#8a6a4a', 0.8), -9.5, 0.45, -2).rotation.y = Math.PI / 2;
+  },
+};
+
 const GRAND_BALLROOM: VenueDef = {
   name: 'Grand Ballroom',
   indoor: true,
@@ -191,4 +517,824 @@ const GRAND_BALLROOM: VenueDef = {
   },
 };
 
-export const VENUES: VenueDef[] = [RUSTIC_BARN, GRAND_BALLROOM];
+const GLASS_CONSERVATORY: VenueDef = {
+  name: 'Glass Conservatory',
+  indoor: true,
+  sub: 'Victorian glasshouse · Daylight',
+  desc: 'A barrel-vaulted iron and glass orangery full of palms, ferns and trailing baskets, washed in soft filtered daylight.',
+  env: {
+    sky: ['#a8cbe8', '#eef4f2', '#8aa070'],
+    fog: ['#e6efe8', 50, 220],
+    hemi: ['#eaf4ff', '#6b7a55', 1.1],
+    sun: ['#fff4e0', 2.8, [10, 22, 8]],
+    exp: 1,
+    env: 0.45,
+  },
+  cam: [5, 2.2, 8],
+  maxD: 15,
+  chair: { type: 'rattan', color: '#c9a877', seat: '#f1e9d8' },
+  cloth: '#fbfaf5',
+  build(g, B, tk) {
+    void tk;
+    ground(g, tm(T(noise('#6b9044', ['#7aa050', '#5a8038', '#86ac5a'], 12000, 3), [60, 60]), 1), 500, -0.01);
+    box(g, 14.4, 0.2, 20.4, tm(T(tiles(['#d8d2c4', '#cfc8b8', '#e2dccf'], 6, '#b0a898', { gap: 4 }), [3, 4]), 0.8), 0, -0.1, 0);
+    const iron = M('#2d3a33', 0.5, 0.5);
+    const glassMat = new THREE.MeshStandardMaterial({ color: '#dbeee6', roughness: 0.05, metalness: 0, transparent: true, opacity: 0.13, side: THREE.DoubleSide, depthWrite: false });
+    const gm = (geo: THREE.BufferGeometry, x: number, y: number, z: number) => {
+      const o = new THREE.Mesh(geo, glassMat);
+      o.position.set(x, y, z);
+      g.add(o);
+      return o;
+    };
+    gm(new THREE.PlaneGeometry(20, 4), -7, 2, 0).rotation.y = Math.PI / 2;
+    gm(new THREE.PlaneGeometry(20, 4), 7, 2, 0).rotation.y = Math.PI / 2;
+    for (const z of [-10, 10]) {
+      gm(new THREE.PlaneGeometry(14, 4), 0, 2, z);
+      gm(new THREE.CircleGeometry(7, 40, 0, Math.PI), 0, 4, z);
+    }
+    const vault = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 20, 40, 1, true, Math.PI / 2, Math.PI), glassMat);
+    vault.rotation.x = Math.PI / 2;
+    vault.position.y = 4;
+    g.add(vault);
+    for (let z = -10; z <= 10.01; z += 2) {
+      const rib = mesh(g, new THREE.TorusGeometry(7, 0.05, 6, 40, Math.PI), iron, 0, 4, z);
+      rib.castShadow = true;
+      for (const s of [-1, 1]) box(g, 0.1, 4, 0.1, iron, s * 7, 2, z);
+    }
+    for (let a = 0.2; a < Math.PI; a += 0.35) box(g, 0.06, 0.06, 20, iron, Math.cos(a) * 7, 4 + Math.sin(a) * 7, 0);
+    for (const y of [0.9, 4]) for (const s of [-1, 1]) box(g, 0.08, 0.08, 20, iron, s * 7, y, 0);
+    for (let x = -6; x <= 6.1; x += 1) for (const z of [-10, 10]) box(g, 0.06, 4, 0.06, iron, x, 2, z);
+    box(g, 14, 0.6, 0.25, M('#cfc6b4'), 0, 0.3, -10);
+    box(g, 14, 0.6, 0.25, M('#cfc6b4'), 0, 0.3, 10);
+    for (const s of [-1, 1]) {
+      box(g, 0.25, 0.6, 20, M('#cfc6b4'), s * 7, 0.3, 0);
+      box(g, 1.2, 0.45, 19, M('#6a4f3a', 1), s * 6.3, 0.22, 0);
+      for (let z = -9.2; z < 9.3; z += 0.7) B.add('leaf', [s * 6.3 + (rnd() - 0.5) * 0.6, 0.55 + rnd() * 0.5, z], 0.35 + rnd() * 0.35, jit(pick(['#3f6b2e', '#557f38', '#2f5a2a', '#6d8f45']), 0.1));
+      for (let z = -8; z < 9; z += 2.7) B.fern(s * 6.2, z, 1.3, '#4c7a34', 0.45);
+    }
+    (
+      [
+        [-5.4, -8.5],
+        [5.4, -8.5],
+        [-5.4, 8.5],
+        [5.4, 8.5],
+        [-3, -8.6],
+        [3, -8.6],
+      ] as [number, number][]
+    ).forEach(([x, z]) => {
+      B.add('trunk', [x, 0.4, z], [0.5, 0.8, 0.5], '#b4623c', [Math.PI, 0, 0]);
+      B.palm(x, z, 3.4 + rnd() * 1.5, (rnd() - 0.5) * 0.6, (rnd() - 0.5) * 0.6);
+    });
+    for (const x of [-3, 3])
+      for (const z of [-5, 0, 5]) {
+        B.wire([x, 4 + Math.sqrt(49 - x * x) - 0.1, z], [x, 5.2, z]);
+        B.add('ball', [x, 5.1, z], [0.35, 0.25, 0.35], '#7a5a3a');
+        for (let j = 0; j < 10; j++) {
+          const a = (j / 10) * 6.28,
+            l = 0.6 + rnd() * 1.1;
+          B.add('rod', [x + Math.cos(a) * 0.32, 5.1 - l / 2, z + Math.sin(a) * 0.32], [0.03, l, 0.03], jit('#4a7a30', 0.1));
+          B.add('leaf', [x + Math.cos(a) * 0.32, 5.1 - l, z + Math.sin(a) * 0.32], 0.08, '#5a8a38');
+        }
+        B.add('leaf', [x, 5.3, z], 0.35, '#4f7f32');
+      }
+    for (let i = 0; i < 24; i++) {
+      const a = rnd() * 6.28,
+        r = 16 + rnd() * 22;
+      B.tree(Math.sin(a) * r, Math.cos(a) * r, { h: 4 + rnd() * 3, s: 1.3 });
+    }
+  },
+};
+
+const VINEYARD_AT_DUSK: VenueDef = {
+  name: 'Vineyard at Dusk',
+  sub: 'Among the vines · Blue hour',
+  desc: 'A gravel clearing between vine rows beneath a spreading oak, strung with bistro lights as the last light fades over the hills.',
+  env: {
+    sky: ['#2d2f5e', '#e98a6b', '#3a3048'],
+    fog: ['#b87a7a', 35, 200],
+    hemi: ['#9a8cc8', '#3a2e22', 0.65],
+    sun: ['#ff8a5a', 1.3, [-40, 5, -40]],
+    exp: 1.15,
+    env: 0.3,
+    bloom: 0.7,
+  },
+  cam: [6.2, 2.4, 8.2],
+  chair: { type: 'cross', color: '#6e4b33', seat: '#d9ccb4' },
+  cloth: '#ede5d6',
+  build(g, B, tk) {
+    void tk;
+    ground(g, tm(T(noise('#5a5a34', ['#6a6a3c', '#4a4a2a', '#7a6a40'], 14000, 3), [80, 80]), 1), 600);
+    const gv = mesh(g, new THREE.CircleGeometry(6.5, 48), tm(T(noise('#b9ab8e', ['#a39478', '#cfc1a4'], 9000, 2), [4, 4]), 1), 0, 0.01, 0);
+    gv.rotation.x = -Math.PI / 2;
+    gv.castShadow = false;
+    for (let x = -40; x <= 40; x += 2.4) {
+      if (Math.abs(x) < 5) continue;
+      for (let z = -70; z <= 35; z += 5) B.add('rod', [x, 0.6, z], [0.04, 1.2, 0.04], '#6a5840');
+      B.wire([x, 1.05, -70], [x, 1.05, 35]);
+      for (let z = -70; z <= 35; z += 0.55) B.add('leaf', [x + (rnd() - 0.5) * 0.25, 0.85 + rnd() * 0.3, z], 0.28 + rnd() * 0.14, jit(pick(['#4f6b30', '#5d7a38', '#3f5a28']), 0.1));
+    }
+    for (let z = -70; z <= 35; z += 0.55) {
+      if (z > -6.5 && z < 6.5) continue;
+      for (const x of [-2.4, 0, 2.4]) B.add('leaf', [x + (rnd() - 0.5) * 0.25, 0.85 + rnd() * 0.3, z], 0.28 + rnd() * 0.14, jit('#4f6b30', 0.1));
+    }
+    B.add('trunk', [6, 2.2, -3], [0.55, 4.4, 0.55], '#4a3a2c');
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * 6.28;
+      B.add('trunk', [6 + Math.cos(a) * 1.4, 4.6, -3 + Math.sin(a) * 1.4], [0.2, 2.4, 0.2], '#4a3a2c', [Math.sin(a) * 0.8, 0, -Math.cos(a) * 0.8]);
+    }
+    for (let i = 0; i < 26; i++) B.add('leaf', [6 + (rnd() - 0.5) * 7, 5.2 + rnd() * 2.4, -3 + (rnd() - 0.5) * 7], 1 + rnd() * 0.9, jit('#3a5028', 0.1));
+    const poles: [number, number][] = [
+      [-4.2, -4.2],
+      [-4.2, 4.2],
+      [4.2, 4.2],
+      [0, -5.5],
+      [-5.5, 0],
+      [0, 5.5],
+    ];
+    poles.forEach(([x, z]) => B.add('rod', [x, 1.8, z], [0.06, 3.6, 0.06], '#3a3028'));
+    const hub: [number, number, number] = [4.8, 3.6, -2.2];
+    poles.forEach(([x, z]) => B.festoon(hub, [x, 3.55, z], 0.7, 26));
+    B.festoon([-4.2, 3.55, -4.2], [-4.2, 3.55, 4.2], 0.6, 22);
+    B.festoon([-4.2, 3.55, 4.2], [4.2, 3.55, 4.2], 0.6, 22);
+    B.festoon([-5.5, 3.55, 0], [0, 3.55, -5.5], 0.5, 16);
+    B.festoon([0, 3.55, 5.5], [-5.5, 3.55, 0], 0.5, 16);
+    plight(g, '#ffc27a', 10, 14, 0, 3.2, 0);
+    plight(g, '#ffc27a', 6, 12, 3, 3.2, -2);
+    for (const [x, z] of [
+      [-3, -5.6],
+      [-3.9, -5],
+    ] as [number, number][]) {
+      B.add('rod', [x, 0.45, z], [0.36, 0.9, 0.36], '#6b4428');
+      B.add('metal', [x, 0.2, z], [0.37, 0.04, 0.37], '#333');
+      B.add('metal', [x, 0.7, z], [0.37, 0.04, 0.37], '#333');
+    }
+    for (let i = 0; i < 14; i++) B.cypress(-60 + i * 6, -90, 9 + rnd() * 2, 2);
+    const fh = new THREE.Group();
+    fh.position.set(-30, 5, -95);
+    g.add(fh);
+    box(fh, 12, 5, 7, M('#d9b98a'), 0, 2.5, 0);
+    box(fh, 13, 0.4, 8, M('#9a4a30'), 0, 5.4, 0);
+    for (const [x, y] of [
+      [-3, 2],
+      [0, 2],
+      [3, 2],
+    ] as [number, number][]) {
+      box(fh, 0.9, 1.1, 0.1, new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffc07a').multiplyScalar(1.6) }), x, y, 3.55);
+    }
+    B.hills(22, ['#4a4a3a', '#5a5040', '#3f4636'], 80, 200, 0);
+    stars(g, 300);
+  },
+};
+
+const ENCHANTED_WOODLAND: VenueDef = {
+  name: 'Enchanted Woodland',
+  sub: 'Fairy-lit forest clearing · Night',
+  desc: 'A mossy glade ringed by tall trees, hung with hundreds of fairy lights, fireflies drifting between lanterns and candles.',
+  env: {
+    sky: ['#070b1a', '#1c2a44', '#05070a'],
+    fog: ['#0d1424', 10, 48],
+    hemi: ['#3a4a7a', '#0a0f08', 0.4],
+    sun: ['#8fa8ff', 0.7, [-20, 30, -20]],
+    exp: 1.25,
+    env: 0.15,
+    bloom: 0.85,
+  },
+  cam: [5.6, 2.2, 7.2],
+  maxD: 14,
+  chair: { type: 'cross', color: '#5a3d2a', seat: '#d6c8ae' },
+  cloth: '#ece5d8',
+  build(g, B, tk) {
+    ground(g, tm(T(noise('#26301c', ['#2e3a20', '#1e2616', '#3a3a24', '#40472a'], 14000, 3), [40, 40]), 1), 300);
+    const moss = mesh(g, new THREE.CircleGeometry(5.5, 48), tm(T(noise('#3f5a2a', ['#4a6a30', '#35502a', '#56763a'], 9000, 3), [4, 4]), 1), 0, 0.01, 0);
+    moss.rotation.x = -Math.PI / 2;
+    moss.castShadow = false;
+    for (let i = 0; i < 60; i++) {
+      const a = rnd() * 6.28,
+        r = 6.5 + rnd() * 24,
+        x = Math.sin(a) * r,
+        z = Math.cos(a) * r,
+        h = 13 + rnd() * 7,
+        w = 0.3 + rnd() * 0.35;
+      B.add('trunk', [x, h / 2, z], [w, h, w], jit('#3a2e24', 0.06));
+      for (let j = 0; j < 4; j++) B.add('leaf', [x + (rnd() - 0.5) * 4, h - 1 + rnd() * 3, z + (rnd() - 0.5) * 4], 2 + rnd() * 1.5, jit('#1a2a18', 0.05));
+    }
+    for (let i = 0; i < 46; i++) {
+      const a = rnd() * 6.28,
+        r = 3.4 + rnd() * 3,
+        x = Math.sin(a) * r,
+        z = Math.cos(a) * r,
+        top = 7.5 + rnd(),
+        bot = 2.4 + rnd() * 1.6;
+      B.wire([x, top, z], [x, bot, z]);
+      for (let y = bot; y < top; y += 0.28) B.add('glow', [x, y, z], 0.032, '#ffd79a', null, 5);
+    }
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * 6.28,
+        b = a + 2.4 + rnd();
+      B.festoon([Math.sin(a) * 6.4, 7.4, Math.cos(a) * 6.4], [Math.sin(b) * 6.4, 7.4, Math.cos(b) * 6.4], 1.4, 40, '#ffe2b0', 4);
+    }
+    const ffGeo = new THREE.SphereGeometry(0.035, 6, 4),
+      ff = new THREE.InstancedMesh(ffGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color('#d8ff8a').multiplyScalar(5) }), 90);
+    g.add(ff);
+    const fd = [...Array(90)].map(() => [rnd() * 6.28, 2 + rnd() * 6, 0.5 + rnd() * 2.5, rnd() * 6.28, 0.2 + rnd() * 0.4]);
+    const oo = new THREE.Object3D();
+    tk.push((t) => {
+      fd.forEach(([a, r, y, p, s], i) => {
+        oo.position.set(Math.sin(a + t * s * 0.3) * r + Math.sin(t * s * 2 + p) * 0.4, y + Math.sin(t * s * 1.7 + p) * 0.5, Math.cos(a + t * s * 0.3) * r);
+        oo.scale.setScalar(0.6 + 0.4 * Math.sin(t * 3 + p * 3));
+        oo.updateMatrix();
+        ff.setMatrixAt(i, oo.matrix);
+      });
+      ff.instanceMatrix.needsUpdate = true;
+    });
+    for (const [x, z, a] of [
+      [-4.6, 2.4, 0.6],
+      [4.2, -3.6, 2.2],
+    ] as [number, number, number][]) {
+      B.add('trunk', [x, 0.35, z], [0.35, 3.4, 0.35], '#4a3a28', [0, a, Math.PI / 2]);
+      for (let j = 0; j < 8; j++) {
+        const t = (j / 7 - 0.5) * 3;
+        B.add('leaf', [x + Math.cos(a) * t, 0.62, z - Math.sin(a) * t], [0.3, 0.12, 0.3], jit('#4a6a30', 0.1));
+      }
+    }
+    for (let i = 0; i < 14; i++) {
+      const a = rnd() * 6.28,
+        r = 3.8 + rnd() * 2.5,
+        x = Math.sin(a) * r,
+        z = Math.cos(a) * r,
+        h = 0.12 + rnd() * 0.12;
+      B.add('rod', [x, h / 2, z], [0.03, h, 0.03], '#eee4d0');
+      B.add('ball', [x, h, z], [0.09, 0.05, 0.09], pick(['#b33a2a', '#c9a27a', '#e6dccb']));
+    }
+    for (let i = 0; i < 14; i++) {
+      const a = rnd() * 6.28,
+        r = 4 + rnd() * 3;
+      B.fern(Math.sin(a) * r, Math.cos(a) * r, 1 + rnd() * 0.5, '#3a6a2a');
+    }
+    const cl: [number, number][] = [
+      [-2.6, -3.4],
+      [3, 2.8],
+      [-3.4, 2.9],
+    ];
+    cl.forEach(([x, z]) => {
+      for (let j = 0; j < 5; j++) {
+        const h = 0.15 + rnd() * 0.35,
+          dx = (rnd() - 0.5) * 0.5,
+          dz = (rnd() - 0.5) * 0.5;
+        B.add('rod', [x + dx, h / 2, z + dz], [0.05, h, 0.05], '#f3ead8');
+        flame(B, x + dx, h + 0.04, z + dz, 0.5);
+      }
+      B.add('box', [x + 0.4, 0.22, z - 0.3], [0.22, 0.44, 0.22], '#1e1a16');
+      flame(B, x + 0.4, 0.24, z - 0.3, 0.9);
+      flick(tk, plight(g, '#ffae5a', 3.5, 7, x, 0.6, z), 3.5);
+    });
+    plight(g, '#ffd7a0', 4, 10, 0, 5, 0);
+    const moon = mesh(g, new THREE.SphereGeometry(9, 24, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color('#dfe6ff').multiplyScalar(1.4), fog: false }), -150, 170, -340);
+    moon.castShadow = false;
+    stars(g, 1100);
+  },
+};
+
+const CITY_ROOFTOP: VenueDef = {
+  name: 'City Rooftop',
+  sub: 'Skyline terrace · Night',
+  desc: 'A planted rooftop deck high above the city — festoon lights, glass balustrade and a lounge corner with the skyline glittering all around.',
+  env: {
+    sky: ['#0e1838', '#5a4a7a', '#141522'],
+    fog: ['#252642', 70, 300],
+    hemi: ['#6070b0', '#201820', 0.55],
+    sun: ['#aab8ff', 0.5, [20, 20, -30]],
+    exp: 1.15,
+    env: 0.35,
+    bloom: 0.75,
+  },
+  cam: [6.4, 2.4, 8],
+  maxD: 16,
+  chair: { type: 'ghost' },
+  cloth: '#23252d',
+  build(g, B, tk) {
+    void tk;
+    box(g, 20, 0.3, 20, tm(T(planks(['#6a5040', '#5a4232', '#7a5a46'], { n: 10 }), [4, 4])), 0, -0.15, 0);
+    box(g, 21, 1.2, 21, M('#2a2a30', 0.9), 0, -0.9, 0);
+    const par = M('#8a8580', 0.9);
+    for (const s of [-1, 1]) {
+      box(g, 0.35, 0.5, 20.4, par, s * 10.1, 0.25, 0);
+      box(g, 20.4, 0.5, 0.35, par, 0, 0.25, s * 10.1);
+    }
+    const glassMat = new THREE.MeshStandardMaterial({ color: '#cfe0e8', roughness: 0.05, transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false });
+    for (const s of [-1, 1]) {
+      const a = new THREE.Mesh(new THREE.PlaneGeometry(20.4, 1.1), glassMat);
+      a.position.set(0, 1.05, s * 10.1);
+      g.add(a);
+      const b = a.clone();
+      b.rotation.y = Math.PI / 2;
+      b.position.set(s * 10.1, 1.05, 0);
+      g.add(b);
+    }
+    const cs: number[] = [];
+    for (let x = -6.5; x <= 6.6; x += 4.33) {
+      cs.push(x);
+      for (const z of [-6.5, 6.5]) B.add('rod', [x, 1.8, z], [0.05, 3.6, 0.05], '#1a1a1e');
+    }
+    cs.forEach((x) => B.festoon([x, 3.55, -6.5], [x, 3.55, 6.5], 0.8, 40));
+    B.festoon([-6.5, 3.55, -6.5], [6.5, 3.55, 6.5], 1, 50);
+    B.festoon([6.5, 3.55, -6.5], [-6.5, 3.55, 6.5], 1, 50);
+    plight(g, '#ffc27a', 10, 14, 0, 3, 0);
+    plight(g, '#ffc27a', 5, 12, -6, 2.5, 5);
+    for (const [x, z, w, d] of [
+      [-9.3, 0, 0.9, 16],
+      [9.3, 0, 0.9, 16],
+      [0, -9.3, 12, 0.9],
+    ] as [number, number, number, number][]) {
+      box(g, w, 0.7, d, M('#3a3a40', 0.8), x, 0.35, z);
+      const n = Math.round(w * d * 5);
+      for (let i = 0; i < n; i++) B.add('cone', [x + (rnd() - 0.5) * w * 0.9, 0.9 + rnd() * 0.2, z + (rnd() - 0.5) * d * 0.9], [0.04, 0.5 + rnd() * 0.4, 0.04], jit(pick(['#6a7a4a', '#8a8a5a', '#5a6a40']), 0.1));
+    }
+    for (const [x, z] of [
+      [-9.2, -9.2],
+      [9.2, -9.2],
+    ] as [number, number][]) {
+      B.add('box', [x, 0.5, z], [1, 1, 1], '#3a3a40');
+      B.tree(x, z, { h: 2, s: 0.7, y: 1, leaf: '#7a8a6a', n: 5 });
+    }
+    const sofa = M('#c8bfb2', 0.95);
+    box(g, 3.2, 0.45, 1, sofa, -6, 0.22, 7.8);
+    box(g, 3.2, 0.7, 0.25, sofa, -6, 0.55, 8.3);
+    box(g, 1, 0.45, 2.2, sofa, -8.1, 0.22, 6.4);
+    box(g, 0.25, 0.7, 2.2, sofa, -8.6, 0.55, 6.4);
+    box(g, 1.2, 0.35, 0.8, M('#2a2420', 0.6), -6, 0.18, 6.4);
+    box(g, 3, 1.05, 0.7, M('#1e1e22', 0.5, 0.3), 6.5, 0.53, -7.6);
+    box(g, 3.2, 0.06, 0.85, M('#d8d2c8', 0.3), 6.5, 1.08, -7.6);
+    const wt = T(winTex(), [1, 1], 256);
+    for (let i = 0; i < 150; i++) {
+      const a = rnd() * 6.28,
+        r = 34 + rnd() * 170,
+        w = 6 + rnd() * 14,
+        d = 6 + rnd() * 14,
+        h = 30 + rnd() * (r < 80 ? 60 : 110);
+      const tx = wt.clone();
+      tx.repeat.set(Math.max(1, w / 5), Math.max(1, h / 6));
+      tx.needsUpdate = true;
+      const m = new THREE.MeshStandardMaterial({ color: '#15171e', roughness: 0.7, emissive: '#ffffff', emissiveMap: tx, emissiveIntensity: 0.9 + rnd() * 0.6 });
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+      b.position.set(Math.sin(a) * r, -80 + h / 2, Math.cos(a) * r);
+      b.rotation.y = rnd() * 1.5;
+      g.add(b);
+      if (rnd() < 0.18) B.add('glow', [b.position.x, -80 + h + 0.8, b.position.z], 0.4, '#ff4a3a', null, 4);
+    }
+    ground(g, M('#0a0b10', 1), 800, -80);
+    const wtG = new THREE.Group();
+    wtG.position.set(-26, -4, -30);
+    g.add(wtG);
+    box(wtG, 12, 1, 12, M('#3a3a40'), 0, -0.5, 0);
+    for (const [x, z] of [
+      [-1.5, -1.5],
+      [1.5, -1.5],
+      [-1.5, 1.5],
+      [1.5, 1.5],
+    ] as [number, number][]) {
+      cyl(wtG, 0.1, 0.1, 4, M('#2a2420'), x, 2, z, 6);
+    }
+    cyl(wtG, 2.2, 2.2, 3.2, M('#6a4a34', 0.9), 0, 5.6, 0, 20);
+    mesh(wtG, new THREE.ConeGeometry(2.4, 1.2, 20), M('#2a2a2e'), 0, 7.8, 0);
+    stars(g, 500);
+  },
+};
+
+const DESERT_OASIS: VenueDef = {
+  name: 'Desert Oasis',
+  sub: 'Bohemian tent among the dunes · Sunset',
+  desc: 'A stretch tent pitched on the dunes over layered kilim rugs, with floor cushions, pampas grass and a crackling fire pit as the sun drops.',
+  env: {
+    sky: ['#4a4a7a', '#f4a86a', '#d9a070'],
+    fog: ['#e9a47a', 55, 280],
+    hemi: ['#ffd2b0', '#b0764a', 0.85],
+    sun: ['#ffb070', 2.6, [-40, 8, -30]],
+    exp: 1,
+    env: 0.35,
+    bloom: 0.7,
+  },
+  cam: [6.4, 2.3, 8.4],
+  chair: { type: 'rattan', color: '#b88a55', seat: '#efe3cf' },
+  cloth: '#efe3cf',
+  build(g, B, tk) {
+    const dg = new THREE.PlaneGeometry(400, 400, 140, 140);
+    dg.rotateX(-Math.PI / 2);
+    const dp = dg.attributes.position;
+    for (let i = 0; i < dp.count; i++) {
+      const x = dp.getX(i),
+        z = dp.getZ(i),
+        r = Math.hypot(x, z),
+        f = THREE.MathUtils.smoothstep(r, 10, 26);
+      dp.setY(i, f * (3 * Math.sin(x * 0.05 + 1) * Math.cos(z * 0.04) + 2 * Math.sin(x * 0.11 + z * 0.07) + 1.4 * Math.sin(z * 0.13 - x * 0.03) + 4));
+    }
+    dg.computeVertexNormals();
+    const dm = mesh(g, dg, tm(T(noise('#e0a872', ['#d49a64', '#eab784', '#c98e5a'], 14000, 2), [70, 70]), 1));
+    dm.castShadow = false;
+    const th = (x: number, z: number) =>
+      1.1 +
+      3.3 * Math.exp(-((x - 3.4) ** 2 + z * z) / 5) +
+      3.3 * Math.exp(-((x + 3.4) ** 2 + z * z) / 5) +
+      1.2 * Math.exp(-(x * x + (z - 4.4) ** 2) / 3) +
+      1.2 * Math.exp(-(x * x + (z + 4.4) ** 2) / 3) -
+      0.6 * (Math.abs(x) / 6.5) ** 4 -
+      0.6 * (Math.abs(z) / 5.5) ** 4;
+    const tg = new THREE.PlaneGeometry(13, 11, 52, 44);
+    const tp = tg.attributes.position;
+    for (let i = 0; i < tp.count; i++) {
+      const x = tp.getX(i),
+        z = -tp.getY(i);
+      tp.setZ(i, th(x, z));
+    }
+    tg.rotateX(-Math.PI / 2);
+    tg.computeVertexNormals();
+    mesh(g, tg, M('#f1e6d2', 0.95, 0, { side: THREE.DoubleSide }));
+    for (const [x, z] of [
+      [3.4, 0],
+      [-3.4, 0],
+      [0, 4.4],
+      [0, -4.4],
+    ] as [number, number][]) {
+      const h = th(x, z);
+      B.add('rod', [x, h / 2, z], [0.06, h, 0.06], '#8a6a44');
+    }
+    for (const [x, z] of [
+      [6.5, 5.5],
+      [-6.5, 5.5],
+      [6.5, -5.5],
+      [-6.5, -5.5],
+      [6.5, 0],
+      [-6.5, 0],
+    ] as [number, number][]) {
+      const h = th(x, z);
+      B.wire([x, h, z], [x * 1.3, 0, z * 1.3]);
+      B.add('rod', [x, h / 2, z], [0.04, h, 0.04], '#8a6a44');
+    }
+    const rugs: [[string, string, string, string], number, number, number, number, number][] = [
+      [['#9a3b2a', '#e2b06a', '#2e3c5a', '#f1e6d2'], 0, 0, 5.2, 4, 0.1],
+      [['#2e3c5a', '#c9703a', '#e8d2a6', '#9a3b2a'], -0.4, 3.6, 4.4, 2.8, -0.25],
+      [['#c9703a', '#3a2a24', '#f1e6d2', '#6b8a8a'], 2.2, 3.2, 3.2, 2.2, 0.5],
+    ];
+    rugs.forEach(([c, x, z, w, d, r], i) => {
+      const rg = mesh(g, new THREE.PlaneGeometry(w, d), tm(T(kilim(c), [1, 1], 512), 1), x, 0.012 + i * 0.004, z);
+      rg.rotation.set(-Math.PI / 2, 0, r);
+      rg.castShadow = false;
+    });
+    const cush = ['#c9703a', '#9a3b2a', '#e2b06a', '#6b8a8a', '#e8d2a6', '#2e3c5a'];
+    for (let i = 0; i < 7; i++) {
+      const x = -2 + i * 0.75 + (rnd() - 0.5) * 0.2,
+        z = 4.6 + (rnd() - 0.5) * 0.3;
+      B.add('box', [x, 0.12, z], [0.62, 0.22, 0.62], pick(cush), [0, rnd() * 0.4, 0]);
+    }
+    box(g, 1.4, 0.3, 0.8, M('#6b4a30', 0.7), 0, 0.15, 3.6);
+    for (const [x, z] of [
+      [3.1, -0.5],
+      [-3.1, -0.5],
+      [-5.6, 4.8],
+      [5.6, -4.8],
+      [-5.6, -4.6],
+    ] as [number, number][]) {
+      B.add('trunk', [x, 0.35, z], [0.22, 0.7, 0.22], pick(['#e8dccb', '#c9a27a', '#a0603a']));
+      for (let j = 0; j < 7; j++) {
+        const a = rnd() * 6.28;
+        B.add('rod', [x + Math.cos(a) * 0.1, 1.1, z + Math.sin(a) * 0.1], [0.01, 0.8, 0.01], '#b8a078', [Math.cos(a) * 0.25, 0, Math.sin(a) * 0.25]);
+        B.add('cone', [x + Math.cos(a) * 0.3, 1.55 + rnd() * 0.3, z + Math.sin(a) * 0.3], [0.09, 0.55, 0.09], jit('#efe0c2', 0.06), [Math.cos(a) * 0.3, 0, -Math.sin(a) * 0.3]);
+      }
+    }
+    const lanterns: [number, number][] = [
+      [-2.4, -2.6],
+      [2.6, -2.4],
+      [-4.5, 2.2],
+      [4.4, 1.8],
+      [1.4, 5.2],
+    ];
+    lanterns.forEach(([x, z], i) => {
+      B.add('box', [x, 0.25, z], [0.24, 0.5, 0.24], '#6a4a2a');
+      B.add('cone', [x, 0.6, z], [0.16, 0.22, 0.16], '#6a4a2a');
+      flame(B, x, 0.26, z, 1.1);
+      if (i < 2) flick(tk, plight(g, '#ffae5a', 3, 7, x, 0.5, z), 3);
+    });
+    for (let i = 0; i < 5; i++) {
+      B.wire([-3.4 + i * 1.7, th(-3.4 + i * 1.7, 0) - 0.05, 0], [-3.4 + i * 1.7, 2.6, 0]);
+      B.add('glow', [-3.4 + i * 1.7, 2.5, 0], 0.09, '#ffc27a', null, 4);
+    }
+    const fx = 6.2,
+      fz = 4.6;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * 6.28;
+      B.add('ball', [fx + Math.cos(a) * 0.6, 0.1, fz + Math.sin(a) * 0.6], [0.18, 0.14, 0.16], jit('#8a7a6a', 0.1));
+    }
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * 3.14;
+      B.add('rod', [fx, 0.12, fz], [0.06, 0.8, 0.06], '#3a2618', [0, a, Math.PI / 2]);
+    }
+    for (let i = 0; i < 5; i++) flame(B, fx + (rnd() - 0.5) * 0.4, 0.25 + rnd() * 0.1, fz + (rnd() - 0.5) * 0.4, 2.2);
+    flick(tk, plight(g, '#ff8a3a', 8, 10, fx, 0.7, fz), 8, 1.3);
+    for (let i = 0; i < 9; i++) {
+      const a = rnd() * 6.28,
+        r = 160 + rnd() * 60,
+        w = 20 + rnd() * 30,
+        h = 15 + rnd() * 20;
+      B.add('rod', [Math.sin(a) * r, h / 2, Math.cos(a) * r], [w, h, w * 0.7], jit('#b5643c', 0.08));
+    }
+    for (const [x, z] of [
+      [-14, -12],
+      [-17, -9],
+      [15, -14],
+    ] as [number, number][]) {
+      B.palm(x, z, 7, 1, 0.4);
+    }
+  },
+};
+
+const GARDEN_MARQUEE: VenueDef = {
+  name: 'Garden Marquee',
+  sub: 'Pole tent on the lawn · Evening',
+  desc: 'A white pole marquee with open sides and tied-back swags, strung with festoons and two candle chandeliers above a timber floor.',
+  env: {
+    sky: ['#39457a', '#f0a878', '#4a4a3a'],
+    fog: ['#d8a080', 40, 200],
+    hemi: ['#ffe2c0', '#4a5a3a', 0.75],
+    sun: ['#ffb070', 1.8, [-30, 8, 20]],
+    exp: 1.1,
+    env: 0.3,
+    bloom: 0.65,
+  },
+  cam: [6, 2.4, 8.6],
+  maxD: 16,
+  chair: { type: 'chiavari', color: '#f2efe9', seat: '#f7f3ec' },
+  cloth: '#f4efe6',
+  build(g, B, tk) {
+    void tk;
+    ground(g, tm(T(noise('#5f8a3c', ['#6f9a45', '#557f34', '#7aa650'], 14000, 3), [70, 70]), 1), 500, -0.06);
+    box(g, 14, 0.1, 20, tm(T(planks(['#b08a62', '#a07c56', '#bc966c']), [4, 6])), 0, -0.05, 0);
+    const th = (x: number, z: number) => 3 + 3.6 * Math.exp(-(x * x + (z - 4) ** 2) / 10) + 3.6 * Math.exp(-(x * x + (z + 4) ** 2) / 10);
+    const tg = new THREE.PlaneGeometry(16, 22, 40, 50),
+      tp = tg.attributes.position;
+    for (let i = 0; i < tp.count; i++) {
+      const x = tp.getX(i),
+        z = -tp.getY(i);
+      tp.setZ(i, th(x, z));
+    }
+    tg.rotateX(-Math.PI / 2);
+    tg.computeVertexNormals();
+    mesh(g, tg, M('#f6f2ea', 0.95, 0, { side: THREE.DoubleSide, emissive: '#3a3024', emissiveIntensity: 0.35 }));
+    for (const z of [-4, 4]) cyl(g, 0.12, 0.14, th(0, z), M('#e8e2d6', 0.8), 0, th(0, z) / 2, z, 12);
+    const sw = M('#fbf8f2', 0.95, 0, { side: THREE.DoubleSide });
+    for (let z = -10.5; z <= 10.6; z += 3.5)
+      for (const s of [-1, 1]) {
+        cyl(g, 0.06, 0.06, 3, M('#e8e2d6', 0.8), s * 7.8, 1.5, z, 8);
+        const d = noSh(mesh(g, new THREE.PlaneGeometry(0.6, 3, 1, 1), sw, s * 7.75, 1.5, z + 0.35));
+        d.rotation.y = Math.PI / 2;
+      }
+    for (const s of [-1, 1]) for (let x = -7.5; x <= 7.6; x += 3.75) cyl(g, 0.06, 0.06, 3, M('#e8e2d6', 0.8), x, 1.5, s * 10.8, 8);
+    for (let i = 0; i < 5; i++) {
+      const z = -8 + i * 4;
+      B.festoon([-7.6, 3, z], [0, th(0, z) - 0.3, z], 0.5, 24);
+      B.festoon([7.6, 3, z], [0, th(0, z) - 0.3, z], 0.5, 24);
+    }
+    for (const z of [-4, 4]) {
+      mesh(g, new THREE.TorusGeometry(0.9, 0.04, 8, 40), M('#3a2a20', 0.6), 0, 3.6, z).rotation.x = Math.PI / 2;
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * 6.28;
+        B.add('glow', [Math.cos(a) * 0.9, 3.72, z + Math.sin(a) * 0.9], [0.03, 0.06, 0.03], '#ffd29a', null, 6);
+      }
+      B.wire([0, 3.6, z], [0, th(0, z) - 0.2, z]);
+      plight(g, '#ffc27a', 12, 14, 0, 3.3, z);
+    }
+    for (let i = 0; i < 22; i++) {
+      const a = rnd() * 6.28,
+        r = 16 + rnd() * 22;
+      B.tree(Math.sin(a) * r, Math.cos(a) * r, { h: 4 + rnd() * 3, s: 1.3 });
+    }
+  },
+};
+
+const FRENCH_CHATEAU: VenueDef = {
+  name: 'French Château',
+  sub: 'Gravel courtyard · Golden hour',
+  desc: 'A pale-stone château with tall shuttered windows and slate towers, a clipped parterre and a fountain on the gravel forecourt.',
+  env: {
+    sky: ['#6b8fc4', '#f7c98b', '#c9a27a'],
+    fog: ['#f0cfa0', 50, 260],
+    hemi: ['#d8e4ff', '#a08060', 0.85],
+    sun: ['#ffc583', 3.1, [-28, 14, 24]],
+    exp: 1,
+    env: 0.35,
+  },
+  cam: [6.4, 2.4, 8.6],
+  chair: { type: 'chiavari', color: '#c8a45a', metal: true, seat: '#f2eadb' },
+  cloth: '#f4efe6',
+  build(g, B, tk) {
+    void tk;
+    ground(g, tm(T(noise('#cfc3aa', ['#bdb198', '#ddd2bc', '#a89c86'], 14000, 2), [60, 60]), 1), 500);
+    const st = tm(T(noise('#e6dccb', ['#dcd0bc', '#efe6d6'], 8000, 3), [6, 3]), 0.9);
+    box(g, 36, 13, 2, st, 0, 6.5, -15);
+    const slate = M('#4a5058', 0.7);
+    const rf = box(g, 36.5, 4, 4, slate, 0, 14.6, -15.2);
+    rf.rotation.x = 0.5;
+    const glassMat = M('#2c3440', 0.2, 0.4),
+      frame = M('#f4f0e8', 0.6);
+    for (let f = 0; f < 3; f++)
+      for (let i = -4; i <= 4; i++) {
+        const x = i * 3.8,
+          y = 2.4 + f * 3.9;
+        box(g, 1.4, 2.8, 0.1, glassMat, x, y, -13.95);
+        box(g, 1.6, 0.12, 0.14, frame, x, y + 1.45, -13.9);
+        box(g, 0.1, 2.8, 0.12, frame, x, y, -13.9);
+        for (const s of [-1, 1]) box(g, 0.7, 2.8, 0.06, M('#8a9aa2', 0.7), x + s * 1.1, y, -13.92);
+      }
+    for (const s of [-1, 1]) {
+      cyl(g, 2.6, 2.6, 17, st, s * 19, 8.5, -14, 32);
+      mesh(g, new THREE.ConeGeometry(3, 5, 32), slate, s * 19, 19.5, -14);
+    }
+    for (let i = 0; i < 4; i++) box(g, 8 - i * 0.6, 0.18, 1, st, 0, 0.09 + i * 0.18, -13.5 + i * -0.3);
+    mesh(g, new THREE.TorusGeometry(1.8, 0.18, 10, 48), st, 0, 0.35, -7).rotation.x = Math.PI / 2;
+    noSh(mesh(g, new THREE.CylinderGeometry(1.8, 1.8, 0.3, 48), M('#6a8a9a', 0.1, 0.3, { transparent: true, opacity: 0.8 }), 0, 0.2, -7));
+    cyl(g, 0.18, 0.3, 1.2, st, 0, 0.6, -7, 16);
+    cyl(g, 0.6, 0.4, 0.15, st, 0, 1.25, -7, 24);
+    noSh(mesh(g, new THREE.CylinderGeometry(0.02, 0.25, 0.9, 16, 1, true), new THREE.MeshStandardMaterial({ color: '#e8f2f6', transparent: true, opacity: 0.35, depthWrite: false }), 0, 1.7, -7));
+    for (const s of [-1, 1]) {
+      for (let z = -10; z <= 6; z += 4) {
+        B.add('box', [s * 9, 0.35, z], [5, 0.7, 0.5], '#2f4d26');
+        B.add('box', [s * 6.5, 0.35, z + 2], [0.5, 0.7, 4], '#2f4d26');
+        B.add('box', [s * 11.5, 0.35, z + 2], [0.5, 0.7, 4], '#2f4d26');
+        B.add('trunk', [s * 9, 0.3, z + 2], [0.2, 0.6, 0.2], '#b4623c');
+        B.add('cone', [s * 9, 1.3, z + 2], [0.5, 1.6, 0.5], '#2d4527');
+      }
+      for (let z = -12; z <= 24; z += 4) B.tree(s * 15, z, { h: 5, s: 1.3, leaf: '#5d7a3a' });
+    }
+    for (const [x, z] of [
+      [-3, -10],
+      [3, -10],
+      [-3, 4],
+      [3, 4],
+    ] as [number, number][]) {
+      B.add('rod', [x, 0.9, z], [0.03, 1.8, 0.03], '#1c1c1c');
+      B.add('box', [x, 1.9, z], [0.22, 0.3, 0.22], '#1c1c1c');
+      flame(B, x, 1.9, z, 1.1);
+    }
+  },
+};
+
+const LAKESIDE_DOCK: VenueDef = {
+  name: 'Lakeside Dock',
+  sub: 'Timber deck over still water · Sunset',
+  desc: 'A cedar dock reaching into a mountain lake, ringed by pines, with bistro lights on posts and the sun dropping behind the peaks.',
+  env: {
+    sky: ['#3d4a82', '#f79a6a', '#6a5a6a'],
+    fog: ['#c89088', 60, 320],
+    hemi: ['#ffcaa8', '#3a4a4a', 0.85],
+    sun: ['#ff9c5a', 2.2, [0, 6, -60]],
+    exp: 1.05,
+    env: 0.4,
+    bloom: 0.7,
+  },
+  cam: [5.5, 2.3, 9],
+  chair: { type: 'cross', color: '#e6ddcc', seat: '#f4efe6' },
+  cloth: '#fbf7f0',
+  build(g, B, tk) {
+    const woodM = M('#7a5638', 0.6);
+    const wg = new THREE.PlaneGeometry(600, 600, 100, 100);
+    wg.rotateX(-Math.PI / 2);
+    const water = mesh(g, wg, M('#2a4a5a', 0.12, 0.35), 0, -0.7, 0);
+    water.castShadow = false;
+    const base = wg.attributes.position.array.slice();
+    tk.push((t) => {
+      const p = wg.attributes.position.array as Float32Array;
+      for (let i = 0; i < p.length; i += 3) p[i + 1] = Math.sin(base[i] * 0.2 + t * 0.6) * 0.03 + Math.sin(base[i + 2] * 0.25 + t * 0.8) * 0.03;
+      wg.attributes.position.needsUpdate = true;
+      wg.computeVertexNormals();
+    });
+    box(g, 12, 0.25, 16, tm(T(planks(['#a67a52', '#96704a', '#b38860']), [4, 6])), 0, -0.125, 1);
+    for (let x = -5.5; x <= 5.6; x += 2.75) for (let z = -6.5; z <= 9; z += 3) cyl(g, 0.12, 0.12, 1.4, M('#5a4232'), x, -0.7, z, 10);
+    for (const [x, z] of [
+      [-5.8, -6.8],
+      [5.8, -6.8],
+      [-5.8, 8.8],
+      [5.8, 8.8],
+      [-5.8, 1],
+      [5.8, 1],
+    ] as [number, number][]) {
+      cyl(g, 0.08, 0.08, 3.2, woodM, x, 1.6, z, 10);
+    }
+    for (const z of [-6.8, 1, 8.8]) B.festoon([-5.8, 3.1, z], [5.8, 3.1, z], 0.6, 40);
+    B.festoon([-5.8, 3.1, -6.8], [-5.8, 3.1, 8.8], 0.5, 50);
+    B.festoon([5.8, 3.1, -6.8], [5.8, 3.1, 8.8], 0.5, 50);
+    plight(g, '#ffc27a', 8, 14, 0, 2.8, 0);
+    const farShore = ground(g, tm(T(noise('#6a7a4a', ['#5a6a3a', '#7a8a5a', '#8a8a5a'], 12000, 3), [40, 20]), 1), 120, -0.3);
+    farShore.position.z = 70;
+    for (let i = 0; i < 60; i++) {
+      const a = rnd() * Math.PI * 2,
+        r = 40 + rnd() * 60,
+        x = Math.sin(a) * r,
+        z = Math.cos(a) * r;
+      if (z < 0 && Math.abs(x) < 30 && r < 70) continue;
+      const h = 6 + rnd() * 6;
+      B.add('trunk', [x, -0.3 + 0.8, z], [0.18, 1.6, 0.18], '#4a3a2a');
+      B.add('cone', [x, h / 2 + 0.8, z], [h * 0.28, h, h * 0.28], jit('#2a4030', 0.06));
+    }
+    for (let i = 0; i < 9; i++) {
+      const x = -160 + i * 40 + rnd() * 20,
+        h = 60 + rnd() * 50;
+      B.add('cone', [x, h / 2 - 5, -250 - rnd() * 40], [45 + rnd() * 20, h, 45], jit('#4a4a62', 0.06));
+      B.add('cone', [x, h - 12, -250], [12, h * 0.25, 12], '#e8e6f0');
+    }
+    const boat = new THREE.Group();
+    boat.position.set(7.5, -0.55, -2);
+    boat.rotation.y = 0.3;
+    g.add(boat);
+    box(boat, 1.1, 0.3, 3, M('#8a5a3a', 0.6), 0, 0, 0);
+    box(boat, 0.9, 0.05, 0.3, woodM, 0, 0.12, 0.4);
+    const sd = mesh(g, new THREE.SphereGeometry(12, 32, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffb070').multiplyScalar(2), fog: false }), 10, 8, -380);
+    sd.castShadow = false;
+  },
+};
+
+const INDUSTRIAL_LOFT: VenueDef = {
+  name: 'Industrial Loft',
+  sub: 'Brick, steel & Edison pendants · Night',
+  indoor: true,
+  desc: 'A converted warehouse with exposed brick, black steel columns, factory windows onto the city and clusters of Edison pendants.',
+  env: {
+    sky: ['#0e1430', '#2a2a44', '#0a0a10'],
+    fog: ['#1a1612', 40, 120],
+    hemi: ['#ffe0b8', '#2a2018', 0.4],
+    sun: ['#9fb0ff', 0.3, [10, 20, -10]],
+    exp: 1.2,
+    env: 0.35,
+    bloom: 0.8,
+  },
+  cam: [6, 2.6, 8.4],
+  maxD: 14,
+  chair: { type: 'bent', color: '#1e1c1b', seat: '#2a2622' },
+  cloth: '#f2ede4',
+  build(g, B, tk) {
+    void tk;
+    box(g, 22, 0.2, 28, M('#8a8680', 0.35, 0, { map: T(noise('#8a8680', ['#7a7670', '#9a968e', '#6e6a64'], 14000, 3), [4, 5]) }), 0, -0.1, 0);
+    const brick = tm(T(bricks(['#8a4a36', '#7a3e2e', '#9a5a42', '#6e3a2a'], '#b8a898'), [6, 3]), 0.95);
+    box(g, 0.4, 8, 28, brick, -11, 4, 0);
+    box(g, 0.4, 8, 28, brick, 11, 4, 0);
+    box(g, 22, 0.3, 28, M('#2a2622', 0.8), 0, 8, 0);
+    const city = new THREE.MeshBasicMaterial({ map: T(winTex(), [3, 1], 256), color: new THREE.Color('#ffffff').multiplyScalar(0.9) });
+    box(g, 20, 6, 0.1, city, 0, 4, -14.2);
+    const steel = M('#1e1e20', 0.5, 0.6);
+    for (let x = -10; x <= 10.01; x += 1.25) box(g, 0.08, 6.2, 0.12, steel, x, 4, -14);
+    for (let y = 1; y <= 7.01; y += 1) box(g, 20, 0.08, 0.12, steel, 0, y, -14);
+    box(g, 22, 1, 0.4, brick, 0, 0.5, -14.1);
+    for (const x of [-6, 6])
+      for (let z = -10; z <= 10.01; z += 5) {
+        box(g, 0.3, 8, 0.3, steel, x, 4, z);
+        box(g, 0.4, 0.1, 0.4, steel, x, 7.9, z);
+      }
+    for (let z = -12; z <= 12.01; z += 4) box(g, 22, 0.4, 0.25, steel, 0, 7.7, z);
+    for (const x of [-3.5, 3.5]) {
+      const d = cyl(g, 0.35, 0.35, 28, M('#9a9a9e', 0.35, 0.8), x, 7.2, 0, 16);
+      d.rotation.x = Math.PI / 2;
+    }
+    for (let i = 0; i < 34; i++) {
+      const x = (rnd() - 0.5) * 5,
+        z = (rnd() - 0.5) * 5,
+        y = 3.2 + rnd() * 1.2;
+      B.wire([x, y + 0.1, z], [x, 7.8, z]);
+      B.add('glow', [x, y, z], [0.035, 0.05, 0.035], '#ffb866', null, 4.5);
+    }
+    for (let i = 0; i < 14; i++) {
+      const x = (rnd() < 0.5 ? -1 : 1) * (7 + rnd() * 3),
+        z = -12 + rnd() * 24,
+        y = 3.5 + rnd() * 1;
+      B.wire([x, y + 0.1, z], [x, 7.8, z]);
+      B.add('glow', [x, y, z], [0.035, 0.05, 0.035], '#ffb866', null, 4.5);
+    }
+    plight(g, '#ffb866', 12, 12, 0, 3.4, 0);
+    plight(g, '#ffb866', 6, 12, -8, 3.8, -6);
+    plight(g, '#ffb866', 6, 12, 8, 3.8, 6);
+    box(g, 0.7, 1.05, 5, M('#2a2420', 0.5), 9.8, 0.525, -4);
+    box(g, 0.9, 0.05, 5.2, M('#6a4a30', 0.4), 9.7, 1.07, -4);
+    for (const [x, z] of [
+      [-9.8, -10],
+      [-9.8, 6],
+      [9.8, 8],
+    ] as [number, number][]) {
+      B.add('trunk', [x, 0.35, z], [0.35, 0.7, 0.35], '#3a3a3a', [Math.PI, 0, 0]);
+      B.tree(x, z, { h: 1.6, s: 0.8, y: 0.4, leaf: '#3f6a32', n: 6 });
+    }
+  },
+};
+
+export const VENUES: VenueDef[] = [
+  RUSTIC_BARN,
+  TUSCAN_VILLA,
+  BEACH_AT_SUNSET,
+  ENGLISH_GARDEN,
+  GRAND_BALLROOM,
+  GLASS_CONSERVATORY,
+  VINEYARD_AT_DUSK,
+  ENCHANTED_WOODLAND,
+  CITY_ROOFTOP,
+  DESERT_OASIS,
+  GARDEN_MARQUEE,
+  FRENCH_CHATEAU,
+  LAKESIDE_DOCK,
+  INDUSTRIAL_LOFT,
+];

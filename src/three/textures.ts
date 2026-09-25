@@ -103,6 +103,76 @@ export function noise(base: string, cols: string[], n = 6000, sz = 2) {
   };
 }
 
+export function kilim(c: [string, string, string, string]) {
+  return (x: CanvasRenderingContext2D, w: number, h: number) => {
+    x.fillStyle = c[0];
+    x.fillRect(0, 0, w, h);
+    x.fillStyle = c[1];
+    [0.06, 0.13, 0.84, 0.91].forEach((b) => x.fillRect(0, b * h, w, h * 0.035));
+    x.fillStyle = c[1];
+    x.fillRect(0, 0.3 * h, w, h * 0.4);
+    for (let i = 0; i < 5; i++) {
+      const cx = (i + 0.5) * (w / 5),
+        cy = h / 2,
+        r = w / 12;
+      x.fillStyle = c[2];
+      x.beginPath();
+      x.moveTo(cx, cy - r * 1.7);
+      x.lineTo(cx + r, cy);
+      x.lineTo(cx, cy + r * 1.7);
+      x.lineTo(cx - r, cy);
+      x.fill();
+      x.fillStyle = c[3];
+      x.beginPath();
+      x.moveTo(cx, cy - r * 0.8);
+      x.lineTo(cx + r * 0.45, cy);
+      x.lineTo(cx, cy + r * 0.8);
+      x.lineTo(cx - r * 0.45, cy);
+      x.fill();
+    }
+    x.fillStyle = c[3];
+    for (let i = 0; i < 16; i++) {
+      for (const y of [0.2, 0.77]) {
+        const cx = (i + 0.5) * (w / 16),
+          cy = y * h;
+        x.beginPath();
+        x.moveTo(cx, cy - 10);
+        x.lineTo(cx + 8, cy);
+        x.lineTo(cx, cy + 10);
+        x.lineTo(cx - 8, cy);
+        x.fill();
+      }
+    }
+    x.globalAlpha = 0.08;
+    for (let i = 0; i < 3000; i++) {
+      x.fillStyle = rnd() < 0.5 ? '#000' : '#fff';
+      x.fillRect(rnd() * w, rnd() * h, 2, 1);
+    }
+    x.globalAlpha = 1;
+  };
+}
+
+export function winTex() {
+  return (x: CanvasRenderingContext2D, w: number, h: number) => {
+    x.fillStyle = '#000';
+    x.fillRect(0, 0, w, h);
+    const n = 16,
+      s = w / n;
+    for (let i = 0; i < n; i++)
+      for (let j = 0; j < n; j++) {
+        if (rnd() < 0.38) {
+          x.fillStyle = pick(['#ffd79a', '#ffe8c2', '#cfe0ff', '#ffc57a']);
+          x.globalAlpha = 0.4 + rnd() * 0.6;
+        } else {
+          x.fillStyle = '#0b0d12';
+          x.globalAlpha = 1;
+        }
+        x.fillRect(i * s + 3, j * s + 4, s - 6, s - 8);
+      }
+    x.globalAlpha = 1;
+  };
+}
+
 export function bricks(cols: string[], mortar: string) {
   return (x: CanvasRenderingContext2D, w: number, h: number) => {
     x.fillStyle = mortar;

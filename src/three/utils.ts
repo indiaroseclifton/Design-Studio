@@ -70,6 +70,11 @@ export function ground(p: THREE.Object3D, m: THREE.Material, size: number, y = 0
   return o;
 }
 
+export function noSh<T extends THREE.Object3D>(o: T): T {
+  o.castShadow = false;
+  return o;
+}
+
 export function disposeObject3D(root: THREE.Object3D) {
   root.traverse((o) => {
     const anyO = o as unknown as { geometry?: THREE.BufferGeometry; material?: THREE.Material | THREE.Material[] };

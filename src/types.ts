@@ -100,9 +100,9 @@ export type Accent = 'champagne' | 'rose' | 'sage' | 'silver';
 export type CameraPreset = 'wide' | 'guest' | 'couple' | 'top';
 
 export interface ChairStyle {
-  type: 'cross' | 'chiavari';
-  color: string;
-  seat: string;
+  type: 'cross' | 'chiavari' | 'rattan' | 'bent' | 'ghost';
+  color?: string;
+  seat?: string;
   metal?: boolean;
 }
 
