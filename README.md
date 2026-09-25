@@ -26,6 +26,14 @@ npm run build    # type-check + production build
 npm run lint      # oxlint
 ```
 
+## Deploying
+
+Every push to `main` builds and publishes the studio to GitHub Pages
+(`.github/workflows/deploy.yml`), at https://indiaroseclifton.github.io/Design-Studio/. The workflow sets
+`BASE_PATH` so the build is served from the repository's subfolder; locally it stays at `/`. Pages has to
+be switched on once, under the repository's **Settings → Pages → Build and deployment → Source: GitHub
+Actions**.
+
 ## What's implemented
 
 ### Everything in the prototype's Studio
