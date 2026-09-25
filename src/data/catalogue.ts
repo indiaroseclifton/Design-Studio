@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { BuildCtx, CatalogueItem } from '../types';
-import { box, cyl, mesh, M, pick } from '../three/utils';
+import { box, cyl, mesh, M, pick, rnd } from '../three/utils';
 import { T, tm, noise } from '../three/textures';
 import { flame } from '../three/builder';
 import { buildChair } from './chairs';
@@ -2191,6 +2191,935 @@ export const ITEMS: Record<string, CatalogueItem> = {
     build(g, { palette, color }) {
       box(g, 0.06, 0.05, 0.06, M(color ?? palette.f, 0.85), 0, 0.025, 0);
       box(g, 0.062, 0.008, 0.062, M(palette.b[0] ?? '#c9a25a', 0.5, 0.6), 0, 0.054, 0);
+    },
+  },
+
+  // ---------- Florals (round 2) ----------
+  bud_vase_trio: {
+    id: 'bud_vase_trio',
+    name: 'Bud vase trio',
+    cat: 'florals',
+    sec: 'Centrepieces',
+    group: 'florals',
+    surf: 'table',
+    fp: 0.08,
+    price: 32,
+    kw: 'bud vase trio single stem minimal',
+    pal: true,
+    build(g, { builder, palette, color }) {
+      const cols = palette.b;
+      for (let i = 0; i < 3; i++) {
+        const x = (i - 1) * 0.09;
+        cyl(g, 0.012, 0.018, 0.14, glass(), x, 0.07, 0, 12);
+        builder.rose(x, 0, color ?? cols[i % cols.length] ?? '#f2bcc0', 0.07, 0.14);
+      }
+      builder.flush();
+    },
+  },
+  floating_blooms_bowl: {
+    id: 'floating_blooms_bowl',
+    name: 'Floating blooms bowl',
+    cat: 'florals',
+    sec: 'Centrepieces',
+    group: 'florals',
+    surf: 'table',
+    fp: 0.16,
+    price: 48,
+    kw: 'floating flowers water bowl centerpiece',
+    pal: true,
+    build(g, { builder, palette, color }) {
+      cyl(g, 0.16, 0.13, 0.08, glass(), 0, 0.04, 0, 32);
+      const water = mesh(g, new THREE.CircleGeometry(0.14, 32), M('#bcdfe0', 0.05, 0, { transparent: true, opacity: 0.55 }), 0, 0.075, 0);
+      water.rotation.x = -Math.PI / 2;
+      const cols = palette.b;
+      for (let i = 0; i < 5; i++) {
+        const a = angle(i, 5);
+        builder.rose(Math.cos(a) * 0.08, Math.sin(a) * 0.08, color ?? cols[i % cols.length], 0.05, 0.08);
+      }
+      builder.flush();
+    },
+  },
+  floral_hoop: {
+    id: 'floral_hoop',
+    name: 'Floral hoop',
+    cat: 'florals',
+    sec: 'Ceremony',
+    group: 'florals',
+    surf: 'floor',
+    fp: 0.6,
+    price: 320,
+    kw: 'floral hoop circle arch ceremony backdrop',
+    pal: true,
+    build(g, { palette, color }) {
+      mesh(g, new THREE.TorusGeometry(0.9, 0.03, 10, 48), M('#6b4a30', 0.7), 0, 1.6, 0);
+      const cols = palette.b;
+      for (let i = 0; i < 12; i++) {
+        const t = i / 11;
+        const a = Math.PI * (0.15 + t * 0.7);
+        const x = Math.cos(a) * 0.9,
+          y = 1.6 + Math.sin(a) * 0.9;
+        mesh(g, new THREE.IcosahedronGeometry(0.09, 0), M(cols[i % cols.length] ?? color ?? '#f2bcc0', 0.85, 0, { flatShading: true }), x, y, 0);
+      }
+    },
+  },
+  potted_orchid: {
+    id: 'potted_orchid',
+    name: 'Potted orchid',
+    cat: 'florals',
+    sec: 'Accents',
+    group: 'florals',
+    surf: 'table',
+    fp: 0.09,
+    price: 38,
+    kw: 'orchid potted plant accent',
+    pal: false,
+    build(g) {
+      cyl(g, 0.06, 0.05, 0.08, M('#8a7a6a', 0.8), 0, 0.04, 0, 16);
+      const stem = cyl(g, 0.006, 0.006, 0.22, M('#3a5a2a', 0.7), 0.02, 0.15, 0, 6);
+      stem.rotation.z = 0.15;
+      for (let i = 0; i < 4; i++) {
+        const y = 0.2 + i * 0.05;
+        mesh(g, new THREE.SphereGeometry(0.035, 10, 8), M('#f4e6f0', 0.5), 0.02 + i * 0.015, y, 0);
+      }
+    },
+  },
+  succulent_planter: {
+    id: 'succulent_planter',
+    name: 'Succulent planter box',
+    cat: 'florals',
+    sec: 'Accents',
+    group: 'florals',
+    surf: 'table',
+    fp: 0.14,
+    price: 44,
+    kw: 'succulent planter box greenery modern',
+    pal: false,
+    build(g) {
+      box(g, 0.28, 0.08, 0.1, M('#8a7a68', 0.8), 0, 0.04, 0);
+      for (let i = 0; i < 5; i++) {
+        const x = (i - 2) * 0.05;
+        mesh(g, new THREE.IcosahedronGeometry(0.035, 0), M('#5a8a5a', 0.7, 0, { flatShading: true }), x, 0.1, 0);
+      }
+    },
+  },
+  glass_terrarium: {
+    id: 'glass_terrarium',
+    name: 'Glass terrarium',
+    cat: 'florals',
+    sec: 'Accents',
+    group: 'florals',
+    surf: 'table',
+    fp: 0.1,
+    price: 36,
+    kw: 'glass terrarium greenery modern minimal',
+    pal: false,
+    build(g) {
+      cyl(g, 0.08, 0.09, 0.02, M('#8a7a68', 0.7), 0, 0.01, 0, 20);
+      mesh(g, new THREE.SphereGeometry(0.11, 20, 14), glass(), 0, 0.13, 0);
+      mesh(g, new THREE.IcosahedronGeometry(0.05, 0), M('#4a7a3a', 0.7, 0, { flatShading: true }), 0, 0.07, 0);
+    },
+  },
+  wildflower_bottle_trio: {
+    id: 'wildflower_bottle_trio',
+    name: 'Wildflower bottle trio',
+    cat: 'florals',
+    sec: 'Centrepieces',
+    group: 'florals',
+    surf: 'table',
+    fp: 0.1,
+    price: 34,
+    kw: 'wildflower bottle trio rustic centerpiece',
+    pal: true,
+    build(g, { builder, palette, color }) {
+      const cols = palette.b;
+      for (let i = 0; i < 3; i++) {
+        const x = (i - 1) * 0.1;
+        cyl(g, 0.018, 0.022, 0.16, glass(), x, 0.08, 0, 10);
+        for (let k = 0; k < 3; k++) builder.rose(x + (k - 1) * 0.02, 0, color ?? cols[(i + k) % cols.length], 0.05, 0.16);
+      }
+      builder.flush();
+    },
+  },
+  petal_aisle: {
+    id: 'petal_aisle',
+    name: 'Petal aisle',
+    cat: 'florals',
+    sec: 'Ceremony',
+    group: 'florals',
+    surf: 'floor',
+    fp: 0.5,
+    price: 60,
+    kw: 'petal aisle runner ceremony floor scatter',
+    pal: true,
+    build(g, { palette, color }) {
+      const cols = palette.b;
+      for (let i = 0; i < 40; i++) {
+        const x = (rnd() - 0.5) * 0.7,
+          z = (rnd() - 0.5) * 2.6;
+        const petal = mesh(g, new THREE.CircleGeometry(0.025, 6), M(color ?? cols[i % cols.length], 0.6, 0, { side: THREE.DoubleSide }), x, 0.002, z);
+        petal.rotation.x = -Math.PI / 2;
+        petal.castShadow = false;
+      }
+    },
+  },
+
+  // ---------- Holiday (round 2) ----------
+  balloon_garland_arch: {
+    id: 'balloon_garland_arch',
+    name: 'Balloon garland arch',
+    cat: 'holiday',
+    sec: 'Party',
+    group: 'holiday',
+    surf: 'floor',
+    fp: 0.9,
+    price: 220,
+    kw: 'balloon garland arch party birthday celebration',
+    pal: true,
+    build(g, { palette, color }) {
+      const cols = [color ?? palette.b[0] ?? '#f2a6b8', palette.b[1] ?? '#f7d9a0', palette.b[2] ?? '#9ec9d9'];
+      for (let i = 0; i < 24; i++) {
+        const t = i / 23,
+          a = Math.PI * (0.08 + t * 0.84);
+        const x = Math.cos(a) * 1.3,
+          y = Math.sin(a) * 1.3;
+        mesh(g, new THREE.SphereGeometry(0.12, 14, 10), M(cols[i % cols.length], 0.4, 0), x, y, (rnd() - 0.5) * 0.15);
+      }
+    },
+  },
+  heart_balloon_bouquet: {
+    id: 'heart_balloon_bouquet',
+    name: 'Heart balloon bouquet',
+    cat: 'holiday',
+    sec: 'Party',
+    group: 'holiday',
+    surf: 'table',
+    fp: 0.12,
+    price: 28,
+    kw: 'heart balloon bouquet valentine celebration',
+    pal: true,
+    build(g, { palette, color }) {
+      const c = color ?? palette.b[0] ?? '#e2506a';
+      for (let i = 0; i < 3; i++) {
+        const x = (i - 1) * 0.08;
+        mesh(g, new THREE.SphereGeometry(0.09, 12, 10), M(c, 0.35, 0), x - 0.03, 0.55 + i * 0.03, 0);
+        mesh(g, new THREE.SphereGeometry(0.09, 12, 10), M(c, 0.35, 0), x + 0.03, 0.55 + i * 0.03, 0);
+        cyl(g, 0.003, 0.003, 0.5, M('#fff', 0.5), x, 0.28 + i * 0.015, 0, 6);
+      }
+    },
+  },
+  cornucopia: {
+    id: 'cornucopia',
+    name: 'Harvest cornucopia',
+    cat: 'holiday',
+    sec: 'Autumn',
+    group: 'holiday',
+    surf: 'table',
+    fp: 0.2,
+    price: 52,
+    kw: 'cornucopia harvest thanksgiving autumn centerpiece',
+    pal: false,
+    build(g) {
+      const horn = mesh(g, new THREE.ConeGeometry(0.11, 0.4, 16, 1, true), M('#a8763a', 0.7), 0, 0.12, 0);
+      horn.rotation.z = Math.PI / 2.2;
+      const gourds = ['#c9702e', '#e8b04a', '#8a5a2a', '#c2185b'];
+      for (let i = 0; i < 6; i++) {
+        mesh(g, new THREE.SphereGeometry(0.045, 10, 8), M(gourds[i % gourds.length], 0.75), -0.14 + i * 0.045, 0.14 + Math.abs(3 - i) * 0.01, 0);
+      }
+    },
+  },
+  easter_egg_nest: {
+    id: 'easter_egg_nest',
+    name: 'Easter egg nest',
+    cat: 'holiday',
+    sec: 'Spring',
+    group: 'holiday',
+    surf: 'table',
+    fp: 0.1,
+    price: 26,
+    kw: 'easter egg nest spring centerpiece',
+    pal: true,
+    build(g, { palette, color }) {
+      cyl(g, 0.08, 0.1, 0.03, M('#c9a25a', 0.85), 0, 0.015, 0, 20);
+      const cols = [color ?? palette.b[0] ?? '#f2bcc0', palette.b[1] ?? '#f7d9a0', palette.b[2] ?? '#9ec9d9', palette.b[3] ?? '#fff'];
+      for (let i = 0; i < 6; i++) {
+        const a = angle(i, 6);
+        const egg = mesh(g, new THREE.SphereGeometry(0.025, 10, 8), M(cols[i % cols.length], 0.6), Math.cos(a) * 0.05, 0.045, Math.sin(a) * 0.05);
+        egg.scale.y = 1.3;
+      }
+    },
+  },
+  gift_boxes: {
+    id: 'gift_boxes',
+    name: 'Gift boxes',
+    cat: 'holiday',
+    sec: 'General',
+    group: 'holiday',
+    surf: 'table',
+    fp: 0.12,
+    price: 22,
+    kw: 'gift boxes presents wrapped holiday birthday',
+    pal: true,
+    build(g, { palette, color }) {
+      const cols = [color ?? palette.b[0] ?? '#e2506a', palette.b[1] ?? '#c9a25a', palette.b[2] ?? '#9ec9d9'];
+      const sizes = [0.12, 0.09, 0.07];
+      let y = 0;
+      sizes.forEach((s, i) => {
+        const h = s * 0.8;
+        box(g, s, h, s, M(cols[i % cols.length], 0.7), 0, y + h / 2, 0);
+        box(g, s * 1.02, 0.012, s * 0.2, M('#fff', 0.6), 0, y + h + 0.006, 0);
+        box(g, s * 0.2, 0.012, s * 1.02, M('#fff', 0.6), 0, y + h + 0.006, 0);
+        y += h + 0.012;
+      });
+    },
+  },
+  nutcracker_pair: {
+    id: 'nutcracker_pair',
+    name: 'Nutcracker pair',
+    cat: 'holiday',
+    sec: 'Winter',
+    group: 'holiday',
+    surf: 'table',
+    fp: 0.1,
+    price: 34,
+    kw: 'nutcracker soldier christmas winter decor',
+    pal: false,
+    build(g) {
+      for (const x of [-0.05, 0.05]) {
+        box(g, 0.05, 0.16, 0.05, M('#1a2a5a', 0.7), x, 0.08, 0);
+        mesh(g, new THREE.SphereGeometry(0.03, 12, 10), M('#f4d9c0', 0.6), x, 0.19, 0);
+        cyl(g, 0.032, 0.026, 0.06, M('#0a0a0a', 0.6), x, 0.25, 0, 12);
+      }
+    },
+  },
+  poinsettia: {
+    id: 'poinsettia',
+    name: 'Poinsettia',
+    cat: 'holiday',
+    sec: 'Winter',
+    group: 'holiday',
+    surf: 'table',
+    fp: 0.11,
+    price: 30,
+    kw: 'poinsettia red plant christmas winter',
+    pal: false,
+    build(g) {
+      cyl(g, 0.07, 0.06, 0.08, M('#8a2020', 0.7), 0, 0.04, 0, 16);
+      for (let i = 0; i < 8; i++) {
+        const a = angle(i, 8);
+        const petal = mesh(g, new THREE.ConeGeometry(0.05, 0.02, 6), M('#b8202a', 0.6, 0, { flatShading: true }), Math.cos(a) * 0.06, 0.1, Math.sin(a) * 0.06);
+        petal.rotation.x = Math.PI / 2;
+      }
+    },
+  },
+  pumpkin_trio: {
+    id: 'pumpkin_trio',
+    name: 'Halloween pumpkin trio',
+    cat: 'holiday',
+    sec: 'Autumn',
+    group: 'holiday',
+    surf: 'table',
+    fp: 0.14,
+    price: 32,
+    kw: 'halloween pumpkin trio carved autumn decor',
+    pal: false,
+    build(g) {
+      const sizes = [0.07, 0.055, 0.045];
+      sizes.forEach((r, i) => {
+        const x = (i - 1) * 0.09;
+        const p = mesh(g, new THREE.SphereGeometry(r, 14, 10), M('#d9722a', 0.75, 0, { flatShading: true }), x, r, 0);
+        p.scale.y = 0.8;
+        cyl(g, 0.006, 0.008, 0.03, M('#3a5a2a', 0.7), x, r * 1.7, 0, 6);
+      });
+    },
+  },
+  snowman: {
+    id: 'snowman',
+    name: 'Snowman',
+    cat: 'holiday',
+    sec: 'Winter',
+    group: 'holiday',
+    surf: 'floor',
+    fp: 0.3,
+    price: 70,
+    kw: 'snowman winter christmas floor decor',
+    pal: false,
+    build(g) {
+      mesh(g, new THREE.SphereGeometry(0.22, 20, 16), M('#f4f7f7', 0.5), 0, 0.22, 0);
+      mesh(g, new THREE.SphereGeometry(0.16, 20, 16), M('#f4f7f7', 0.5), 0, 0.56, 0);
+      mesh(g, new THREE.SphereGeometry(0.11, 18, 14), M('#f4f7f7', 0.5), 0, 0.82, 0);
+      cyl(g, 0.09, 0.1, 0.05, M('#1a1a1a', 0.6), 0, 0.99, 0, 16);
+      cyl(g, 0.075, 0.075, 0.1, M('#1a1a1a', 0.6), 0, 0.955, 0, 16);
+      const nose = mesh(g, new THREE.ConeGeometry(0.02, 0.08, 8), M('#e8862a', 0.7), 0, 0.83, 0.1);
+      nose.rotation.x = Math.PI / 2;
+    },
+  },
+  evergreen_garland: {
+    id: 'evergreen_garland',
+    name: 'Evergreen & berry garland',
+    cat: 'holiday',
+    sec: 'Winter',
+    group: 'holiday',
+    surf: 'hang',
+    fp: 0.12,
+    price: 55,
+    kw: 'evergreen berry garland christmas winter greenery',
+    pal: false,
+    build(_g, { builder }) {
+      for (let x = -0.5; x <= 0.5; x += 0.1) {
+        const y = -0.06 - Math.abs(x) * 0.08;
+        builder.fern(x, 0, 0.35, '#2f5230', y);
+        if (Math.round(x * 10) % 2 === 0) builder.rose(x, 0, '#a8202a', 0.04, y + 0.02);
+      }
+      builder.flush();
+    },
+  },
+  papel_picado_banners: {
+    id: 'papel_picado_banners',
+    name: 'Papel picado banners',
+    cat: 'holiday',
+    sec: 'Fiesta',
+    group: 'holiday',
+    surf: 'hang',
+    fp: 0.15,
+    price: 32,
+    kw: 'papel picado banner fiesta mexican celebration',
+    pal: true,
+    build(g, { palette, color }) {
+      const cols = [color ?? palette.b[0] ?? '#e2506a', palette.b[1] ?? '#f7d9a0', palette.b[2] ?? '#9ec9d9', palette.b[3] ?? '#c9a25a', palette.b[4] ?? '#f2bcc0'];
+      for (let i = 0; i < 6; i++) {
+        const x = (i - 2.5) * 0.16;
+        mesh(g, new THREE.PlaneGeometry(0.14, 0.1), M(cols[i % cols.length], 0.7, 0, { side: THREE.DoubleSide }), x, -0.1 - Math.abs(i - 2.5) * 0.01, 0);
+      }
+    },
+  },
+  red_paper_lanterns: {
+    id: 'red_paper_lanterns',
+    name: 'Red paper lanterns',
+    cat: 'holiday',
+    sec: 'Celebration',
+    group: 'holiday',
+    surf: 'hang',
+    fp: 0.15,
+    price: 38,
+    kw: 'red paper lantern lunar new year celebration hanging',
+    pal: false,
+    build(g) {
+      for (let i = 0; i < 3; i++) {
+        const x = (i - 1) * 0.22;
+        mesh(g, new THREE.SphereGeometry(0.09, 16, 12), M('#c2182a', 0.6, 0, { emissive: '#c2182a', emissiveIntensity: 0.35 }), x, -0.1 + Math.abs(i - 1) * 0.05, 0);
+        cyl(g, 0.01, 0.01, 0.03, M('#c9a25a', 0.4, 0.7), x, -0.02 + Math.abs(i - 1) * 0.05, 0, 8);
+      }
+    },
+  },
+
+  // ---------- Tableware (round 2) ----------
+  champagne_flutes: {
+    id: 'champagne_flutes',
+    name: 'Champagne flutes',
+    cat: 'tableware',
+    sec: 'Glassware',
+    group: 'tableware',
+    surf: 'table',
+    fp: 0.03,
+    price: 8,
+    kw: 'champagne flute glass toast',
+    pal: false,
+    build(g) {
+      for (const x of [-0.02, 0.02]) {
+        cyl(g, 0.015, 0.008, 0.12, glass(), x, 0.09, 0, 12);
+        cyl(g, 0.02, 0.02, 0.005, glass(), x, 0.0025, 0, 12);
+        cyl(g, 0.004, 0.006, 0.06, glass(), x, 0.033, 0, 8);
+      }
+    },
+  },
+  wine_bottle_trio: {
+    id: 'wine_bottle_trio',
+    name: 'Wine bottle trio',
+    cat: 'tableware',
+    sec: 'Bar',
+    group: 'tableware',
+    surf: 'table',
+    fp: 0.06,
+    price: 45,
+    kw: 'wine bottle trio bar service',
+    pal: false,
+    build(g) {
+      const cols = ['#2a1a10', '#3a4a1a', '#1a1a1a'];
+      for (let i = 0; i < 3; i++) {
+        const x = (i - 1) * 0.06;
+        cyl(g, 0.028, 0.028, 0.24, M(cols[i], 0.3, 0.1), x, 0.12, 0, 14);
+        cyl(g, 0.01, 0.014, 0.06, M(cols[i], 0.3, 0.1), x, 0.27, 0, 10);
+      }
+    },
+  },
+  water_carafe: {
+    id: 'water_carafe',
+    name: 'Water carafe & tumblers',
+    cat: 'tableware',
+    sec: 'Glassware',
+    group: 'tableware',
+    surf: 'table',
+    fp: 0.08,
+    price: 22,
+    kw: 'water carafe tumbler glass service',
+    pal: false,
+    build(g) {
+      cyl(g, 0.03, 0.04, 0.16, glass(), -0.03, 0.08, 0, 14);
+      cyl(g, 0.02, 0.03, 0.03, glass(), -0.03, 0.175, 0, 14);
+      for (const x of [0.03, 0.06]) cyl(g, 0.02, 0.018, 0.07, glass(), x, 0.035, 0, 10);
+    },
+  },
+  chafing_dish_pair: {
+    id: 'chafing_dish_pair',
+    name: 'Chafing dish pair',
+    cat: 'tableware',
+    sec: 'Buffet',
+    group: 'tableware',
+    surf: 'table',
+    fp: 0.28,
+    price: 120,
+    kw: 'chafing dish buffet warming service',
+    pal: false,
+    build(g, { builder }) {
+      for (const x of [-0.13, 0.13]) {
+        box(g, 0.22, 0.03, 0.16, M('#c8c8c8', 0.3, 0.9), x, 0.02, 0);
+        box(g, 0.2, 0.1, 0.14, M('#dcdcdc', 0.25, 0.85), x, 0.09, 0);
+        box(g, 0.2, 0.015, 0.14, M('#9a9a9a', 0.3, 0.9), x, 0.145, 0);
+        flame(builder, x, 0.02, 0.1, 0.3);
+      }
+      builder.flush();
+    },
+  },
+  coffee_tea_urns: {
+    id: 'coffee_tea_urns',
+    name: 'Coffee & tea urns',
+    cat: 'tableware',
+    sec: 'Buffet',
+    group: 'tableware',
+    surf: 'table',
+    fp: 0.14,
+    price: 85,
+    kw: 'coffee tea urn buffet service',
+    pal: false,
+    build(g) {
+      for (const x of [-0.09, 0.09]) {
+        cyl(g, 0.06, 0.07, 0.22, M('#d8d8d8', 0.25, 0.9), x, 0.15, 0, 20);
+        cyl(g, 0.065, 0.065, 0.02, M('#c0c0c0', 0.3, 0.9), x, 0.27, 0, 20);
+        box(g, 0.03, 0.02, 0.03, M('#8a6a4a', 0.6), x, 0.06, 0.07);
+      }
+    },
+  },
+  ice_bucket_champagne: {
+    id: 'ice_bucket_champagne',
+    name: 'Champagne ice bucket',
+    cat: 'tableware',
+    sec: 'Bar',
+    group: 'tableware',
+    surf: 'table',
+    fp: 0.1,
+    price: 38,
+    kw: 'ice bucket champagne bar chiller',
+    pal: false,
+    build(g) {
+      cyl(g, 0.09, 0.07, 0.16, M('#dcdcdc', 0.2, 0.9), 0, 0.08, 0, 20);
+      cyl(g, 0.028, 0.028, 0.24, M('#1a1a1a', 0.3, 0.1), 0, 0.24, 0, 14);
+      cyl(g, 0.01, 0.014, 0.06, M('#1a1a1a', 0.3, 0.1), 0, 0.37, 0, 10);
+    },
+  },
+  cocktail_tray: {
+    id: 'cocktail_tray',
+    name: 'Cocktail tray',
+    cat: 'tableware',
+    sec: 'Bar',
+    group: 'tableware',
+    surf: 'table',
+    fp: 0.1,
+    price: 26,
+    kw: 'cocktail tray bar service glasses',
+    pal: false,
+    build(g) {
+      cyl(g, 0.14, 0.14, 0.008, M('#8a6a4a', 0.5, 0.3), 0, 0.004, 0, 24);
+      for (let i = 0; i < 4; i++) {
+        const a = angle(i, 4);
+        cyl(g, 0.018, 0.012, 0.08, glass(), Math.cos(a) * 0.07, 0.048, Math.sin(a) * 0.07, 10);
+      }
+    },
+  },
+  fruit_compote: {
+    id: 'fruit_compote',
+    name: 'Fruit & grape compote',
+    cat: 'tableware',
+    sec: 'Buffet',
+    group: 'tableware',
+    surf: 'table',
+    fp: 0.13,
+    price: 34,
+    kw: 'fruit grape compote display buffet',
+    pal: false,
+    build(g) {
+      cyl(g, 0.12, 0.09, 0.05, M('#f4f0e6', 0.4), 0, 0.14, 0, 24);
+      cyl(g, 0.02, 0.03, 0.12, M('#f4f0e6', 0.4), 0, 0.06, 0, 14);
+      const cols = ['#6a2a4a', '#c2185b', '#c9a25a', '#3a6a2a'];
+      for (let i = 0; i < 10; i++) {
+        const a = angle(i, 10);
+        mesh(g, new THREE.SphereGeometry(0.025, 10, 8), M(cols[i % cols.length], 0.6), Math.cos(a) * 0.07, 0.19, Math.sin(a) * 0.07);
+      }
+    },
+  },
+  seafood_tower: {
+    id: 'seafood_tower',
+    name: 'Seafood tower',
+    cat: 'tableware',
+    sec: 'Buffet',
+    group: 'tableware',
+    surf: 'table',
+    fp: 0.16,
+    price: 180,
+    kw: 'seafood tower tiered display raw bar',
+    pal: false,
+    build(g) {
+      cyl(g, 0.16, 0.16, 0.02, glass(), 0, 0.01, 0, 28);
+      cyl(g, 0.02, 0.02, 0.14, M('#dcdcdc', 0.3, 0.8), 0, 0.08, 0, 10);
+      cyl(g, 0.11, 0.11, 0.02, glass(), 0, 0.15, 0, 24);
+      cyl(g, 0.02, 0.02, 0.1, M('#dcdcdc', 0.3, 0.8), 0, 0.2, 0, 10);
+      cyl(g, 0.07, 0.07, 0.02, glass(), 0, 0.25, 0, 20);
+      const cols = ['#c2704a', '#e8b04a', '#8a2a2a'];
+      for (let i = 0; i < 8; i++) {
+        const a = angle(i, 8);
+        mesh(g, new THREE.SphereGeometry(0.02, 8, 6), M(cols[i % cols.length], 0.6), Math.cos(a) * 0.13, 0.03, Math.sin(a) * 0.13);
+      }
+    },
+  },
+  chalkboard_sign: {
+    id: 'chalkboard_sign',
+    name: 'Chalkboard table sign',
+    cat: 'tableware',
+    sec: 'Paper goods',
+    group: 'tableware',
+    surf: 'table',
+    fp: 0.03,
+    price: 14,
+    kw: 'chalkboard sign table menu rustic',
+    hasText: true,
+    pal: true,
+    build(g, { color, text }) {
+      const wood = M(color ?? '#5a4028', 0.7);
+      box(g, 0.02, 0.16, 0.02, wood, -0.05, 0.08, 0);
+      box(g, 0.02, 0.16, 0.02, wood, 0.05, 0.08, 0);
+      box(g, 0.14, 0.1, 0.006, M('#1c1c1c', 0.7, 0, { map: textTexture(text ?? 'Table 1', { bg: '#1c1c1c', fg: '#fff', size: 34 }) }), 0, 0.13, 0.01);
+    },
+  },
+
+  // ---------- Faith & culture (round 2) ----------
+  akash_lanterns: {
+    id: 'akash_lanterns',
+    name: 'Akash kandil star lanterns',
+    cat: 'faith',
+    sec: 'Hindu',
+    group: 'faith',
+    surf: 'hang',
+    fp: 0.15,
+    price: 42,
+    kw: 'akash kandil star lantern diwali indian celebration hanging',
+    pal: true,
+    build(g, { palette, color }) {
+      const cols = [color ?? palette.b[0] ?? '#e8b04a', palette.b[1] ?? '#e2506a', palette.b[2] ?? '#9ec9d9'];
+      for (let i = 0; i < 3; i++) {
+        const x = (i - 1) * 0.2;
+        mesh(g, new THREE.OctahedronGeometry(0.08, 0), M(cols[i % cols.length], 0.5, 0, { emissive: cols[i % cols.length], emissiveIntensity: 0.4, flatShading: true }), x, -0.1 + Math.abs(i - 1) * 0.04, 0);
+      }
+    },
+  },
+  altar_stand: {
+    id: 'altar_stand',
+    name: 'Altar with cross',
+    cat: 'faith',
+    sec: 'Christian',
+    group: 'faith',
+    surf: 'floor',
+    fp: 0.2,
+    price: 180,
+    kw: 'altar cross christian ceremony stage',
+    pal: true,
+    build(g, { palette, color }) {
+      box(g, 0.6, 0.85, 0.35, M(color ?? palette.f, 0.7), 0, 0.425, 0);
+      box(g, 0.62, 0.03, 0.37, M('#c9a25a', 0.4, 0.7), 0, 0.86, 0);
+      const wood = M('#6a4a2e', 0.6);
+      box(g, 0.04, 0.4, 0.04, wood, 0, 1.1, -0.15);
+      box(g, 0.24, 0.04, 0.04, wood, 0, 1.24, -0.15);
+    },
+  },
+  anand_karaj_canopy: {
+    id: 'anand_karaj_canopy',
+    name: 'Anand Karaj canopy',
+    cat: 'faith',
+    sec: 'Ceremony structures',
+    group: 'faith',
+    surf: 'floor',
+    fp: 1.3,
+    price: 460,
+    kw: 'anand karaj sikh wedding canopy ceremony structure',
+    pal: true,
+    build(g, { palette, color }) {
+      const wood = M('#8a6a3a', 0.6, 0.2);
+      const posts: [number, number][] = [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ];
+      for (const [x, z] of posts) cyl(g, 0.045, 0.045, 2.3, wood, x, 1.15, z, 12);
+      box(g, 2.1, 0.05, 0.05, wood, 0, 2.3, -1);
+      box(g, 2.1, 0.05, 0.05, wood, 0, 2.3, 1);
+      box(g, 0.05, 0.05, 2.1, wood, -1, 2.3, 0);
+      box(g, 0.05, 0.05, 2.1, wood, 1, 2.3, 0);
+      const cloth = mesh(g, new THREE.PlaneGeometry(2.2, 2.2, 4, 4), M(color ?? palette.b[0] ?? '#e2506a', 0.85, 0, { side: THREE.DoubleSide }), 0, 2.26, 0);
+      cloth.rotation.x = Math.PI / 2;
+    },
+  },
+  calabash_centerpiece: {
+    id: 'calabash_centerpiece',
+    name: 'Calabash & protea centrepiece',
+    cat: 'faith',
+    sec: 'African',
+    group: 'faith',
+    surf: 'table',
+    fp: 0.13,
+    price: 56,
+    kw: 'calabash protea african centerpiece culture',
+    pal: false,
+    build(g, { builder }) {
+      const bowl = mesh(g, new THREE.SphereGeometry(0.08, 16, 12), M('#c9a25a', 0.75), 0, 0.06, 0);
+      bowl.scale.y = 0.85;
+      for (let i = 0; i < 3; i++) {
+        const a = angle(i, 3);
+        builder.rose(Math.cos(a) * 0.05, Math.sin(a) * 0.05, '#c2704a', 0.09, 0.1);
+      }
+      builder.flush();
+    },
+  },
+  diya_lamps: {
+    id: 'diya_lamps',
+    name: 'Diya lamps',
+    cat: 'faith',
+    sec: 'Hindu',
+    group: 'faith',
+    surf: 'table',
+    fp: 0.1,
+    price: 24,
+    kw: 'diya lamp diwali hindu celebration candles',
+    pal: false,
+    build(g, { builder }) {
+      for (let i = 0; i < 5; i++) {
+        const x = (i - 2) * 0.045;
+        cyl(g, 0.018, 0.022, 0.012, M('#c9702e', 0.75), x, 0.006, 0, 12);
+        flame(builder, x, 0.02, 0, 0.3);
+      }
+      builder.flush();
+    },
+  },
+  dreidels_gelt: {
+    id: 'dreidels_gelt',
+    name: 'Dreidels & gelt',
+    cat: 'faith',
+    sec: 'Judaica',
+    group: 'faith',
+    surf: 'table',
+    fp: 0.07,
+    price: 18,
+    kw: 'dreidel gelt hanukkah judaica game',
+    pal: false,
+    build(g) {
+      for (let i = 0; i < 3; i++) {
+        const x = (i - 1) * 0.04;
+        box(g, 0.025, 0.035, 0.025, M('#2a4a8a', 0.6), x, 0.0175, 0);
+        const top = mesh(g, new THREE.ConeGeometry(0.018, 0.02, 4), M('#2a4a8a', 0.6), x, 0, 0);
+        top.rotation.y = Math.PI / 4;
+      }
+      for (let i = 0; i < 6; i++) {
+        const a = angle(i, 6);
+        cyl(g, 0.012, 0.012, 0.003, M('#c9a25a', 0.3, 0.9), Math.cos(a) * 0.07, 0.0015, Math.sin(a) * 0.07, 16);
+      }
+    },
+  },
+  ramadan_lanterns: {
+    id: 'ramadan_lanterns',
+    name: 'Ramadan lanterns (fanous)',
+    cat: 'faith',
+    sec: 'Islamic',
+    group: 'faith',
+    surf: 'hang',
+    fp: 0.15,
+    price: 40,
+    kw: 'ramadan fanous lantern islamic celebration hanging',
+    pal: false,
+    build(g) {
+      for (let i = 0; i < 3; i++) {
+        const x = (i - 1) * 0.22;
+        cyl(g, 0.055, 0.07, 0.14, M('#c9a25a', 0.3, 0.85, { emissive: '#c9702e', emissiveIntensity: 0.3 }), x, -0.1 + Math.abs(i - 1) * 0.04, 0, 10);
+        cyl(g, 0.02, 0.03, 0.03, M('#c9a25a', 0.3, 0.85), x, -0.02 + Math.abs(i - 1) * 0.04, 0, 10);
+      }
+    },
+  },
+  kiddush_set: {
+    id: 'kiddush_set',
+    name: 'Kiddush cup & challah',
+    cat: 'faith',
+    sec: 'Judaica',
+    group: 'faith',
+    surf: 'table',
+    fp: 0.09,
+    price: 36,
+    kw: 'kiddush cup challah bread judaica shabbat',
+    pal: false,
+    build(g) {
+      cyl(g, 0.025, 0.018, 0.06, M('#c9a25a', 0.3, 0.9), -0.05, 0.03, 0, 16);
+      const loaf = mesh(g, new THREE.CapsuleGeometry(0.03, 0.1, 4, 10), M('#c9822a', 0.6), 0.04, 0.035, 0);
+      loaf.rotation.z = Math.PI / 2;
+    },
+  },
+  kinara_candle_holder: {
+    id: 'kinara_candle_holder',
+    name: 'Kinara',
+    cat: 'faith',
+    sec: 'African',
+    group: 'faith',
+    surf: 'table',
+    fp: 0.12,
+    price: 32,
+    kw: 'kinara kwanzaa candle holder african american celebration',
+    pal: false,
+    build(g, { builder }) {
+      box(g, 0.24, 0.02, 0.03, M('#1a1a1a', 0.6), 0, 0.01, 0);
+      const cols = ['#c2182a', '#c2182a', '#c2182a', '#1a1a1a', '#3a6a2a', '#3a6a2a', '#3a6a2a'];
+      for (let i = -3; i <= 3; i++) {
+        const c = cols[i + 3];
+        cyl(g, 0.008, 0.008, 0.1, M(c, 0.5), i * 0.035, 0.07, 0, 10);
+        flame(builder, i * 0.035, 0.13, 0, 0.3);
+      }
+      builder.flush();
+    },
+  },
+  nikah_stage: {
+    id: 'nikah_stage',
+    name: 'Nikah stage',
+    cat: 'faith',
+    sec: 'Islamic',
+    group: 'faith',
+    surf: 'floor',
+    fp: 1.1,
+    price: 420,
+    kw: 'nikah stage islamic wedding ceremony decor',
+    pal: true,
+    build(g, { palette, color }) {
+      box(g, 2.2, 0.12, 1.1, M('#c9a25a', 0.4, 0.6), 0, 0.06, 0);
+      const cloth = M(color ?? palette.f, 0.85);
+      box(g, 0.06, 1.6, 0.06, cloth, -1, 0.92, -0.4);
+      box(g, 0.06, 1.6, 0.06, cloth, 1, 0.92, -0.4);
+      mesh(g, new THREE.PlaneGeometry(2.1, 1.5, 4, 4), M(palette.b[0] ?? '#e2506a', 0.8, 0, { side: THREE.DoubleSide }), 0, 1.7, -0.4);
+    },
+  },
+  palki_canopy: {
+    id: 'palki_canopy',
+    name: 'Palki canopy',
+    cat: 'faith',
+    sec: 'Hindu',
+    group: 'faith',
+    surf: 'floor',
+    fp: 0.5,
+    price: 280,
+    kw: 'palki palanquin canopy indian wedding entrance',
+    pal: true,
+    build(g, { palette, color }) {
+      const wood = M('#8a5a2a', 0.6, 0.2);
+      const posts: [number, number][] = [
+        [-0.4, -0.25],
+        [0.4, -0.25],
+        [-0.4, 0.25],
+        [0.4, 0.25],
+      ];
+      for (const [x, z] of posts) cyl(g, 0.03, 0.03, 1.6, wood, x, 0.8, z, 10);
+      const roof = mesh(g, new THREE.ConeGeometry(0.65, 0.45, 4), M(color ?? palette.b[0] ?? '#e2506a', 0.75), 0, 1.85, 0);
+      roof.rotation.y = Math.PI / 4;
+    },
+  },
+  seder_plate: {
+    id: 'seder_plate',
+    name: 'Seder plate',
+    cat: 'faith',
+    sec: 'Judaica',
+    group: 'faith',
+    surf: 'table',
+    fp: 0.09,
+    price: 44,
+    kw: 'seder plate passover judaica ceremony',
+    pal: false,
+    build(g) {
+      cyl(g, 0.11, 0.1, 0.015, M('#dcdcdc', 0.3, 0.8), 0, 0.0075, 0, 24);
+      const cols = ['#3a6a2a', '#c9a25a', '#8a5a2a', '#c2182a', '#f4f0e6', '#7a3a2a'];
+      for (let i = 0; i < 6; i++) {
+        const a = angle(i, 6);
+        cyl(g, 0.02, 0.02, 0.012, M(cols[i], 0.6), Math.cos(a) * 0.06, 0.021, Math.sin(a) * 0.06, 12);
+      }
+    },
+  },
+  tea_ceremony_set: {
+    id: 'tea_ceremony_set',
+    name: 'Tea ceremony set',
+    cat: 'faith',
+    sec: 'Japanese',
+    group: 'faith',
+    surf: 'table',
+    fp: 0.1,
+    price: 48,
+    kw: 'japanese tea ceremony set matcha culture',
+    pal: false,
+    build(g) {
+      cyl(g, 0.045, 0.05, 0.02, M('#c9a25a', 0.4, 0.5), 0, 0.01, 0, 20);
+      cyl(g, 0.035, 0.03, 0.04, M('#3a2a1a', 0.6), 0, 0.04, 0, 16);
+      for (const [x, z] of [
+        [0.06, 0.03],
+        [0.06, -0.03],
+      ] as [number, number][])
+        cyl(g, 0.018, 0.016, 0.025, M('#e8dcc8', 0.5), x, 0.0325, z, 12);
+    },
+  },
+  rangoli_design: {
+    id: 'rangoli_design',
+    name: 'Rangoli',
+    cat: 'faith',
+    sec: 'Hindu',
+    group: 'faith',
+    surf: 'floor',
+    fp: 0.4,
+    price: 65,
+    kw: 'rangoli floor pattern hindu diwali celebration',
+    pal: true,
+    build(g, { palette, color }) {
+      const cols = [color ?? palette.b[0] ?? '#e2506a', palette.b[1] ?? '#e8b04a', palette.b[2] ?? '#9ec9d9', palette.b[3] ?? '#fff'];
+      const tex = T(
+        (ctx, w, h) => {
+          ctx.fillStyle = '#1c1610';
+          ctx.fillRect(0, 0, w, h);
+          const cx = w / 2,
+            cy = h / 2;
+          for (let ring = 0; ring < 4; ring++) {
+            const r = (ring + 1) * (w * 0.11);
+            ctx.fillStyle = cols[ring % cols.length];
+            for (let i = 0; i < 12; i++) {
+              const a = (i / 12) * Math.PI * 2;
+              ctx.beginPath();
+              ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, w * 0.045, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        },
+        [1, 1],
+        256,
+      );
+      const disc = mesh(g, new THREE.CircleGeometry(0.5, 48), M('#fff', 0.9, 0, { map: tex }), 0, 0.003, 0);
+      disc.rotation.x = -Math.PI / 2;
+      disc.castShadow = false;
     },
   },
 };
