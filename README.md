@@ -28,11 +28,9 @@ npm run lint      # oxlint
 
 ## Deploying
 
-Every push to `main` builds and publishes the studio to GitHub Pages
-(`.github/workflows/deploy.yml`), at https://indiaroseclifton.github.io/Design-Studio/. The workflow sets
-`BASE_PATH` so the build is served from the repository's subfolder; locally it stays at `/`. Pages has to
-be switched on once, under the repository's **Settings → Pages → Build and deployment → Source: GitHub
-Actions**.
+The repository is connected to Vercel (project `designstudio`). Every push to `main` deploys to
+production, and every pull request gets its own preview deployment, linked from the PR by the Vercel bot.
+It's a static Vite build (`npm run build` → `dist/`), so no extra configuration is needed.
 
 ## What's implemented
 
