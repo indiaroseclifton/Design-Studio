@@ -3,8 +3,10 @@ import { VENUES } from '../../engine/venues.gen';
 import { captureScene, downloadUrl, slug } from '../../lib/capture';
 import { useSmall } from '../../lib/useMedia';
 import { useDesignStore, type ModalKind, type OverlayKind } from '../../store/designStore';
+import { toggleFullscreen, useFullscreen, useSideStudio } from '../../lib/fullscreen';
 
-type ToolbarKey = ModalKind | OverlayKind | 'flower' | 'cake' | 'snapshot';
+type ViewKey = 'v-cat' | 'v-panel' | 'v-strip' | 'v-side' | 'v-all' | 'v-full';
+type ToolbarKey = ModalKind | OverlayKind | 'flower' | 'cake' | 'snapshot' | ViewKey;
 interface MenuEntry {
   key: ToolbarKey;
   label: string;
@@ -42,7 +44,7 @@ const btnClass = 'rounded-[9px] px-3 max-[1180px]:px-2 py-2 text-[12.5px] font-m
 const onStyle = { background: 'rgba(var(--acr),.18)', color: 'var(--ac)' };
 
 /** A toolbar dropdown; closes on an outside click or Esc. */
-function Dropdown({ label, items, isOn, onPick, open, setOpen, align = 'right' }: { label: string; items: MenuEntry[]; isOn: (k: ToolbarKey) => boolean; onPick: (k: ToolbarKey) => void; open: boolean; setOpen: (o: boolean) => void; align?: 'left' | 'right' }) {
+function Dropdown({ label, items, isOn, onPick, open, setOpen, align = 'right', lit }: { label: string; items: MenuEntry[]; isOn: (k: ToolbarKey) => boolean; onPick: (k: ToolbarKey) => void; open: boolean; setOpen: (o: boolean) => void; align?: 'left' | 'right'; /** overrides the button's highlight */ lit?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -62,7 +64,7 @@ function Dropdown({ label, items, isOn, onPick, open, setOpen, align = 'right' }
       window.removeEventListener('keydown', key, true);
     };
   }, [open, setOpen]);
-  const anyOn = items.some((m) => isOn(m.key));
+  const anyOn = lit ?? items.some((m) => isOn(m.key));
   return (
     <div ref={ref} className="relative">
       <button type="button" className={btnClass} aria-haspopup="menu" aria-expanded={open} style={anyOn || open ? onStyle : undefined} onClick={() => setOpen(!open)}>
@@ -104,7 +106,12 @@ export function TopToolbar() {
   const drawer = useDesignStore((s) => s.drawer);
   const setDrawer = useDesignStore((s) => s.setDrawer);
   const small = useSmall();
-  const [menu, setMenu] = useState<'studios' | 'more' | null>(null);
+  const [menu, setMenu] = useState<'studios' | 'more' | 'view' | null>(null);
+  const hidden = useDesignStore((s) => s.hidden);
+  const togglePanel = useDesignStore((s) => s.togglePanel);
+  const setAllPanels = useDesignStore((s) => s.setAllPanels);
+  const full = useFullscreen();
+  const sideStudio = useSideStudio();
 
   function snapshot() {
     const url = captureScene();
@@ -116,11 +123,41 @@ export function TopToolbar() {
     showToast('Snapshot saved');
   }
 
-  const isOn = (k: ToolbarKey) => modal === k || overlay === k || (k === 'flower' && studioOpen) || (k === 'cake' && cakeOpen);
+  const allHidden = hidden.catalogue && hidden.panel && hidden.strip;
+  const shown = (v: boolean) => (v ? 'Minimised · click to show' : 'Shown · click to minimise');
+  const VIEW: MenuEntry[] = [
+    ...(sideStudio
+      ? [{ key: 'v-side' as const, label: 'Side panel', note: shown(hidden.side) + ' (H)' }]
+      : small
+        ? [{ key: 'v-strip' as const, label: 'Venue strip', note: shown(hidden.strip) }]
+        : [
+            { key: 'v-cat' as const, label: 'Catalogue', note: shown(hidden.catalogue) },
+            { key: 'v-panel' as const, label: 'Settings panel', note: shown(hidden.panel) },
+            { key: 'v-strip' as const, label: 'Venue strip', note: shown(hidden.strip) },
+            { key: 'v-all' as const, label: allHidden ? 'Show all panels' : 'Minimise all panels', note: 'Just the scene (H)' },
+          ]),
+    { key: 'v-full', label: full ? 'Exit full screen' : 'Full screen', note: full ? 'Back to the browser window (F or Esc)' : 'Use the whole screen (F)' },
+  ];
+  const viewOn: Partial<Record<ToolbarKey, boolean>> = { 'v-cat': !hidden.catalogue, 'v-panel': !hidden.panel, 'v-strip': !hidden.strip, 'v-side': !hidden.side, 'v-full': full };
+  const isOn = (k: ToolbarKey) =>
+    viewOn[k] ?? (modal === k || overlay === k || (k === 'flower' && studioOpen) || (k === 'cake' && cakeOpen));
   const anyStudio = studioOpen || cakeOpen || !!overlay;
+
+  /** The View menu's entries; true when handled. */
+  function k2view(key: ToolbarKey): key is ViewKey {
+    if (key === 'v-cat') togglePanel('catalogue');
+    else if (key === 'v-panel') togglePanel('panel');
+    else if (key === 'v-strip') togglePanel('strip');
+    else if (key === 'v-side') togglePanel('side');
+    else if (key === 'v-all') setAllPanels(!allHidden);
+    else if (key === 'v-full') toggleFullscreen();
+    else return false;
+    return true;
+  }
 
   function onClick(key: ToolbarKey) {
     setMenu(null);
+    if (k2view(key)) return;
     setDrawer(null);
     if (key === 'flower') return studioOpen ? closeStudio() : openStudio();
     if (key === 'cake') return cakeOpen ? closeCakeStudio() : openCakeStudio();
@@ -150,8 +187,8 @@ export function TopToolbar() {
       {label}
     </button>
   );
-  const dd = (id: 'studios' | 'more', label: string, items: MenuEntry[], align?: 'left' | 'right') => (
-    <Dropdown label={label} items={items} isOn={isOn} onPick={onClick} open={menu === id} setOpen={(o) => setMenu(o ? id : null)} align={align} />
+  const dd = (id: 'studios' | 'more' | 'view', label: string, items: MenuEntry[], align?: 'left' | 'right', lit?: boolean) => (
+    <Dropdown label={label} items={items} isOn={isOn} onPick={onClick} open={menu === id} setOpen={(o) => setMenu(o ? id : null)} align={align} lit={lit} />
   );
 
   return (
@@ -165,7 +202,7 @@ export function TopToolbar() {
           ? { left: 8, right: 8, width: 'max-content', maxWidth: 'calc(100vw - 16px)', marginInline: 'auto', top: 8 }
           : anyStudio
             ? { left: 16, right: 16, width: 'max-content', maxWidth: 'calc(100vw - 32px)', marginInline: 'auto' }
-            : { left: 358, right: 304, width: 'max-content', maxWidth: 'calc(100vw - 662px)', marginInline: 'auto' }
+            : { left: hidden.catalogue ? 16 : 358, right: hidden.panel ? 16 : 304, width: 'max-content', maxWidth: `calc(100vw - ${(hidden.catalogue ? 16 : 358) + (hidden.panel ? 16 : 304)}px)`, marginInline: 'auto' }
       }
     >
       <button type="button" className={btnClass} disabled={!history.length} onClick={undo} title="Undo (Ctrl+Z)" aria-label="Undo">
@@ -189,7 +226,8 @@ export function TopToolbar() {
           </button>
         ))}
       <span className="mx-1 h-[18px] w-px" style={{ background: 'rgba(255,240,220,.15)' }} />
-      {dd('more', 'More', small ? [...SMALL_MORE, ...MORE] : MORE)}
+      {small ? dd('more', 'More', [...SMALL_MORE, ...MORE, ...VIEW], undefined, [...SMALL_MORE, ...MORE].some((m) => isOn(m.key))) : dd('view', 'View', VIEW, undefined, full || (sideStudio ? hidden.side : hidden.catalogue || hidden.panel || hidden.strip))}
+      {!small && dd('more', 'More', MORE)}
     </div>
   );
 }

@@ -26,6 +26,12 @@ npm run build    # type-check + production build
 npm run lint      # oxlint
 ```
 
+## Deploying
+
+The repository is connected to Vercel (project `designstudio`). Every push to `main` deploys to
+production, and every pull request gets its own preview deployment, linked from the PR by the Vercel bot.
+It's a static Vite build (`npm run build` → `dist/`), so no extra configuration is needed.
+
 ## What's implemented
 
 ### Everything in the prototype's Studio
@@ -85,6 +91,17 @@ Its components are in `src/components/flower/` and its logic in `src/engine/flow
   - Vessel-aware stem-count advice, a one-click **colour story** from any event palette, and a searchable
     flower grid showing what's already in the recipe.
   - Cancel and Esc ask before discarding unsaved changes.
+- **Placing by hand** (`src/engine/placed.ts`, `src/components/studio3d/drag.tsx`):
+  - Clicking a flower still adds stems that the recipe places automatically. Dragging it onto the
+    arrangement instead places one bloom exactly where it's dropped, facing out from the heart of the
+    arrangement. Greenery sprigs (except trailing ivy) can be dragged in by their picture.
+  - Placed blooms can be picked up and dragged anywhere on the arrangement; the camera holds still while
+    you do. Click one to select it (a ring shows which); Delete removes it.
+  - A **Placed by hand** list gives each one a colour and a remove button. Colour stories recolour them
+    too, and they count towards the stem total and price.
+  - Changing the vessel or size moves placed blooms onto the new shape.
+  - Mouse and pen drags start after a few pixels. On touch screens, press and hold a flower to pick it up,
+    so the list still scrolls.
 - **Saving:** Save to My Flowers or Save & place. A saved arrangement is a normal catalogue piece: it can be
   placed, dragged, stacked, quoted and re-edited via **✿ Edit in Flower Studio**. Arrangements persist in
   `localStorage` (`vs2_custom`) and are validated on load.
@@ -97,6 +114,11 @@ Its components are in `src/components/flower/` and its logic in `src/engine/flow
 Open it from the toolbar (**Cake Studio**), or from **New cake** under My Cakes or Desserts. The editor is in
 `src/components/cake/CakeStudio.tsx`, and the cake model and geometry are in `src/engine/cakes.ts`. It shares a
 3D stage with the Flower Studio (`src/components/studio3d/`).
+
+Flowers can be placed by hand on a cake too. Drag one from **Decorate** onto any tier, the board or the top
+and it sits in the icing, facing out; placed blooms can be dragged around, recoloured or removed, and they
+stay on their tier when tiers are resized or the stand changes. Clicking a flower still adds stems in the
+chosen style (switching on a crescent if the cake had none).
 
 - **Tiers:**
   - Up to 5 tiers, each round, square, hexagonal or heart-shaped.
@@ -153,11 +175,22 @@ design, so saved designs, exports and share links carry it, and each feeds the o
     print from it.
 - **Music** (`src/music/`, `src/components/music/`):
   - The day's moments, from guests arriving to the last song, timed from the ceremony.
-  - A library of about 160 wedding songs, with approximate tempo and energy. Curation scores energy fit,
+  - A library of about 195 wedding songs, with approximate tempo and energy. Curation scores energy fit,
     genre and era preferences and must-plays, never repeats a song, and shapes the party with a warm-up,
     peaks and breathers.
-  - An energy-across-the-day chart, with a crosshair tooltip and keyboard stepping.
+  - Recommendations for each moment, beside the playlist: wedding favourites, songs matching your genres
+    and eras, and songs like the ones you've pinned, each with its reason. One tap adds a song (a set
+    grows to fit it) or picks it for a single-song moment.
   - Pin, remove, reshuffle and add your own songs, with a do-not-play list.
+  - **Previews in the app** (`src/music/preview.ts`): ▶ plays a 30-second clip without leaving the studio,
+    from Apple's public iTunes Search API (no account or key). A ring fills as it plays, one clip plays at
+    a time, Space pauses and resumes, and a player bar under the playlist has the artwork, a seekable
+    progress line and a link to the full track on Apple Music. Once previewed, a song's record label shows
+    its album artwork. Lookups skip karaoke and cover versions, are cached, and fall back to JSONP if the
+    browser refuses the direct request; when there's no preview, the bar links to a Spotify search.
+  - A warm black-and-gold look: a glowing energy wave across the day (click it to open a moment), moment
+    chips, and a track table with energy bars, tempo and start times. A little crowd dances along the floor
+    under the wave (swaying, bobbing or jumping to the energy), and one-song moments spin on a turntable.
   - Exports: a DJ brief PDF and a playlist CSV for import tools.
   - The order of service names the ceremony music, and the Storybook names the first-dance song.
 - **Attire & colour** (`src/attire/`, `src/components/attire/`):
@@ -187,6 +220,20 @@ full-screen view was open.
   - Options: life-size or a 1:10 tabletop model.
   - model-viewer is loaded from jsDelivr on first use, as in the prototype. If it can't load, the `.glb`
     can still be downloaded.
+
+### Minimising panels and full screen
+
+- Each panel has a handle on its edge: the catalogue, the settings column and the venue strip. Clicking a
+  handle slides that panel off screen, and the handle stays at the edge to bring it back. The toolbar
+  re-centres over the space.
+- In the Flower, Cake, Stationery, Menu, Music and Attire studios, the side panel minimises the same way,
+  and the preview widens to fill the screen.
+- **View** in the toolbar (under **More** on phones) lists each panel, with minimise or show all, and
+  **Full screen**. It lights up while anything is minimised or full screen is on.
+- Keys: **F** for full screen and **H** to hide or show the panels. In a studio, **H** toggles its side
+  panel.
+- Which panels are minimised is remembered between visits. Where the browser has no full-screen mode
+  (iPhone Safari), **Full screen** minimises the panels instead.
 
 ### Phones, tablets and drag-and-drop
 
