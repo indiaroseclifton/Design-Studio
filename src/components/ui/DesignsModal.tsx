@@ -4,6 +4,7 @@ import { captureScene, downloadText, slug } from '../../lib/capture';
 import { gz64, readJSON, writeJSON } from '../../lib/storage';
 import { useDesignStore } from '../../store/designStore';
 import { normalizeDesign } from '../../lib/designFormat';
+import { arrangementsIn, importArrangements, type SavedArrangement } from '../../engine/flowers';
 import type { Design } from '../../types';
 import { Modal } from './Modal';
 
@@ -17,6 +18,8 @@ interface SavedDesign {
   venueName: string;
   thumb: string | null;
   data: Design;
+  /** Flower Studio arrangements the design uses, so it still opens if they're deleted locally */
+  flowers?: SavedArrangement[];
 }
 
 const loadSaved = () => readJSON<SavedDesign[]>(LS_KEY, []).filter((d) => d && typeof d.id === 'string' && d.data);
@@ -32,6 +35,7 @@ export function DesignsModal() {
   const loadDesign = useDesignStore((s) => s.loadDesign);
   const closeModal = useDesignStore((s) => s.closeModal);
   const showToast = useDesignStore((s) => s.showToast);
+  const bumpFlowers = () => useDesignStore.setState((s) => ({ flowersVersion: s.flowersVersion + 1 }));
   const [saved, setSaved] = useState<SavedDesign[]>(loadSaved);
   const [name, setName] = useState('');
   const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null);
@@ -57,6 +61,7 @@ export function DesignsModal() {
       venueName: venue.name,
       thumb: captureScene(480, 300, 'image/jpeg', 0.75),
       data: design,
+      flowers: arrangementsIn(design.items.map((i) => i.type)),
     };
     if (persist([entry, ...saved])) {
       setName('');
@@ -65,6 +70,7 @@ export function DesignsModal() {
   }
 
   function open(d: SavedDesign) {
+    if (importArrangements(d.flowers)) bumpFlowers();
     const clean = normalizeDesign(d.data);
     if (!clean) {
       showToast('That design could not be read');
@@ -84,7 +90,7 @@ export function DesignsModal() {
 
   async function shareLink() {
     try {
-      const code = await gz64(JSON.stringify({ ...design, venueName: venue.name }));
+      const code = await gz64(JSON.stringify({ ...design, venueName: venue.name, flowers: arrangementsIn(design.items.map((i) => i.type)) }));
       const url = `${location.href.split('#')[0]}#d=${code}`;
       try {
         await navigator.clipboard.writeText(url);
@@ -100,6 +106,8 @@ export function DesignsModal() {
   async function importFile(file: File) {
     try {
       const raw = JSON.parse(await file.text());
+      // Register any arrangements carried in the file first, so pieces that use them survive normalising.
+      if (importArrangements(raw?.flowers)) bumpFlowers();
       const clean = normalizeDesign(raw);
       if (!clean) throw new Error('not a design');
       loadDesign(withVenue(clean, typeof raw.venueName === 'string' ? raw.venueName : undefined));
@@ -132,7 +140,7 @@ export function DesignsModal() {
           type="button"
           className="btn"
           onClick={() =>
-            downloadText(JSON.stringify({ app: 'venue-studio', ...design, venueName: venue.name }, null, 1), `${slug(venue.name)}.json`, 'application/json')
+            downloadText(JSON.stringify({ app: 'venue-studio', ...design, venueName: venue.name, flowers: arrangementsIn(design.items.map((i) => i.type)) }, null, 1), `${slug(venue.name)}.json`, 'application/json')
           }
         >
           Export file

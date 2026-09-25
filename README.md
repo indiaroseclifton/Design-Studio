@@ -61,6 +61,22 @@ npm run lint      # oxlint
   including files exported from the prototype), **Quote** (cloths, overlays, chair styles and décor priced as
   in the prototype, CSV and print/PDF), **Snapshot** and **autosave**.
 
+### Flower Studio
+
+Open it from the toolbar (**✿ Flower Studio**), the catalogue header, or **New arrangement** under My Flowers.
+Its components are in `src/components/flower/` and its logic in `src/engine/flowers.ts`.
+
+- A full-screen editor with its own orbiting 3D viewer, and an editable name field.
+- Controls: 7 presets, 7 vessels, 5 finishes, 5 shapes, size (60–160%), 17 flower types with 17 colours and
+  − n + steppers, and 7 kinds of greenery. Each row has a cut-stem thumbnail rendered in 3D.
+- **Shuffle placement** reseeds the arrangement. **Save to catalogue** and **Save & place** add it under **My
+  Flowers** as a normal catalogue piece. It can be placed, dragged, stacked, quoted, and edited later via
+  **✿ Edit in Flower Studio** in the inspector.
+- Arrangements persist in `localStorage` (`vs2_custom`), and saved data is validated on load.
+- Arrangements now travel with designs: exports, share links and saved designs embed the ones they use, which
+  are registered on import. The handoff lists this as a gap in the prototype.
+- The main scene pauses rendering while the studio covers it.
+
 ### Porting approach
 
 `scripts/port-prototype.py` copies the prototype's item, pack, template, flower-engine and venue builders
@@ -89,8 +105,7 @@ called texture methods on it, so that venue failed to build.
 
 ## Deferred
 
-Flower Studio (its engine is ported and used by several catalogue pieces, but the full-screen editor isn't
-built), Storybook, Brass Lantern and the AR viewer still show a "coming soon" overlay. Also still to do:
+Storybook, Brass Lantern and the AR viewer still show a "coming soon" overlay. Also still to do:
 drag-and-drop from the catalogue (click-to-place is implemented), GLB uploads, the lookbook PDF, and the
 ≤860px responsive drawer layout.
 

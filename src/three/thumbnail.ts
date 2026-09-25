@@ -4,6 +4,7 @@ import { ITEMS, TEMPLATES, itemGroup, type Entry } from '../engine/catalogue';
 import { CHAIRS, HANG, OVERLAYS, chairSpots, clothOf, fabricMat, hasTbl, makeChair, makeChairParts, palOf, tableUnit, topY } from '../engine/studio';
 import { DEF_TABLE, addItem, setAllPlaces } from '../lib/designOps';
 import { DEFAULT_DESIGN } from '../lib/designFormat';
+import { cutStem } from '../engine/flowers';
 import { disposeObject3D } from './utils';
 import type { Design, TableConfig } from '../types';
 
@@ -93,32 +94,37 @@ function thumbGroup(e: Entry, pal: string, chair: string | null): THREE.Group {
   return composeTemplate(e.id);
 }
 
-function render(e: Entry, pal: string, chair: string | null): string {
+/** Frame a group in the thumbnail camera from `dir` and return a WebP data URL of the given size. */
+function shoot(g: THREE.Group, dir: THREE.Vector3, fit: number, w = W, h = H): string {
   const { renderer: r, scene: sc } = setup();
-  const g = thumbGroup(e, pal, chair);
   sc.add(g);
   g.updateMatrixWorld(true);
   const sph = new THREE.Box3().setFromObject(g).getBoundingSphere(new THREE.Sphere());
-  const dir = (
-    e.k === 'tpl' ? new THREE.Vector3(1, 1.15, 1.5) : e.k === 'chair' || e.k === 'decor' ? new THREE.Vector3(1.1, 0.6, 1.3) : new THREE.Vector3(0.9, 0.75, 1.5)
-  ).normalize();
-  const dist = (Math.max(0.2, sph.radius) / Math.sin(THREE.MathUtils.degToRad(cam.fov / 2))) * (e.k === 'tpl' ? 0.72 : 0.92);
-  cam.position.copy(sph.center).addScaledVector(dir, dist);
+  cam.aspect = w / h;
+  const dist = (Math.max(0.02, sph.radius) / Math.sin(THREE.MathUtils.degToRad(cam.fov / 2))) * fit;
+  cam.position.copy(sph.center).addScaledVector(dir.normalize(), dist);
   cam.lookAt(sph.center);
   cam.near = dist / 60;
   cam.far = dist * 4;
   cam.updateProjectionMatrix();
+  if (w !== W || h !== H) r.setSize(w, h, false);
   r.render(sc, cam);
   const url = r.domElement.toDataURL('image/webp', 0.85);
+  if (w !== W || h !== H) r.setSize(W, H, false);
   sc.remove(g);
   disposeObject3D(g);
   return url;
 }
 
+function render(e: Entry, pal: string, chair: string | null): string {
+  const dir = e.k === 'tpl' ? new THREE.Vector3(1, 1.15, 1.5) : e.k === 'chair' || e.k === 'decor' ? new THREE.Vector3(1.1, 0.6, 1.3) : new THREE.Vector3(0.9, 0.75, 1.5);
+  return shoot(thumbGroup(e, pal, chair), dir, e.k === 'tpl' ? 0.72 : 0.92);
+}
+
 /* ---------------------------------------------------------------- async queue */
 
 const cache = new Map<string, string>();
-const waiting = new Map<string, { e: Entry; pal: string; chair: string | null; cbs: Array<(url: string) => void> }>();
+const waiting = new Map<string, { make: () => string; cbs: Array<(url: string) => void> }>();
 let pumping = false;
 
 /** Palette-aware pieces (and chair décor, which depends on the chair) get their own thumbnail per palette. */
@@ -129,9 +135,12 @@ export function thumbKey(e: Entry, pal: string, chair: string | null) {
 
 export const cachedThumb = (key: string) => cache.get(key);
 
-/** Queue a thumbnail; `cb` runs when it's ready. Renders one per tick so the UI stays responsive. */
-export function requestThumb(e: Entry, pal: string, chair: string | null, cb: (url: string) => void): () => void {
-  const key = thumbKey(e, pal, chair);
+/** Drop cached thumbnails whose key starts with `prefix` (e.g. after re-saving a Flower Studio arrangement). */
+export function forgetThumbs(prefix: string) {
+  for (const k of [...cache.keys()]) if (k.startsWith(prefix)) cache.delete(k);
+}
+
+function enqueue(key: string, make: () => string, cb: (url: string) => void): () => void {
   const hit = cache.get(key);
   if (hit) {
     cb(hit);
@@ -139,7 +148,7 @@ export function requestThumb(e: Entry, pal: string, chair: string | null, cb: (u
   }
   const w = waiting.get(key);
   if (w) w.cbs.push(cb);
-  else waiting.set(key, { e, pal, chair, cbs: [cb] });
+  else waiting.set(key, { make, cbs: [cb] });
   if (!pumping) {
     pumping = true;
     setTimeout(pump, 30);
@@ -152,6 +161,18 @@ export function requestThumb(e: Entry, pal: string, chair: string | null, cb: (u
   };
 }
 
+/** Queue a catalogue thumbnail; `cb` runs when it's ready. Renders one per tick so the UI stays responsive. */
+export function requestThumb(e: Entry, pal: string, chair: string | null, cb: (url: string) => void): () => void {
+  return enqueue(thumbKey(e, pal, chair), () => render(e, pal, chair), cb);
+}
+
+export const stemKey = (kind: 'flower' | 'green', t: string, c?: string) => `stem:${kind}:${t}:${c ?? ''}`;
+
+/** Queue a tall cut-stem thumbnail for the Flower Studio's rows. */
+export function requestStemThumb(kind: 'flower' | 'green', t: string, c: string | undefined, cb: (url: string) => void): () => void {
+  return enqueue(stemKey(kind, t, c), () => shoot(cutStem(kind, t, c), new THREE.Vector3(0.15, 0.3, 1), 0.8, 104, 128), cb);
+}
+
 function pump() {
   const next = waiting.entries().next();
   if (next.done) {
@@ -161,7 +182,7 @@ function pump() {
   const [key, job] = next.value;
   waiting.delete(key);
   try {
-    const url = render(job.e, job.pal, job.chair);
+    const url = job.make();
     cache.set(key, url);
     job.cbs.forEach((f) => f(url));
   } catch (err) {
@@ -169,4 +190,3 @@ function pump() {
   }
   setTimeout(pump, 8);
 }
-

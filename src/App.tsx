@@ -10,6 +10,7 @@ import { Letterbox } from './components/ui/Letterbox';
 import { DesignsModal } from './components/ui/DesignsModal';
 import { QuoteModal } from './components/ui/QuoteModal';
 import { AddonsModal } from './components/ui/AddonsModal';
+import { FlowerStudio } from './components/flower/FlowerStudio';
 import { useEffect } from 'react';
 import { useVenuePhoto } from './lib/venuePhoto';
 import { useDesignStore } from './store/designStore';
@@ -19,6 +20,7 @@ import { useShareLink } from './lib/useShareLink';
 
 export default function App() {
   const modal = useDesignStore((s) => s.modal);
+  const studio = useDesignStore((s) => s.studio);
   useKeyboardShortcuts();
   useApplyTweaks();
   useShareLink();
@@ -37,6 +39,8 @@ export default function App() {
       <VenueStrip />
       <HintPill />
       <Toast />
+      {/* key: reopening the studio (or editing another arrangement) starts from fresh state */}
+      {studio.open && <FlowerStudio key={studio.editId ?? 'new'} />}
       {modal === 'designs' && <DesignsModal />}
       {modal === 'quote' && <QuoteModal />}
       {modal === 'addons' && <AddonsModal />}

@@ -47,10 +47,10 @@ src = src.replace('const RUNNERS={', 'const RUNNERS: Record<string, [string, (p:
 SIGS = {
     'function stringFlags(g,B,a,b,n,mats,sag=.35)': 'function stringFlags(g:O3,B:Builder,a:number[],b:number[],n:number,mats:Mat[],sag=.35)',
     'function P(B,bm,k,x,y,z,sx,sy,sz,rx,ry,rz,c,e=1)': 'function P(B:Builder,bm:THREE.Matrix4,k:string,x:number,y:number,z:number,sx:number,sy:number,sz:number,rx:number,ry:number,rz:number,c:string,e=1)',
-    'function frame(bm,x,y,z,nx,ny,nz,tw=0)': 'function frame(bm:THREE.Matrix4,x:number,y:number,z:number,nx:number,ny:number,nz:number,tw=0)',
+    'function frame(bm,x,y,z,nx,ny,nz,tw=0)': 'export function frame(bm:THREE.Matrix4,x:number,y:number,z:number,nx:number,ny:number,nz:number,tw=0)',
     'function ring(B,bm,n,r,t,len,w,y0,c,o={})': 'function ring(B:Builder,bm:THREE.Matrix4,n:number,r:number,t:number,len:number,w:number,y0:number,c:string,o:RingOpts={})',
-    'function stemTo(B,bm,a,b,r,c)': 'function stemTo(B:Builder,bm:THREE.Matrix4,a:number[],b:number[],r:number,c:string)',
-    'const fc=k=>': 'const fc=(k:string):string=>',
+    'function stemTo(B,bm,a,b,r,c)': 'export function stemTo(B:Builder,bm:THREE.Matrix4,a:number[],b:number[],r:number,c:string)',
+    'const fc=k=>': 'export const fc=(k:string):string=>',
     'function bloomAt(B,bm,t,p,n,s,c)': 'function bloomAt(B:Builder,bm:THREE.Matrix4,t:string,p:number[],n:number[],s:number,c:string)',
     'const finMat=k=>': 'const finMat=(k:string):Mat=>',
     'function buildArrangement(g,r)': 'export function buildArrangement(g:O3,r:Arrangement)',
@@ -111,6 +111,8 @@ FIXES = [
     (",rr=Math.hypot(ps.getX(k),ps.getZ(k));", ";"),
     ("const ox=px*1.12,oz=", "const oz="),
     ("const FINS=", "export const FINS: Record<string, string>="),
+    # The Flower Studio (src/components/flower) draws cut-stem thumbnails with these.
+    ("const I4=new THREE.Matrix4(),", "export const I4=new THREE.Matrix4();const "),
     ("const SHAPES=", "export const SHAPES: Record<string, string>="),
     ('const pl=noSh(mesh(g,new THREE.PlaneGeometry(len,EH),wm.clone(),x0,EH/2,z0));', 'const pl=noSh(mesh(g,new THREE.PlaneGeometry(len,EH),wm.clone(),x0,EH/2,z0)) as THREE.Mesh<THREE.BufferGeometry,THREE.MeshStandardMaterial>;'),
     ("sage:'#a8b8a0'}[o.fab];", "sage:'#a8b8a0'}[o.fab]??'#f7f1e6';"),

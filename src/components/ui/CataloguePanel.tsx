@@ -47,10 +47,14 @@ export function CataloguePanel() {
   const select = useDesignStore((s) => s.select);
   const packsOn = useDesignStore((s) => s.packsOn);
   const openModal = useDesignStore((s) => s.openModal);
+  const openStudio = useDesignStore((s) => s.openStudio);
+  const flowersVersion = useDesignStore((s) => s.flowersVersion);
   const [editPal, setEditPal] = useState(false);
 
   const packSet = useMemo(() => new Set(packsOn), [packsOn]);
-  const entries = useMemo(() => buildEntries(packSet), [packSet]);
+  // flowersVersion: saved arrangements live in ITEMS, so re-list them when they change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const entries = useMemo(() => buildEntries(packSet), [packSet, flowersVersion]);
   const tabs = CAT_ORDER.filter((k) => !isPack(k) || packSet.has(k));
   const curCat = tabs.includes(cat) ? cat : 'templates';
 
@@ -111,6 +115,9 @@ export function CataloguePanel() {
             <h2 className="serif text-[28px] leading-none">Catalogue</h2>
             <span className="lbl">{q ? `${list.length} found` : `${pieceCount} pieces`}</span>
           </div>
+          <button type="button" className="btn shrink-0 whitespace-nowrap px-2.5 py-1.5" onClick={() => openStudio()}>
+            Flower Studio
+          </button>
         </div>
         <input className="inp" placeholder="Search — chiavari, arch, menorah, lace…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <div className="scroll flex max-h-[92px] flex-wrap gap-1 overflow-y-auto">
@@ -168,7 +175,18 @@ export function CataloguePanel() {
       )}
 
       <div className="scroll flex-1 overflow-auto p-1 px-3.5 pb-3.5">
-        {sections.length === 0 && <div className="px-1 py-5 text-[13px] opacity-60">Nothing matches that search.</div>}
+        {!q && curCat === 'mine' && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button type="button" className="card text-left" onClick={() => openStudio()}>
+              <div className="th flex items-center justify-center text-[34px] font-light" style={{ color: 'var(--ac)' }}>
+                +
+              </div>
+              <b>New arrangement</b>
+              <small>Design a bouquet or centrepiece in the Flower Studio. It saves here, ready to place.</small>
+            </button>
+          </div>
+        )}
+        {sections.length === 0 && (q || curCat !== 'mine') && <div className="px-1 py-5 text-[13px] opacity-60">Nothing matches that search.</div>}
         {sections.map(([sec, items]) => (
           <div key={sec}>
             <div className="lbl mb-2 mt-3.5">{sec}</div>

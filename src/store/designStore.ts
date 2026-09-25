@@ -6,6 +6,8 @@ import type { Entry } from '../engine/catalogue';
 import { CHAIRS } from '../engine/studio';
 import { DEFAULT_DESIGN, normalizeDesign } from '../lib/designFormat';
 import * as ops from '../lib/designOps';
+import { customKey, loadCustom, registerCustom, saveCustomList, type SavedArrangement } from '../engine/flowers';
+import { forgetThumbs } from '../three/thumbnail';
 
 export type ModalKind = 'designs' | 'quote' | 'addons';
 
@@ -40,6 +42,16 @@ interface StoreState {
   activeCategory: string;
   /** true while a drag gesture is live (history already captured at its start) */
   gesture: boolean;
+  /** Flower Studio: open, and which saved arrangement is being edited (null = new) */
+  studio: { open: boolean; editId: string | null };
+  /** bumped whenever saved arrangements change, so the catalogue re-lists them */
+  flowersVersion: number;
+
+  openStudio: (editId?: string | null) => void;
+  closeStudio: () => void;
+  /** Save an arrangement to My Flowers; with `place`, also add it to the scene. */
+  saveArrangement: (r: SavedArrangement, place: boolean) => void;
+  deleteArrangement: (id: string) => void;
 
   /** Apply a named design operation to a draft copy and record it in undo history. */
   edit: (fn: (d: Design) => void, toast?: string, undoable?: boolean) => void;
@@ -152,6 +164,49 @@ export const useDesignStore = create<StoreState>()(
         search: '',
         activeCategory: 'templates',
         gesture: false,
+        studio: { open: false, editId: null },
+        flowersVersion: 0,
+
+        openStudio: (editId = null) => set({ studio: { open: true, editId }, selection: null, modal: null, comingSoon: null }),
+        closeStudio: () => set({ studio: { open: false, editId: null } }),
+        saveArrangement: (r, place) => {
+          const list = loadCustom().filter((x) => x.id !== r.id);
+          list.push(r);
+          if (!saveCustomList(list)) {
+            toast('Browser storage is full — delete an arrangement first');
+            return;
+          }
+          registerCustom(r);
+          const key = customKey(r.id);
+          forgetThumbs(`item:${key}`);
+          set((s) => ({
+            flowersVersion: s.flowersVersion + 1,
+            studio: { open: false, editId: null },
+            activeCategory: 'mine',
+            search: '',
+            // Re-saving changes how placed copies are built; a fresh design object makes the scene rebuild them.
+            design: s.design.items.some((i) => i.type === key) ? clone(s.design) : s.design,
+          }));
+          if (!place) {
+            toast(`Saved “${r.name}” to My Flowers`);
+            return;
+          }
+          let placed: PlacedItem | null = null;
+          commit((d) => void (placed = ops.addItem(d, key, { host: selectedHost(get()) })));
+          const it = placed as PlacedItem | null;
+          if (it) set({ selection: { k: 'item', id: it.id } });
+          toast(it ? `Saved “${r.name}” and placed it` : `Saved “${r.name}” — choose Round or Banquet to place it on a table`, !!it);
+        },
+        deleteArrangement: (id) => {
+          const key = customKey(id);
+          saveCustomList(loadCustom().filter((x) => x.id !== id));
+          commit((d) => void ops.removeItems(d, d.items.filter((i) => i.type === key).map((i) => i.id)));
+          // Keep the definition (hidden from the catalogue) so undo can bring deleted pieces back safely.
+          if (ITEMS[key]) ITEMS[key].cat = 'deleted';
+          forgetThumbs(`item:${key}`);
+          set((s) => ({ flowersVersion: s.flowersVersion + 1, studio: { open: false, editId: null }, selection: null }));
+          toast('Arrangement deleted');
+        },
 
         edit: (fn, msg, undoable = true) => {
           commit(fn);

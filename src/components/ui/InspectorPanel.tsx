@@ -4,6 +4,7 @@ import { CHAIRS, CLOTHS, DECOR, OVERLAYS, PALS, palOf } from '../../engine/studi
 import { arrange, linked, recolor, setOpt, swapItem } from '../../lib/designOps';
 import { useDesignStore } from '../../store/designStore';
 import type { Design, PlacedItem } from '../../types';
+import { customIdOf } from '../../engine/flowers';
 
 function Chips({ list, active, onPick }: { list: Array<[string, string]>; active: string | null | undefined; onPick: (id: string) => void }) {
   return (
@@ -71,6 +72,7 @@ export function InspectorPanel() {
   const beginGesture = useDesignStore((s) => s.beginGesture);
   const endGesture = useDesignStore((s) => s.endGesture);
   const live = useDesignStore((s) => s.live);
+  const openStudio = useDesignStore((s) => s.openStudio);
   const [applyAll, setApplyAll] = useState(false);
 
   if (!selection) return null;
@@ -234,6 +236,11 @@ export function InspectorPanel() {
           Remove
         </button>
       </div>
+      {customIdOf(item.type) && (
+        <button type="button" className="btn" onClick={() => openStudio(customIdOf(item.type))}>
+          ✿ Edit in Flower Studio
+        </button>
+      )}
       {d.top && <div className="text-[11px] leading-[1.4] opacity-60">While this is selected, catalogue pieces you click are set on top of it.</div>}
     </section>
   );

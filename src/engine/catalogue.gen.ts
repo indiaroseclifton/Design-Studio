@@ -2061,8 +2061,8 @@ registerKind('trumpet', () => [
   ),
   M('#fff', 0.55, 0, { side: THREE.DoubleSide }),
 ]);
-const I4 = new THREE.Matrix4(),
-  _m4 = new THREE.Matrix4(),
+export const I4 = new THREE.Matrix4();
+const _m4 = new THREE.Matrix4(),
   _q4 = new THREE.Quaternion(),
   _tq = new THREE.Quaternion(),
   _e4 = new THREE.Euler(0, 0, 0, 'YXZ'),
@@ -2091,7 +2091,7 @@ function P(
   _m4.compose(_p4.set(x, y, z), _q4, _s4.set(sx, sy, sz));
   B.addM(k, bm.clone().multiply(_m4), c, e);
 }
-function frame(bm: THREE.Matrix4, x: number, y: number, z: number, nx: number, ny: number, nz: number, tw = 0) {
+export function frame(bm: THREE.Matrix4, x: number, y: number, z: number, nx: number, ny: number, nz: number, tw = 0) {
   _d4.set(nx, ny, nz);
   if (_d4.lengthSq() < 1e-9) _d4.set(0, 1, 0);
   _d4.normalize();
@@ -2137,7 +2137,7 @@ function ring(
     );
   }
 }
-function stemTo(B: Builder, bm: THREE.Matrix4, a: number[], b: number[], r: number, c: string) {
+export function stemTo(B: Builder, bm: THREE.Matrix4, a: number[], b: number[], r: number, c: string) {
   const dx = b[0] - a[0],
     dy = b[1] - a[1],
     dz = b[2] - a[2],
@@ -2165,7 +2165,7 @@ export const FCOL: Record<string, [string, string]> = {
   green: ['Green', '#c3d59a'],
   plum: ['Plum', '#3a1a30'],
 };
-const fc = (k: string): string => FCOL[k]?.[1] || k;
+export const fc = (k: string): string => FCOL[k]?.[1] || k;
 export const FL: Record<string, FlowerDef> = {
   rose: {
     n: 'Garden rose',

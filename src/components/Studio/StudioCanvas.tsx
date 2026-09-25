@@ -100,6 +100,8 @@ export function StudioCanvas() {
   const quality = useDesignStore((s) => s.tweaks.quality);
   const motion = useDesignStore((s) => s.motion);
   const planView = useDesignStore((s) => s.planView);
+  // The Flower Studio covers the scene; stop rendering it underneath.
+  const paused = useDesignStore((s) => s.studio.open);
   const photo = useVenuePhoto((s) => s.photo);
   const itemsRoot = useRef<THREE.Group | null>(null);
 
@@ -117,6 +119,7 @@ export function StudioCanvas() {
   return (
     <div className="absolute inset-0" style={{ filter: MOOD_FILTER[mood] }}>
       <Canvas
+        frameloop={paused ? 'never' : 'always'}
         shadows="percentage"
         dpr={[1, 2]}
         // preserveDrawingBuffer lets Snapshot and design thumbnails read the finished, post-processed frame.
