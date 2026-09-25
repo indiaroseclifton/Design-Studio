@@ -34,6 +34,11 @@ const MOOD: Record<Mood, { exp: number; bloom: number; vig: number }> = {
 function setExposure(gl: THREE.WebGLRenderer, exposure: number) {
   gl.toneMappingExposure = exposure;
 }
+/** Plan view clips everything above 3.1 m so the camera sees past roofs and chandeliers (as the prototype does). */
+const PLAN_CLIP = [new THREE.Plane(new THREE.Vector3(0, -1, 0), 3.1)];
+function setClipping(gl: THREE.WebGLRenderer, plan: boolean) {
+  gl.clippingPlanes = plan ? PLAN_CLIP : [];
+}
 function setEnvironment(scene: THREE.Scene, tex: THREE.Texture | null, intensity: number, background: THREE.Texture | null) {
   scene.environment = tex;
   scene.environmentIntensity = intensity;
@@ -44,7 +49,17 @@ function setEnvironment(scene: THREE.Scene, tex: THREE.Texture | null, intensity
  * Renderer-level settings: exposure, a soft studio reflection environment (so glass, china, silver and brass
  * catch highlights, as in the prototype's RoomEnvironment), and the capture hook for Snapshot/Designs.
  */
-function RendererBridge({ exposure, envIntensity, background }: { exposure: number; envIntensity: number; background: THREE.Texture | null }) {
+function RendererBridge({
+  exposure,
+  envIntensity,
+  background,
+  plan,
+}: {
+  exposure: number;
+  envIntensity: number;
+  background: THREE.Texture | null;
+  plan: boolean;
+}) {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
@@ -65,6 +80,7 @@ function RendererBridge({ exposure, envIntensity, background }: { exposure: numb
   useEffect(() => () => envTex.dispose(), [envTex]);
 
   useEffect(() => setExposure(gl, exposure), [gl, exposure]);
+  useEffect(() => setClipping(gl, plan), [gl, plan]);
   useEffect(() => setEnvironment(scene, envTex, envIntensity, background), [scene, envTex, envIntensity, background]);
 
   useEffect(() => {
@@ -83,6 +99,7 @@ export function StudioCanvas() {
   const mood = useDesignStore((s) => s.tweaks.mood);
   const quality = useDesignStore((s) => s.tweaks.quality);
   const motion = useDesignStore((s) => s.motion);
+  const planView = useDesignStore((s) => s.planView);
   const photo = useVenuePhoto((s) => s.photo);
   const itemsRoot = useRef<THREE.Group | null>(null);
 
@@ -106,7 +123,7 @@ export function StudioCanvas() {
         gl={{ antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
         camera={{ fov: 45, near: 0.1, far: 1200, position: venue.cam }}
       >
-        <RendererBridge exposure={env.exp * M.exp} envIntensity={env.env ?? 0.3} background={pano} />
+        <RendererBridge exposure={env.exp * M.exp} envIntensity={env.env ?? 0.3} background={pano} plan={planView} />
         {!pano && <color attach="background" args={[skyHor]} />}
         <fog attach="fog" args={[fogColor, fogNear, fogFar]} />
         {!pano && (

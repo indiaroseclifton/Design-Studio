@@ -89,6 +89,10 @@ input {
   border-color: rgba(var(--acr), 0.5);
   color: var(--ac);
 }
+.chip.addon.on {
+  color: var(--text-on-accent);
+  border-color: var(--ac);
+}
 
 .btn {
   font: 500 12px Jost, sans-serif;
