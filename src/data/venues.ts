@@ -1322,6 +1322,29 @@ const INDUSTRIAL_LOFT: VenueDef = {
   },
 };
 
+const YOUR_VENUE: VenueDef = {
+  name: 'Your Venue',
+  custom: true,
+  sub: 'Upload a photo of the space',
+  desc: 'Use a photo of the real room as the backdrop. A 2:1 panorama wraps all the way around; a normal photo becomes a curved backdrop.',
+  env: {
+    sky: ['#8aa0b8', '#dfe4e8', '#9a9488'],
+    fog: ['#dfe4e8', 60, 300],
+    hemi: ['#ffffff', '#8a8070', 1],
+    sun: ['#fff4e6', 2.4, [10, 20, 12]],
+    exp: 1,
+    env: 0.5,
+  },
+  cam: [6, 2.4, 8.6],
+  chair: { type: 'chiavari', color: '#f2efe9', seat: '#f7f3ec' },
+  cloth: '#f4efe6',
+  build(g) {
+    const fl = mesh(g, new THREE.CircleGeometry(30, 64), tm(T(tiles(['#cfc6b6', '#c4baa8', '#d8d0c0'], 6, '#a89e8c', { gap: 3 }), [12, 12]), 0.8), 0, 0, 0);
+    fl.rotation.x = -Math.PI / 2;
+    fl.castShadow = false;
+  },
+};
+
 export const VENUES: VenueDef[] = [
   RUSTIC_BARN,
   TUSCAN_VILLA,
@@ -1337,4 +1360,5 @@ export const VENUES: VenueDef[] = [
   FRENCH_CHATEAU,
   LAKESIDE_DOCK,
   INDUSTRIAL_LOFT,
+  YOUR_VENUE,
 ];

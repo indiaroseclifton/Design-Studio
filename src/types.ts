@@ -153,6 +153,8 @@ export interface Arrangement {
 export interface VenueDef {
   name: string;
   indoor?: boolean;
+  /** marks the user-photo venue: the studio renders an uploaded photo as the backdrop instead of the procedural sky */
+  custom?: boolean;
   sub: string;
   desc: string;
   env: VenueEnv;

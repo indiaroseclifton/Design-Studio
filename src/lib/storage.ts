@@ -3,6 +3,7 @@ import type { Arrangement, Design } from '../types';
 const DESIGNS_KEY = 'design-studio:saved-designs';
 const PACKS_KEY = 'design-studio:packs';
 const FLOWERS_KEY = 'design-studio:custom-flowers';
+const VENUE_PHOTO_KEY = 'design-studio:venue-photo';
 
 export interface SavedDesign {
   id: string;
@@ -66,5 +67,21 @@ export function persistCustomFlowers(arrangements: Arrangement[]) {
     localStorage.setItem(FLOWERS_KEY, JSON.stringify(arrangements));
   } catch {
     // ignore
+  }
+}
+
+export function loadVenuePhoto(): string | null {
+  try {
+    return localStorage.getItem(VENUE_PHOTO_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function persistVenuePhoto(dataUrl: string) {
+  try {
+    localStorage.setItem(VENUE_PHOTO_KEY, dataUrl);
+  } catch {
+    // a large photo can exceed the localStorage quota — the photo still works for this session
   }
 }

@@ -27,11 +27,15 @@ npm run lint      # oxlint
 
 ## What's implemented
 
-- **Venues** — 14 of the 15 venues, fully procedural and ported from the handoff (Rustic Barn, Tuscan
+- **Venues** — all 15 venues, fully procedural and ported from the handoff (Rustic Barn, Tuscan
   Villa, Beach at Sunset, English Garden, Grand Ballroom, Glass Conservatory, Vineyard at Dusk, Enchanted
   Woodland, City Rooftop, Desert Oasis, Garden Marquee, French Château, Lakeside Dock, Industrial Loft),
   each with its own sky shader, fog, lighting rig and geometry (`src/data/venues.ts`). Five chair styles
-  (cross, chiavari, rattan, bent bistro, ghost acrylic) cover all of them.
+  (cross, chiavari, rattan, bent bistro, ghost acrylic) cover all of them. The 15th, **Your Venue**, lets you
+  upload a photo of a real space instead: a 2:1 panorama is mapped as an equirectangular dome background
+  that wraps all the way around, while any other photo becomes a curved backdrop panel behind the tables.
+  The photo persists to `localStorage` and can be swapped via the "Change" link on its venue card
+  (`src/store/venuePhotoStore.ts`).
 - **Catalogue** — 108 placeable pieces across Templates, Linens, Chairs, Tableware, Florals, Candles &
   light, Furniture & lighting, Wedding, Holiday, Faith & culture, Corporate, Parties & kids, Desserts, and
   five add-on packs (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail
@@ -70,7 +74,7 @@ npm run lint      # oxlint
 
 Storybook, Brass Lantern, and the AR viewer are stubbed with a "coming soon" overlay from the toolbar —
 they're substantial features in their own right and were scoped out by design. Also deferred: My Uploads
-(needs file upload), the rest of the ~277-item catalogue, and the "Your Venue" custom photo-upload venue,
+(a general-purpose upload gallery beyond the venue photo), the rest of the ~277-item catalogue,
 drag-and-drop placement (click-to-place is implemented instead), plan view, multi-select, per-table
 rotation, and the placement-zone/weather visualizations.
 
