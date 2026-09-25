@@ -14,6 +14,7 @@ mesh builder, a venue system).
 - Vite + React 19 + TypeScript
 - three.js via `@react-three/fiber` + `@react-three/drei`
 - Zustand for state (design, selection, undo/redo history, tweaks)
+- `@react-three/postprocessing` for bloom, vignette and ambient occlusion
 - Tailwind CSS v4 for the glass-panel UI chrome
 
 ## Run it
@@ -27,52 +28,71 @@ npm run lint      # oxlint
 
 ## What's implemented
 
-### First pass: scaffold + Studio core
+### Everything in the prototype's Studio
 
-- **Venues:** procedural venues ported from the handoff (`src/data/venues.ts`), each with its own sky
-  shader, fog, lighting rig and geometry. Rustic Barn and Grand Ballroom (indoor), and Beach at Sunset and
-  English Garden (outdoor).
-- **Catalogue:** ~20 placeable pieces across Linens, Tableware, Florals, Candles & light, and
-  Furniture & lighting (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail
-  (`src/three/thumbnail.ts`).
-- **Placement:** click a catalogue card to place it on the table, floor or ceiling. Select a "host"
-  item (one with a `top` surface) to enter decorating mode and stack stackable pieces on it.
-- **Tables & guests:** Round / Banquet / Ceremony / Empty layouts, a guests slider that adds tables,
-  "Dress every table alike" mirroring, and "Set a place at every chair" (`src/lib/layout.ts`).
-- **Selection & editing:** click to select, rotate (↺/↻), duplicate, remove, recolour via palette or a
-  custom colour, and edit text on signage and menu cards.
-- **Undo/redo:** snapshot-based history wired to the toolbar.
+- **15 venues** (`src/engine/venues.gen.ts`): every scene from the prototype, including **Your Venue**, which
+  uses an uploaded photo as the backdrop. A 2:1 panorama wraps all the way round; a normal photo becomes a
+  curved backdrop. The photo is kept in IndexedDB. Venues build from the same seeds as the prototype, so they
+  lay out identically.
+- **The full catalogue** (`src/engine/catalogue.gen.ts`): all 286 pieces, the 14 add-on packs (switched on from
+  the Add-ons modal, each adding a catalogue tab), 21 templates, 16 tablecloths, 5 overlays, 10 chair styles
+  and 4 kinds of chair décor. It also includes configurable "builder" pieces (place settings, tents, stages,
+  walls, pipe-and-drape) whose options appear in the inspector.
+- **The prototype's design model** (`src/lib/designOps.ts`):
+  - Positioned tables that can be rotated and dragged in plan view.
+  - Mirrored table pieces that share a `link`.
+  - Host surfaces: select a cake table, bar or plinth and click pieces to set them on top.
+  - Aisle- and centre-locked pieces, and one-of-a-kind runners.
+  - "Set a place at every chair", templates, and the clamping rules that keep pieces on tables, out of the
+    aisle and inside the room.
+- **Scene interaction** (`src/components/Studio/Interaction.tsx`):
+  - Click to select a piece; click a table or its chairs to edit them.
+  - Drag pieces across tables and onto or off host surfaces.
+  - Shift-click to multi-select, then drag the group, or line it up, circle it or face it to the centre.
+  - Drag tables in plan view.
+  - Snap to grid.
+- **Inspector:**
+  - Swap a piece for others in its group, optionally for every matching piece.
+  - Builder options, editable text and per-piece palette.
+  - For chairs: style, décor and décor colours. For tables: cloth, custom cloth colour, overlay and rotation.
+- **Palettes:** the prototype's 7, plus a custom palette edited with colour pickers.
+- **Time of day and weather**, **tweaks** (mood, interface mode, accent, render quality), **camera presets**
+  framed on the layout, **plan view**, **Designs** (save/open/rename/delete, share link, JSON import/export,
+  including files exported from the prototype), **Quote** (cloths, overlays, chair styles and décor priced as
+  in the prototype, CSV and print/PDF), **Snapshot** and **autosave**.
 
-### Second pass: Studio completeness, Designs, Quote
+### Porting approach
 
-- **Time of day & weather** (`src/lib/environment.ts`, `src/three/Weather.tsx`): Venue / Day / Golden /
-  Night re-light the sky, sun, fog, exposure and the venue's own lamps, and add a star dome at night.
-  Rain and snow particle systems run on outdoor venues and grey out the sky, as in the prototype's `envFor`.
-- **Keyboard shortcuts** (`src/lib/useKeyboardShortcuts.ts`): Esc (closes the modal, then exits
-  cinematic, then plan view, then deselects), Q/E rotate, D duplicate, Delete/Backspace remove,
-  Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z or Ctrl+Y redo. The prototype's global ArrowLeft/Right venue switching is
-  deliberately left out, because the handoff flags it as the likely cause of unexpected venue changes.
-- **Tweaks panel:** Mood (CSS filter plus exposure), Interface (Studio / Focus, where panels fade to 18% until
-  hovered / Cinematic, with letterbox bars, hidden panels and the strip kept) and Accent (Champagne / Rose / Sage /
-  Silver, applied through the `--ac` CSS variables).
-- **Camera:** preset tweens (instant when Motion is off), Reset camera, and an orthographic top-down
-  **Plan view**.
-- **Designs modal:** save the current design with a scene thumbnail, then open, rename or delete it
-  (`vs2_designs` in localStorage). Also a gzip share link (`#d=…`, opened on load), JSON export and JSON import.
-  Imported data is validated by `normalizeDesign`.
-- **Quote modal:** lines are built from what's actually in the scene (mirrored table pieces count once per
-  table), grouped by category, with editable unit prices, currency, service % and tax %. Includes CSV export
-  and a print/PDF view with a snapshot. Settings persist in `vs2_quote`.
-- **Snapshot:** downloads a PNG of the current view.
-- **Autosave:** the current design, tweaks and motion setting survive a reload (`vs2_state`).
+`scripts/port-prototype.py` copies the prototype's item, pack, template, flower-engine and venue builders
+verbatim into the two `*.gen.ts` modules, then applies a list of explicit, reviewable fixes for TypeScript.
+Keeping the builders verbatim means they stay diffable against the handoff. Shared helpers (materials,
+fabrics, chairs, tables and floral geometry) are hand-ported into typed modules in `src/engine/`.
+
+The port surfaced one bug in the prototype, which is fixed in the script: City Rooftop cloned a material and
+called texture methods on it, so that venue failed to build.
+
+### Quality and realism upgrades over the prototype
+
+- **Lighting:** a RoomEnvironment reflection map, so glass, china, silver and brass pick up highlights.
+  Bloom and vignette follow the handoff's mood spec. Screen-space ambient occlusion (N8AO) gives contact
+  shadows under plates, vases and chairs. Shadows use tuned bounds and bias.
+- **Materials:** physically based glass with clearcoat, glazed china, velvet and linen with sheen, and flower
+  petals with soft sheen.
+- **Geometry:**
+  - Lathe-turned plates and chargers with a real rim.
+  - Shaped knife, fork and spoon.
+  - Round tablecloths that fall to the floor in soft pleats, with a rolled edge.
+  - Cupped rose, peony and ranunculus petals.
+  - Chairs with rounded cushions, turned legs, stretchers and a woven rattan back.
+- **Render quality tweak:** High adds ambient occlusion, 8× MSAA and 4K shadows; Standard suits laptops
+  and tablets.
 
 ## Deferred
 
-Flower Studio, Storybook, Brass Lantern, the AR viewer and the Add-ons modal still show a "coming soon"
-overlay from the toolbar. Also deferred: the full 277-item catalogue and the remaining 11 venues, the add-on
-packs, drag-and-drop placement (click-to-place is implemented instead), dragging tables in plan view, multi-select,
-per-table rotation, the custom palette editor, the placement-zone visualization, bloom/vignette post-processing,
-the lookbook PDF, and the ≤860px responsive drawer layout.
+Flower Studio (its engine is ported and used by several catalogue pieces, but the full-screen editor isn't
+built), Storybook, Brass Lantern and the AR viewer still show a "coming soon" overlay. Also still to do:
+drag-and-drop from the catalogue (click-to-place is implemented), GLB uploads, the lookbook PDF, and the
+≤860px responsive drawer layout.
 
 See `docs/design_handoff_event_studio/README.md` (the original handoff bundle) for the full original spec,
 including the working HTML/three.js prototype and screenshots.

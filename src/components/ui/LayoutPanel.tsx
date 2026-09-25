@@ -1,5 +1,7 @@
+import { useState } from 'react';
+import { chairSpots, hasTbl } from '../../engine/studio';
+import { ITEMS } from '../../engine/catalogue';
 import { useDesignStore } from '../../store/designStore';
-import { useTableLayout } from '../../lib/useTableLayout';
 import type { TableLayout } from '../../types';
 
 const LAYOUT_OPTS: Array<[TableLayout, string]> = [
@@ -13,38 +15,37 @@ export function LayoutPanel() {
   const design = useDesignStore((s) => s.design);
   const setLayout = useDesignStore((s) => s.setLayout);
   const setGuests = useDesignStore((s) => s.setGuests);
-  const toggleMirror = useDesignStore((s) => s.toggleMirror);
-  const placeItem = useDesignStore((s) => s.placeItem);
-  const showToast = useDesignStore((s) => s.showToast);
-  const { tables } = useTableLayout();
+  const setMirror = useDesignStore((s) => s.setMirror);
+  const setAllPlaces = useDesignStore((s) => s.setAllPlaces);
+  const snapOn = useDesignStore((s) => s.snapOn);
+  const setSnap = useDesignStore((s) => s.setSnap);
+  // The slider shows its value live but only rebuilds the room when released.
+  const [dragGuests, setDragGuests] = useState<number | null>(null);
 
-  function setPlaceAtEveryChair() {
-    if (!tables.length) {
-      showToast('Choose Round or Banquet layout first');
-      return;
-    }
-    for (const table of tables) {
-      const inset = (table.kind === 'round' ? table.radius : Math.min(table.width, table.length) / 2) - 0.18;
-      for (const seat of table.seats) {
-        const dist = Math.hypot(seat.x, seat.z) || 1;
-        const scale = inset / dist;
-        placeItem({ type: 'charger_gold', x: seat.x * scale, z: seat.z * scale, t: table.index });
-      }
-    }
-    showToast('Set a place at every chair');
-  }
+  const m = design.table.mode;
+  const seats = chairSpots(m, design.tables, design.guests).length;
+  const guests = dragGuests ?? design.guests;
+  const note = hasTbl(m)
+    ? `${design.tables.length} table${design.tables.length > 1 ? 's' : ''} · ${seats} seats`
+    : m === 'ceremony'
+      ? `${seats} seats · ${Math.max(2, Math.ceil(design.guests / 8))} rows`
+      : '';
+  const commitGuests = () => {
+    if (dragGuests !== null && dragGuests !== design.guests) setGuests(dragGuests);
+    setDragGuests(null);
+  };
 
   return (
     <section className="glass flex flex-col gap-2 p-3.5">
       <div className="lbl">Layout</div>
       <div className="seg">
         {LAYOUT_OPTS.map(([v, l]) => (
-          <button key={v} type="button" className={design.table.layout === v ? 'on' : ''} onClick={() => setLayout(v)}>
+          <button key={v} type="button" className={m === v ? 'on' : ''} onClick={() => v !== m && setLayout(v)}>
             {l}
           </button>
         ))}
       </div>
-      {design.table.layout !== 'none' && (
+      {m !== 'none' && (
         <div className="flex flex-col gap-1">
           <div className="grid grid-cols-[auto_1fr_28px] items-center gap-2.5 text-[12.5px]">
             <span>Guests</span>
@@ -53,27 +54,38 @@ export function LayoutPanel() {
               min={1}
               max={160}
               step={1}
-              value={design.table.guests}
-              onChange={(e) => setGuests(Number(e.target.value))}
+              aria-label="Guests"
+              value={guests}
+              onChange={(e) => setDragGuests(Number(e.target.value))}
+              onPointerUp={commitGuests}
+              onKeyUp={commitGuests}
+              onBlur={commitGuests}
             />
-            <b className="text-right font-medium">{design.table.guests}</b>
+            <b className="text-right font-medium">{guests}</b>
           </div>
-          {tables.length > 0 && (
-            <div className="text-[11px] opacity-60">
-              {tables.length} table{tables.length > 1 ? 's' : ''}
-            </div>
-          )}
+          {note && <div className="text-[11px] opacity-60">{note}</div>}
         </div>
       )}
-      {design.table.layout !== 'ceremony' && design.table.layout !== 'none' && (
+      {hasTbl(m) && design.tables.length > 1 && (
         <label className="check">
-          <input type="checkbox" checked={design.table.mirror} onChange={toggleMirror} />
+          <input type="checkbox" checked={design.mirror} onChange={(e) => setMirror(e.target.checked)} />
           <span>Dress every table alike</span>
         </label>
       )}
-      <button type="button" className="btn primary" onClick={setPlaceAtEveryChair} disabled={!tables.length}>
-        Set a place at every chair
-      </button>
+      <label className="check">
+        <input type="checkbox" checked={snapOn} onChange={(e) => setSnap(e.target.checked)} />
+        <span>Snap to grid</span>
+      </label>
+      {hasTbl(m) && (
+        <button type="button" className="btn primary" onClick={setAllPlaces}>
+          Set a place at every chair
+        </button>
+      )}
+      {hasTbl(m) && (
+        <div className="text-[11px] leading-[1.4] opacity-60">
+          Setting: {ITEMS[design.table.place]?.name ?? 'Classic'}. Pick another in Tableware to change it.
+        </div>
+      )}
     </section>
   );
 }

@@ -1,35 +1,21 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Accent, CameraPreset, Design, Mood, PlacedItem, Selection, TableLayout, TimeOfDay, UIMode, Weather } from '../types';
-import { ITEMS } from '../data/catalogue';
-import { VENUES } from '../data/venues';
+import type { Accent, CameraPreset, Design, Mood, PlacedItem, Quality, Selection, TableConfig, TableLayout, TimeOfDay, UIMode, Weather } from '../types';
+import { ITEMS } from '../engine/catalogue';
+import type { Entry } from '../engine/catalogue';
+import { CHAIRS } from '../engine/studio';
+import { DEFAULT_DESIGN, normalizeDesign } from '../lib/designFormat';
+import * as ops from '../lib/designOps';
 
-export type ModalKind = 'designs' | 'quote';
+export type ModalKind = 'designs' | 'quote' | 'addons';
 
-export const DEFAULT_DESIGN: Design = {
-  venue: 0,
-  time: 'venue',
-  wx: 'clear',
-  table: { layout: 'round', guests: 8, mirror: true, rot: 0 },
-  items: [],
-  palette: 'ivory',
-  customPalette: [],
-};
-
-const MAX_HISTORY = 50;
+const MAX_HISTORY = 80;
 
 interface ToastState {
   msg: string;
   undoable?: boolean;
-}
-
-interface PlaceItemInput {
-  type: string;
-  x: number;
-  z: number;
-  rot?: number;
-  t?: number;
-  on?: string;
+  /** bumps so the same message re-triggers the timer */
+  n: number;
 }
 
 interface StoreState {
@@ -37,40 +23,47 @@ interface StoreState {
   history: Design[];
   future: Design[];
   selection: Selection;
-  tweaks: { mood: Mood; ui: UIMode; accent: Accent };
+  tweaks: { mood: Mood; ui: UIMode; accent: Accent; quality: Quality };
   motion: boolean;
   autoRotate: boolean;
   cameraPreset: CameraPreset;
   /** bumped on every preset request so "Reset camera" re-runs even when the preset is unchanged */
   cameraNonce: number;
   planView: boolean;
-  modal: ModalKind | null;
   showZone: boolean;
+  snapOn: boolean;
+  packsOn: string[];
+  modal: ModalKind | null;
   toast: ToastState | null;
   comingSoon: string | null;
   search: string;
-  activeCategory: string | null;
+  activeCategory: string;
+  /** true while a drag gesture is live (history already captured at its start) */
+  gesture: boolean;
+
+  /** Apply a named design operation to a draft copy and record it in undo history. */
+  edit: (fn: (d: Design) => void, toast?: string, undoable?: boolean) => void;
+  /** Start a drag: capture one undo step; subsequent `live` edits don't add history. */
+  beginGesture: () => void;
+  live: (fn: (d: Design) => void) => void;
+  endGesture: () => void;
 
   setVenue: (i: number) => void;
   setTime: (t: TimeOfDay) => void;
   setWeather: (w: Weather) => void;
   setLayout: (l: TableLayout) => void;
   setGuests: (n: number) => void;
-  toggleMirror: () => void;
+  setMirror: (on: boolean) => void;
+  setTableCfg: (p: Partial<TableConfig>, msg?: string) => void;
   setPalette: (id: string) => void;
-
-  placeItem: (input: PlaceItemInput) => string;
-  removeItem: (id: string) => void;
-  moveItem: (id: string, x: number, z: number) => void;
-  rotateItem: (id: string, dir: 1 | -1) => void;
-  duplicateItem: (id: string) => void;
-  setItemColor: (id: string, color: string | undefined) => void;
-  setItemPalette: (id: string, pal: string | undefined) => void;
-  setItemText: (id: string, text: string) => void;
+  setCustomPalette: (p: Design['customPalette']) => void;
+  activate: (e: Entry) => void;
+  setAllPlaces: () => void;
   clearAll: () => void;
   loadDesign: (d: Design) => void;
 
   select: (sel: Selection) => void;
+  toggleMulti: (id: string) => void;
   rotateSelected: (dir: 1 | -1) => void;
   duplicateSelected: () => void;
   removeSelected: () => void;
@@ -84,6 +77,9 @@ interface StoreState {
   setCameraPreset: (p: CameraPreset) => void;
   setPlanView: (on: boolean) => void;
   setShowZone: (on: boolean) => void;
+  setSnap: (on: boolean) => void;
+  setPackOn: (id: string, on: boolean) => void;
+  setPacks: (ids: string[]) => void;
   openModal: (m: ModalKind) => void;
   closeModal: () => void;
 
@@ -93,223 +89,289 @@ interface StoreState {
   dismissComingSoon: () => void;
 
   setSearch: (s: string) => void;
-  setCategory: (c: string | null) => void;
+  setCategory: (c: string) => void;
 }
 
-function snapshot(d: Design): Design {
-  return JSON.parse(JSON.stringify(d));
-}
+const clone = (d: Design): Design => structuredClone(d);
+const ROT = Math.PI / 12;
 
-// Declared before the store: persist hydrates synchronously from localStorage inside create().
-const LAYOUTS: TableLayout[] = ['round', 'banquet', 'ceremony', 'none'];
-const TIMES: TimeOfDay[] = ['venue', 'day', 'golden', 'night'];
-const WEATHERS: Weather[] = ['clear', 'rain', 'snow'];
-const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
-
-/**
- * Coerce untrusted JSON (localStorage, an imported file) into a valid Design, dropping unknown catalogue items.
- * Returns null when the input isn't recognisably a design.
- */
-export function normalizeDesign(raw: unknown): Design | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const o = raw as Record<string, unknown>;
-  if (!Array.isArray(o.items) || !o.table || typeof o.table !== 'object') return null;
-  const t = o.table as Record<string, unknown>;
-  const items: PlacedItem[] = [];
-  for (const it of o.items as Array<Record<string, unknown>>) {
-    if (!it || typeof it !== 'object' || typeof it.type !== 'string' || !ITEMS[it.type]) continue;
-    items.push({
-      id: typeof it.id === 'string' ? it.id : crypto.randomUUID(),
-      type: it.type,
-      x: num(it.x, 0),
-      z: num(it.z, 0),
-      rot: num(it.rot, 0),
-      pal: typeof it.pal === 'string' ? it.pal : undefined,
-      color: typeof it.color === 'string' ? it.color : undefined,
-      text: typeof it.text === 'string' ? it.text : undefined,
-      on: typeof it.on === 'string' ? it.on : undefined,
-      t: typeof it.t === 'number' ? it.t : undefined,
-    });
-  }
-  const ids = new Set(items.map((i) => i.id));
-  return {
-    venue: Math.min(VENUES.length - 1, Math.max(0, Math.floor(num(o.venue, 0)))),
-    time: TIMES.includes(o.time as TimeOfDay) ? (o.time as TimeOfDay) : 'venue',
-    wx: WEATHERS.includes(o.wx as Weather) ? (o.wx as Weather) : 'clear',
-    table: {
-      layout: LAYOUTS.includes(t.layout as TableLayout) ? (t.layout as TableLayout) : 'round',
-      guests: Math.min(160, Math.max(1, Math.round(num(t.guests, 8)))),
-      mirror: typeof t.mirror === 'boolean' ? t.mirror : true,
-      linen: typeof t.linen === 'string' ? t.linen : undefined,
-      rot: num(t.rot, 0),
-    },
-    // Children whose host didn't survive would otherwise be orphaned off-surface.
-    items: items.filter((i) => !i.on || ids.has(i.on)),
-    palette: typeof o.palette === 'string' ? o.palette : DEFAULT_DESIGN.palette,
-    customPalette: Array.isArray(o.customPalette) ? o.customPalette.filter((c): c is string => typeof c === 'string') : [],
-  };
+/** The host a new piece should be stacked onto: the selected item if it's a host, or the selected item's host. */
+export function selectedHost(s: Pick<StoreState, 'design' | 'selection'>): PlacedItem | null {
+  if (s.selection?.k !== 'item') return null;
+  const id = s.selection.id;
+  const it = s.design.items.find((i) => i.id === id);
+  if (!it) return null;
+  return ITEMS[it.type]?.top ? it : (ops.hostOf(s.design, it) ?? null);
 }
 
 export const useDesignStore = create<StoreState>()(
   persist(
     (set, get) => {
-      function commit(mutator: (d: Design) => Design) {
+      /** Run `fn` on a draft; if it changed anything, push the old design onto history. */
+      function commit(fn: (d: Design) => void): Design {
         const { design, history } = get();
-        const next = mutator(snapshot(design));
-        const nextHistory = [...history, snapshot(design)].slice(-MAX_HISTORY);
-        set({ design: next, history: nextHistory, future: [] });
+        const draft = clone(design);
+        fn(draft);
+        if (JSON.stringify(draft) === JSON.stringify(design)) return design;
+        set({ design: draft, history: [...history, design].slice(-MAX_HISTORY), future: [] });
+        return draft;
       }
+      const toast = (msg: string, undoable?: boolean) => set((s) => ({ toast: { msg, undoable, n: (s.toast?.n ?? 0) + 1 } }));
+      const selItem = () => {
+        const { selection, design } = get();
+        return selection?.k === 'item' ? design.items.find((i) => i.id === selection.id) : undefined;
+      };
+      /** Drop a selection that no longer points at anything. */
+      const tidySelection = () => {
+        const { selection, design } = get();
+        if (selection?.k === 'item' && !design.items.some((i) => i.id === selection.id)) set({ selection: null });
+        if (selection?.k === 'multi') {
+          const ids = selection.ids.filter((id) => design.items.some((i) => i.id === id));
+          set({ selection: ids.length > 1 ? { k: 'multi', ids } : ids.length ? { k: 'item', id: ids[0] } : null });
+        }
+        if ((selection?.k === 'table' || selection?.k === 'chairs') && design.table.mode === 'none') set({ selection: null });
+      };
 
       return {
         design: DEFAULT_DESIGN,
         history: [],
         future: [],
         selection: null,
-        tweaks: { mood: 'natural', ui: 'studio', accent: 'champagne' },
+        tweaks: { mood: 'natural', ui: 'studio', accent: 'champagne', quality: 'high' },
         motion: true,
         autoRotate: false,
         cameraPreset: 'wide',
         cameraNonce: 0,
         planView: false,
-        modal: null,
         showZone: false,
+        snapOn: false,
+        packsOn: [],
+        modal: null,
         toast: null,
         comingSoon: null,
         search: '',
-        activeCategory: null,
+        activeCategory: 'templates',
+        gesture: false,
 
-        setVenue: (i) => commit((d) => ({ ...d, venue: i })),
-        setTime: (t) => commit((d) => ({ ...d, time: t })),
-        setWeather: (w) => commit((d) => ({ ...d, wx: w })),
-        setLayout: (l) => commit((d) => ({ ...d, table: { ...d.table, layout: l } })),
-        setGuests: (n) => commit((d) => ({ ...d, table: { ...d.table, guests: n } })),
-        toggleMirror: () => commit((d) => ({ ...d, table: { ...d.table, mirror: !d.table.mirror } })),
-        setPalette: (id) => commit((d) => ({ ...d, palette: id })),
-
-        placeItem: (input) => {
-          const id = crypto.randomUUID();
-          commit((d) => ({
-            ...d,
-            items: [...d.items, { id, type: input.type, x: input.x, z: input.z, rot: input.rot ?? 0, t: input.t, on: input.on }],
-          }));
-          set({ selection: { k: 'item', id } });
-          return id;
+        edit: (fn, msg, undoable = true) => {
+          commit(fn);
+          tidySelection();
+          if (msg) toast(msg, undoable);
         },
-        removeItem: (id) => commit((d) => ({ ...d, items: d.items.filter((i) => i.id !== id && i.on !== id) })),
-        moveItem: (id, x, z) => commit((d) => ({ ...d, items: d.items.map((i) => (i.id === id ? { ...i, x, z } : i)) })),
-        rotateItem: (id, dir) =>
-          commit((d) => ({
-            ...d,
-            items: d.items.map((i) => (i.id === id ? { ...i, rot: i.rot + dir * (Math.PI / 12) } : i)),
-          })),
-        duplicateItem: (id) => {
-          const newId = crypto.randomUUID();
+        beginGesture: () => {
+          const { design, history } = get();
+          set({ gesture: true, history: [...history, clone(design)].slice(-MAX_HISTORY), future: [] });
+        },
+        live: (fn) => {
+          const draft = clone(get().design);
+          fn(draft);
+          set({ design: draft });
+        },
+        endGesture: () => {
+          const { history, design } = get();
+          // A click without movement shouldn't leave an empty undo step behind.
+          const last = history[history.length - 1];
+          if (last && JSON.stringify(last) === JSON.stringify(design)) set({ history: history.slice(0, -1) });
+          set({ gesture: false });
+        },
+
+        setVenue: (i) => commit((d) => void (d.venue = i)),
+        setTime: (t) => commit((d) => void (d.time = t)),
+        setWeather: (w) => commit((d) => void (d.wx = w)),
+        setLayout: (l) => {
+          commit((d) => ops.setTable(d, { mode: l }));
+          tidySelection();
+          set((s) => ({ cameraPreset: 'wide', cameraNonce: s.cameraNonce + 1 }));
+        },
+        setGuests: (n) => {
+          const d = commit((dd) => ops.setGuests(dd, n));
+          tidySelection();
+          const m = d.table.mode;
+          toast(m === 'round' || m === 'banquet' ? `${n} guests · ${d.tables.length} table${d.tables.length > 1 ? 's' : ''}` : `${n} guests`, true);
+        },
+        setMirror: (on) => {
+          commit((d) => void (d.mirror = on));
+          toast(on ? 'New table pieces go on every table' : 'Pieces now go on one table at a time');
+        },
+        setTableCfg: (p, msg) => {
+          commit((d) => ops.setTable(d, p));
+          if (msg) toast(msg, true);
+        },
+        setPalette: (id) => commit((d) => void (d.palette = id)),
+        setCustomPalette: (p) =>
           commit((d) => {
-            const src = d.items.find((i) => i.id === id);
-            if (!src) return d;
-            return { ...d, items: [...d.items, { ...src, id: newId, x: src.x + 0.15, z: src.z + 0.15 }] };
-          });
-          set({ selection: { k: 'item', id: newId } });
+            d.customPalette = p;
+            d.palette = 'custom';
+          }),
+
+        activate: (e) => {
+          const n = e.name;
+          const s = get();
+          if (e.k === 'item') {
+            let placed: PlacedItem | null = null;
+            const host = selectedHost(s);
+            const d = commit((dd) => {
+              placed = ops.addItem(dd, e.id, { host });
+              if (placed && ITEMS[e.id].group === 'place') dd.table.place = e.id;
+            });
+            const it = placed as PlacedItem | null;
+            if (!it) {
+              toast('Choose a table layout first, or select a surface to decorate');
+              return;
+            }
+            // Keep decorating the host when stacking; otherwise select the new piece.
+            if (!it.on) set({ selection: { k: 'item', id: it.id } });
+            if (ITEMS[e.id].top) toast(`${n} added — select it, then click tabletop pieces to set them on top`);
+            else if (it.on) {
+              const H = d.items.find((i) => i.id === it.on);
+              if (H) toast(`${n} placed on the ${ITEMS[H.type].name.toLowerCase()}`, true);
+            }
+          } else if (e.k === 'cloth') {
+            commit((d) => ops.setTable(d, { cloth: e.id }));
+            toast(`Tablecloth: ${n}`, true);
+            if (e.id === 'custom') set({ selection: { k: 'table', idx: 0 } });
+          } else if (e.k === 'overlay') {
+            commit((d) => ops.setTable(d, { overlay: e.id }));
+            toast(`Overlay: ${n}`, true);
+          } else if (e.k === 'chair') {
+            commit((d) => ops.setTable(d, { chair: e.id }));
+            toast(`All chairs replaced with ${n}`, true);
+          } else if (e.k === 'decor') {
+            commit((d) => ops.setTable(d, { decor: e.id, decorPal: d.palette }));
+            toast(e.id === 'none' ? 'Chair décor removed' : `${n} added to all chairs`, true);
+          } else if (e.k === 'tpl') {
+            let name: string | null = null;
+            commit((d) => void (name = ops.applyTemplate(d, e.id)));
+            set((st) => ({ selection: null, cameraPreset: 'wide', cameraNonce: st.cameraNonce + 1 }));
+            if (name) toast(`“${name}” applied`, true);
+          }
         },
-        setItemColor: (id, color) => commit((d) => ({ ...d, items: d.items.map((i) => (i.id === id ? { ...i, color } : i)) })),
-        setItemPalette: (id, pal) => commit((d) => ({ ...d, items: d.items.map((i) => (i.id === id ? { ...i, pal } : i)) })),
-        setItemText: (id, text) => commit((d) => ({ ...d, items: d.items.map((i) => (i.id === id ? { ...i, text } : i)) })),
+        setAllPlaces: () => {
+          let n = 0;
+          commit((d) => void (n = ops.setAllPlaces(d)));
+          set({ selection: null });
+          if (n) toast(`${n} place settings set`, true);
+          else toast('Choose Round or Banquet tables first');
+        },
         clearAll: () => {
-          commit((d) => ({ ...d, items: [] }));
+          commit((d) => void (d.items = []));
           set({ selection: null });
         },
         loadDesign: (loaded) => {
-          commit(() => snapshot(loaded));
+          commit((d) => Object.assign(d, clone(loaded)));
           set({ selection: null });
         },
 
-        select: (sel) => set({ selection: sel }),
+        select: (sel) => {
+          if (sel?.k === 'multi' && sel.ids.length === 1) sel = { k: 'item', id: sel.ids[0] };
+          if (sel?.k === 'multi' && !sel.ids.length) sel = null;
+          set({ selection: sel });
+        },
+        toggleMulti: (id) => {
+          const sel = get().selection;
+          const cur = sel?.k === 'item' ? [sel.id] : sel?.k === 'multi' ? sel.ids : [];
+          get().select({ k: 'multi', ids: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] });
+        },
         rotateSelected: (dir) => {
           const sel = get().selection;
-          if (sel?.k === 'item') get().rotateItem(sel.id, dir);
+          if (sel?.k === 'table')
+            commit((d) => {
+              const T = d.tables[sel.idx];
+              if (T) T.ry += dir * ROT;
+            });
+          const it = selItem();
+          if (!it) return;
+          const d = ITEMS[it.type];
+          if (d.lock === 'aisle' || (d.lock === 'center' && get().design.table.mode === 'banquet')) return;
+          commit((dd) => ops.rotateItem(dd, dd.items.find((i) => i.id === it.id)!, dir * ROT));
         },
         duplicateSelected: () => {
-          const sel = get().selection;
-          if (sel?.k === 'item') get().duplicateItem(sel.id);
+          const it = selItem();
+          if (!it) return;
+          let made: PlacedItem | null = null;
+          commit((d) => void (made = ops.duplicate(d, d.items.find((i) => i.id === it.id)!)));
+          const m = made as PlacedItem | null;
+          if (m) set({ selection: { k: 'item', id: m.id } });
+          else toast('That piece is one of a kind here');
         },
         removeSelected: () => {
           const sel = get().selection;
-          if (sel?.k === 'item') {
-            get().removeItem(sel.id);
+          if (sel?.k === 'multi') {
+            commit((d) => ops.removeItems(d, sel.ids.flatMap((id) => {
+              const it = d.items.find((i) => i.id === id);
+              return it ? ops.linked(d, it).map((i) => i.id) : [];
+            })));
             set({ selection: null });
+            toast(`${sel.ids.length} pieces removed`, true);
+            return;
           }
+          const it = selItem();
+          if (!it) return;
+          commit((d) => ops.removeIt(d, d.items.find((i) => i.id === it.id)!));
+          set({ selection: null });
+          toast(`${ITEMS[it.type].name} removed`, true);
         },
 
         undo: () => {
           const { history, design, future } = get();
           if (!history.length) return;
-          const prev = history[history.length - 1];
-          set({
-            design: prev,
-            history: history.slice(0, -1),
-            future: [snapshot(design), ...future].slice(0, MAX_HISTORY),
-            selection: null,
-          });
+          set({ design: history[history.length - 1], history: history.slice(0, -1), future: [design, ...future].slice(0, MAX_HISTORY) });
+          tidySelection();
         },
         redo: () => {
           const { future, design, history } = get();
           if (!future.length) return;
-          const next = future[0];
-          set({
-            design: next,
-            future: future.slice(1),
-            history: [...history, snapshot(design)].slice(-MAX_HISTORY),
-            selection: null,
-          });
+          set({ design: future[0], future: future.slice(1), history: [...history, design].slice(-MAX_HISTORY) });
+          tidySelection();
         },
 
         setTweak: (key, value) => set((s) => ({ tweaks: { ...s.tweaks, [key]: value } })),
-        setMotion: (on) => set({ motion: on }),
+        setMotion: (on) => set({ motion: on, ...(on ? {} : { autoRotate: false }) }),
         setAutoRotate: (on) => set({ autoRotate: on }),
         setCameraPreset: (p) => set((s) => ({ cameraPreset: p, cameraNonce: s.cameraNonce + 1, planView: false })),
         setPlanView: (on) => set({ planView: on }),
         setShowZone: (on) => set({ showZone: on }),
+        setSnap: (on) => set({ snapOn: on }),
+        setPackOn: (id, on) =>
+          set((s) => {
+            const packsOn = on ? [...new Set([...s.packsOn, id])] : s.packsOn.filter((x) => x !== id);
+            const activeCategory = on ? id : s.activeCategory === id ? 'templates' : s.activeCategory;
+            return { packsOn, activeCategory };
+          }),
+        setPacks: (ids) => set((s) => ({ packsOn: ids, activeCategory: ids.includes(s.activeCategory) || !s.packsOn.includes(s.activeCategory) ? s.activeCategory : 'templates' })),
         openModal: (m) => set({ modal: m, comingSoon: null }),
         closeModal: () => set({ modal: null }),
 
-        showToast: (msg, undoable) => set({ toast: { msg, undoable } }),
+        showToast: toast,
         dismissToast: () => set({ toast: null }),
         showComingSoon: (name) => set({ comingSoon: name }),
         dismissComingSoon: () => set({ comingSoon: null }),
 
         setSearch: (s) => set({ search: s }),
-        setCategory: (c) => set({ activeCategory: c }),
+        setCategory: (c) => set({ activeCategory: c, search: '' }),
       };
     },
     {
-      name: 'vs2_state',
+      name: 'vs3_state',
       version: 1,
-      // Only the design and the viewer's preferences survive a reload; history, selection and UI state don't.
-      partialize: (s) => ({ design: s.design, tweaks: s.tweaks, motion: s.motion }),
+      // The design and the viewer's preferences survive a reload; history, selection and UI state don't.
+      partialize: (s) => ({ design: s.design, tweaks: s.tweaks, motion: s.motion, packsOn: s.packsOn, snapOn: s.snapOn, showZone: s.showZone, activeCategory: s.activeCategory }),
       merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<Pick<StoreState, 'design' | 'tweaks' | 'motion'>>;
+        const p = (persisted ?? {}) as Partial<StoreState>;
         return {
           ...current,
           design: normalizeDesign(p.design) ?? current.design,
           tweaks: { ...current.tweaks, ...p.tweaks },
           motion: p.motion ?? current.motion,
+          packsOn: Array.isArray(p.packsOn) ? p.packsOn.filter((x) => typeof x === 'string') : current.packsOn,
+          snapOn: p.snapOn ?? current.snapOn,
+          showZone: p.showZone ?? current.showZone,
+          activeCategory: typeof p.activeCategory === 'string' ? p.activeCategory : current.activeCategory,
         };
       },
     },
   ),
 );
 
-export function hostOf(items: PlacedItem[], it: PlacedItem): PlacedItem | null {
-  if (!it.on) return null;
-  const host = items.find((i) => i.id === it.on);
-  if (!host) return null;
-  return ITEMS[host.type]?.top ? host : null;
-}
-
-export function isStackable(typeId: string): boolean {
-  const def = ITEMS[typeId];
-  if (!def) return false;
-  if (def.surf === 'table') return true;
-  if (def.surf === 'floor') return def.fp <= 0.5 && def.group !== 'lounge' && def.sec !== 'Structures';
-  return false;
-}
+/** The chair style in use: the design's choice or the venue's default. */
+export const chairStyleOf = (d: Design, venueChair: import('../types').ChairStyle) => (d.table.chair ? CHAIRS[d.table.chair] : venueChair);

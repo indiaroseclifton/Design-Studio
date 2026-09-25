@@ -1,46 +1,61 @@
 import * as THREE from 'three';
 import { M, jit, pick, rnd } from './utils';
 
-type Vec3Tuple = [number, number, number];
-type Kind = 'leaf' | 'trunk' | 'rod' | 'cone' | 'ball' | 'hill' | 'box' | 'metal' | 'crystal' | 'glow';
+export type Vec3Tuple = [number, number, number];
+type KindFactory = () => [THREE.BufferGeometry, THREE.Material];
 
-const KINDS: Record<Kind, () => [THREE.BufferGeometry, THREE.Material]> = {
+const KINDS: Record<string, KindFactory> = {
   leaf: () => [new THREE.IcosahedronGeometry(1, 1), M('#fff', 0.9, 0, { flatShading: true })],
-  trunk: () => [new THREE.CylinderGeometry(0.6, 1, 1, 8), M('#fff', 0.95)],
+  trunk: () => [new THREE.CylinderGeometry(0.6, 1, 1, 10), M('#fff', 0.95)],
   rod: () => [new THREE.CylinderGeometry(1, 1, 1, 12), M('#fff', 0.7)],
   cone: () => [new THREE.ConeGeometry(1, 1, 8), M('#fff', 0.9, 0, { flatShading: true })],
   ball: () => [new THREE.SphereGeometry(1, 16, 10), M('#fff', 0.75)],
   hill: () => [new THREE.SphereGeometry(1, 48, 24), M('#fff', 1)],
   box: () => [new THREE.BoxGeometry(1, 1, 1), M('#fff', 0.85)],
-  metal: () => [new THREE.CylinderGeometry(1, 1, 1, 12), M('#fff', 0.3, 0.9)],
-  crystal: () => [new THREE.OctahedronGeometry(1, 0), M('#fff', 0.04, 1)],
-  glow: () => [new THREE.SphereGeometry(1, 8, 6), new THREE.MeshBasicMaterial({ color: '#fff' })],
+  metal: () => [new THREE.CylinderGeometry(1, 1, 1, 16), M('#fff', 0.3, 0.9)],
+  crystal: () => [new THREE.OctahedronGeometry(1, 0), new THREE.MeshPhysicalMaterial({ color: '#fff', roughness: 0.02, metalness: 0.2, clearcoat: 1, iridescence: 0.4 })],
+  glow: () => [new THREE.SphereGeometry(1, 10, 8), new THREE.MeshBasicMaterial({ color: '#fff', toneMapped: false })],
 };
 
-type Entry = [Vec3Tuple, number | Vec3Tuple, string, Vec3Tuple | null, number];
+/** Register an extra instanced kind (flower heads, baubles…); later builders can `add` it by name. */
+export function registerKind(name: string, factory: KindFactory) {
+  KINDS[name] = factory;
+}
+
+/** Scales steady and flickering venue lights for the time of day, as the prototype's `lightK`. */
+export let lightK = 1;
+export const setLightK = (k: number) => {
+  lightK = k;
+};
+
+type Entry = [Vec3Tuple | THREE.Matrix4, number | Vec3Tuple, string, Vec3Tuple | null, number];
 
 export interface Builder {
-  add: (k: Kind, p: Vec3Tuple, s?: number | Vec3Tuple, c?: string, r?: Vec3Tuple | null, e?: number) => void;
+  add: (k: string, p: Vec3Tuple | number[], s?: number | Vec3Tuple | number[], c?: string, r?: Vec3Tuple | number[] | null, e?: number) => void;
+  addM: (k: string, m: THREE.Matrix4, c?: string, e?: number) => void;
   tree: (x: number, z: number, op?: { h?: number; s?: number; y?: number; n?: number; bark?: string; leaf?: string }) => void;
   cypress: (x: number, z: number, h?: number, y0?: number) => void;
   palm: (x: number, z: number, h?: number, dx?: number, dz?: number) => void;
   rose: (x: number, z: number, col: string, s?: number, y0?: number) => void;
   fern: (x: number, z: number, s?: number, col?: string, y0?: number) => void;
   hills: (n: number, cols: string[], rmin: number, rmax: number, y: number, skip?: (a: number) => boolean) => void;
-  festoon: (a: Vec3Tuple, b: Vec3Tuple, sag: number, n: number, c?: string, e?: number) => void;
-  wire: (a: Vec3Tuple, b: Vec3Tuple) => void;
+  festoon: (a: Vec3Tuple | number[], b: Vec3Tuple | number[], sag: number, n: number, c?: string, e?: number) => void;
+  wire: (a: Vec3Tuple | number[], b: Vec3Tuple | number[]) => void;
   flush: () => void;
 }
 
 export function Builder(g: THREE.Object3D): Builder {
-  const acc: Partial<Record<Kind, Entry[]>> = {};
+  const acc: Record<string, Entry[]> = {};
   const wires: number[] = [];
   const o = new THREE.Object3D();
   o.rotation.order = 'YXZ';
 
   const B: Builder = {
     add(k, p, s = 1, c = '#fff', r = null, e = 1) {
-      (acc[k] ??= []).push([p, s, c, r, e]);
+      (acc[k] ??= []).push([p as Vec3Tuple, s as number | Vec3Tuple, c, r as Vec3Tuple | null, e]);
+    },
+    addM(k, m, c = '#fff', e = 1) {
+      (acc[k] ??= []).push([m, 1, c, null, e]);
     },
     tree(x, z, op = {}) {
       const h = op.h ?? 4.5,
@@ -134,18 +149,23 @@ export function Builder(g: THREE.Object3D): Builder {
     },
     flush() {
       for (const k in acc) {
-        const L = acc[k as Kind]!;
-        const [geo, mat] = KINDS[k as Kind]();
+        const L = acc[k];
+        const factory = KINDS[k];
+        if (!factory) throw new Error(`Unknown builder kind "${k}"`);
+        const [geo, mat] = factory();
         const im = new THREE.InstancedMesh(geo, mat, L.length);
         const color = new THREE.Color();
         L.forEach(([p, s, c, r, e], i) => {
-          o.position.set(...p);
-          if (r) o.rotation.set(r[0], r[1], r[2]);
-          else o.rotation.set(0, 0, 0);
-          if (Array.isArray(s)) o.scale.set(...s);
-          else o.scale.setScalar(s);
-          o.updateMatrix();
-          im.setMatrixAt(i, o.matrix);
+          if (p instanceof THREE.Matrix4) im.setMatrixAt(i, p);
+          else {
+            o.position.set(...p);
+            if (r) o.rotation.set(r[0], r[1], r[2]);
+            else o.rotation.set(0, 0, 0);
+            if (Array.isArray(s)) o.scale.set(...s);
+            else o.scale.setScalar(s);
+            o.updateMatrix();
+            im.setMatrixAt(i, o.matrix);
+          }
           color.set(c);
           if (e !== 1) color.multiplyScalar(e);
           im.setColorAt(i, color);
@@ -167,6 +187,7 @@ export function Builder(g: THREE.Object3D): Builder {
 export const plight = (g: THREE.Object3D, c: string, i: number, d: number, x: number, y: number, z: number) => {
   const l = new THREE.PointLight(c, i, d, 1.6);
   l.position.set(x, y, z);
+  l.userData.base = i;
   g.add(l);
   return l;
 };
@@ -175,7 +196,7 @@ export const flick = (tk: Array<(t: number) => void>, l: THREE.PointLight, base:
   const ph = Math.random() * 9;
   l.userData.flick = true;
   tk.push((t) => {
-    l.intensity = base * (0.82 + 0.1 * Math.sin(t * 9 * sp + ph) + 0.08 * Math.sin(t * 23 * sp + ph * 2));
+    l.intensity = lightK * base * (0.82 + 0.1 * Math.sin(t * 9 * sp + ph) + 0.08 * Math.sin(t * 23 * sp + ph * 2));
   });
 };
 

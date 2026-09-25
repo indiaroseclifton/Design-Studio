@@ -1,4 +1,4 @@
-import { VENUES } from '../../data/venues';
+import { VENUES } from '../../engine/venues.gen';
 import { captureScene, downloadUrl, slug } from '../../lib/capture';
 import { useDesignStore, type ModalKind } from '../../store/designStore';
 
@@ -70,14 +70,7 @@ export function TopToolbar() {
         </button>
       ))}
       <span className="mx-1 h-[18px] w-px" style={{ background: 'rgba(255,240,220,.15)' }} />
-      <button
-        type="button"
-        className={btnClass}
-        onClick={() => {
-          closeModal();
-          showComingSoon('Add-on packs');
-        }}
-      >
+      <button type="button" className={btnClass} style={modal === 'addons' ? onStyle : undefined} onClick={() => (modal === 'addons' ? closeModal() : openModal('addons'))}>
         ＋ Add-ons
       </button>
     </div>

@@ -13,14 +13,12 @@ export function registerCapture(c: CaptureCtx | null) {
 }
 
 /**
- * Render the studio scene once and copy it into a canvas of the requested size (cover-cropped).
- * Rendering and reading back in the same task means the main renderer doesn't need `preserveDrawingBuffer`.
+ * Copy the last finished frame (post-processing included) into a canvas of the requested size, cover-cropped.
+ * The studio renderer keeps its drawing buffer, so the frame is still there to read.
  */
 export function captureScene(w?: number, h?: number, type = 'image/png', quality?: number): string | null {
   if (!ctx) return null;
-  const { gl, scene, camera } = ctx;
-  gl.render(scene, camera);
-  const src = gl.domElement;
+  const src = ctx.gl.domElement;
   const outW = w ?? src.width,
     outH = h ?? src.height;
   const out = document.createElement('canvas');

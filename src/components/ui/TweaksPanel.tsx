@@ -1,6 +1,6 @@
 import { ACCENTS } from '../../data/palettes';
 import { useDesignStore } from '../../store/designStore';
-import type { Accent, Mood, UIMode } from '../../types';
+import type { Accent, Mood, Quality, UIMode } from '../../types';
 
 const MOODS: Array<[Mood, string]> = [
   ['natural', 'Natural'],
@@ -12,6 +12,10 @@ const MODES: Array<[UIMode, string]> = [
   ['studio', 'Studio'],
   ['focus', 'Focus'],
   ['cinematic', 'Cinematic'],
+];
+const QUALITY: Array<[Quality, string]> = [
+  ['high', 'High'],
+  ['standard', 'Standard'],
 ];
 const ACCENT_OPTS: Array<[Accent, string]> = [
   ['champagne', 'Champagne'],
@@ -39,6 +43,14 @@ export function TweaksPanel() {
       <div className="seg three">
         {MODES.map(([v, l]) => (
           <button key={v} type="button" className={tweaks.ui === v ? 'on' : ''} onClick={() => setTweak('ui', v)}>
+            {l}
+          </button>
+        ))}
+      </div>
+      <div className="text-[11.5px] opacity-70">Render quality</div>
+      <div className="seg" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+        {QUALITY.map(([v, l]) => (
+          <button key={v} type="button" className={tweaks.quality === v ? 'on' : ''} title={v === 'high' ? 'Ambient occlusion, 8× antialiasing and sharper shadows' : 'Faster on laptops and tablets'} onClick={() => setTweak('quality', v)}>
             {l}
           </button>
         ))}

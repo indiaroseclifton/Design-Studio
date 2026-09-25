@@ -1,7 +1,7 @@
-import { CATEGORIES, ITEMS } from '../data/catalogue';
+import { CATL, ITEMS, defaultPrice } from '../engine/catalogue';
+import { CHAIRS, CLOTHS, DECOR, OVERLAYS, chairSpots, hasTbl } from '../engine/studio';
+import { placement } from './designOps';
 import type { Design, VenueDef } from '../types';
-import type { LayoutResult } from './layout';
-import { resolvePlacements } from './placements';
 
 export interface QuoteSettings {
   cur: string;
@@ -26,43 +26,31 @@ export interface QuoteLine {
   price: number;
 }
 
-const CHAIR_PRICE = { cross: 9, chiavari: 7.5 } as const;
-
-function defaultPrice(key: string, venue: VenueDef): number {
-  const [kind, id] = key.split(':');
-  if (kind === 'table') return id === 'round' ? 14 : 20;
-  if (kind === 'cloth') return 18;
-  if (kind === 'chair') return CHAIR_PRICE[venue.chair.type];
-  return ITEMS[id]?.price ?? 50;
-}
-
-const catLabel = (id: string) => CATEGORIES.find((c) => c.id === id)?.label ?? 'Other';
-
-/** Build the quote from what's actually in the scene: mirrored table pieces count once per table. */
-export function quoteLines(design: Design, layout: LayoutResult, venue: VenueDef, prices: Record<string, number>): QuoteLine[] {
-  const lines: QuoteLine[] = [];
+/** Build the quote from what's actually in the scene (the prototype's `quoteLines`). */
+export function quoteLines(S: Design, venue: VenueDef, prices: Record<string, number>): QuoteLine[] {
+  const L: QuoteLine[] = [];
   const add = (key: string, name: string, qty: number, cat: string) => {
-    if (qty > 0) lines.push({ key, name, qty, cat, price: prices[key] ?? defaultPrice(key, venue) });
+    if (qty > 0) L.push({ key, name, qty, cat, price: prices[key] ?? defaultPrice(key) });
   };
-
-  const { tables, ceremonySeats } = layout;
-  const mode = design.table.layout;
-  if (tables.length && (mode === 'round' || mode === 'banquet')) {
-    const t0 = tables[0];
-    const size = mode === 'round' ? `Round table · ${(t0.radius * 2).toFixed(1)} m` : `Banquet table · ${t0.length.toFixed(1)} m`;
-    add(`table:${mode}`, size, tables.length, 'Furniture');
-    add('cloth:venue', 'Tablecloth · Venue linen', tables.length, 'Linens');
+  const m = S.table.mode,
+    t = S.table;
+  if (hasTbl(m)) {
+    add('table:' + m, m === 'round' ? 'Round table · 1.9 m' : 'Banquet table · 3.8 m', S.tables.length, 'Furniture');
+    const cl = t.cloth ? CLOTHS[t.cloth] : null;
+    if (!cl?.bare) add('cloth:' + (t.cloth || 'venue'), 'Tablecloth · ' + (cl ? cl.name : 'Venue linen'), S.tables.length, 'Linens');
+    if (t.overlay && t.overlay !== 'none' && !cl?.bare) add('overlay:' + t.overlay, 'Overlay · ' + OVERLAYS[t.overlay].name, S.tables.length, 'Linens');
   }
-  const chairs = tables.reduce((n, t) => n + t.seats.length, 0) + ceremonySeats.length;
-  add(`chair:${venue.chair.type}`, `Chair · ${venue.chair.type === 'chiavari' ? 'Chiavari' : 'Cross-back'}`, chairs, 'Furniture');
-
-  const counts = new Map<string, number>();
-  for (const p of resolvePlacements(design, tables)) counts.set(p.item.type, (counts.get(p.item.type) ?? 0) + 1);
-  for (const [type, qty] of counts) {
-    const def = ITEMS[type];
-    if (def) add(`item:${type}`, def.name, qty, catLabel(def.cat));
+  const n = chairSpots(m, S.tables, S.guests).length;
+  if (n) {
+    // Venue-default chairs are priced by their style, like any other chair of that type.
+    const chairKey = t.chair ?? Object.keys(CHAIRS).find((k) => CHAIRS[k].type === venue.chair.type) ?? 'chiavari_gold';
+    add('chair:' + chairKey, 'Chair · ' + (t.chair ? CHAIRS[t.chair].name : 'Venue standard'), n, 'Furniture');
+    if (t.decor !== 'none') add('decor:' + t.decor, 'Chair décor · ' + DECOR[t.decor].name, n, 'Linens');
   }
-  return lines;
+  const cnt = new Map<string, number>();
+  for (const i of S.items) if (placement(S, i).visible) cnt.set(i.type, (cnt.get(i.type) ?? 0) + 1);
+  for (const [k, q] of cnt) add('item:' + k, ITEMS[k].name, q, CATL[ITEMS[k].cat] || 'Other');
+  return L;
 }
 
 export function quoteTotals(lines: QuoteLine[], q: Pick<QuoteSettings, 'svc' | 'tax'>) {

@@ -4,6 +4,11 @@ let _s = 1;
 export const seed = (n: number) => {
   _s = n >>> 0 || 1;
 };
+/** Raw PRNG state, so code that needs its own deterministic stream can save and restore the caller's. */
+export const getSeedState = () => _s;
+export const setSeedState = (v: number) => {
+  _s = v;
+};
 export const rnd = () => {
   _s |= 0;
   _s = (_s + 0x6d2b79f5) | 0;
@@ -70,12 +75,31 @@ export function ground(p: THREE.Object3D, m: THREE.Material, size: number, y = 0
   return o;
 }
 
+/** Module-level materials, geometries and textures reused by many builds; `disposeObject3D` leaves them alone. */
+const SHARED = new WeakSet<object>();
+export const shared = <T extends object>(x: T): T => {
+  SHARED.add(x);
+  return x;
+};
+
 export function disposeObject3D(root: THREE.Object3D) {
   root.traverse((o) => {
     const anyO = o as unknown as { geometry?: THREE.BufferGeometry; material?: THREE.Material | THREE.Material[] };
-    anyO.geometry?.dispose();
+    if (anyO.geometry && !SHARED.has(anyO.geometry)) anyO.geometry.dispose();
     if (anyO.material) {
-      (Array.isArray(anyO.material) ? anyO.material : [anyO.material]).forEach((mm) => mm.dispose());
+      for (const mm of Array.isArray(anyO.material) ? anyO.material : [anyO.material]) {
+        if (SHARED.has(mm)) continue;
+        for (const v of Object.values(mm)) if (v instanceof THREE.Texture && !SHARED.has(v)) v.dispose();
+        mm.dispose();
+      }
     }
   });
 }
+
+export const lathe = (pts: Array<[number, number]>, s = 24) => new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), s);
+
+/** Turn off shadow casting (glass, fabric sheers, emissive pieces) and return the object. */
+export const noSh = <T extends THREE.Object3D>(o: T): T => {
+  o.castShadow = false;
+  return o;
+};

@@ -3,21 +3,51 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, OrthographicCamera } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import { chairSpots, hasTbl } from '../../engine/studio';
+import { layoutFrame } from '../../lib/designOps';
 import { useDesignStore } from '../../store/designStore';
-import type { CameraPreset, VenueDef } from '../../types';
+import type { CameraPreset, Design, VenueDef } from '../../types';
 
-const PRESET_TARGET: Record<CameraPreset, [number, number, number]> = {
-  wide: [0, 0.9, 0],
-  guest: [0, 0.85, 0],
-  couple: [0, 0.9, 0],
-  top: [0, 0, 0],
-};
+type V3 = [number, number, number];
 
-function presetPosition(preset: CameraPreset, venue: VenueDef): [number, number, number] {
-  if (preset === 'wide') return venue.cam;
-  if (preset === 'guest') return [1.6, 0.9, 2.2];
-  if (preset === 'couple') return [0, 1.7, -2.6];
-  return [0.01, 12, 0.01];
+/** Camera position and target for a preset, framed on the current layout (the prototype's `presetCam`). */
+function presetView(k: CameraPreset, S: Design, venue: VenueDef): [V3, V3] {
+  const m = S.table.mode,
+    T = S.tables[0] || { x: 0, z: 0, ry: 0 },
+    f = layoutFrame(S);
+  if (k === 'guest') {
+    if (m === 'ceremony') return [[0.95, 1.2, 0.7 + Math.max(2, Math.ceil(S.guests / 8))], [0, 1.3, -3.8]];
+    if (hasTbl(m)) {
+      const s = chairSpots(m, [T], 8)[0];
+      const dx = s[0] - T.x,
+        dz = s[1] - T.z,
+        l = Math.hypot(dx, dz) || 1;
+      return [
+        [T.x + (dx / l) * (l + 0.2), 1.22, T.z + (dz / l) * (l + 0.2)],
+        [T.x - (dx / l) * 0.3, 0.78, T.z - (dz / l) * 0.3],
+      ];
+    }
+    return [[0, 1.6, 5], [0, 1, 0]];
+  }
+  if (k === 'top') return [[f.x + 0.01, 7 + f.ext * 1.8, f.z + 2.5 + f.ext * 0.4], [f.x, 0.4, f.z]];
+  if (k === 'couple') {
+    if (m === 'ceremony') return [[0, 1.65, -3.3], [0, 1.2, 3]];
+    if (hasTbl(m)) return [m === 'banquet' ? [T.x + 3.2, 1.5, T.z] : [T.x, 1.5, T.z + 2.6], [T.x, 0.8, T.z]];
+    return [[0, 1.6, -4], [0, 1, 2]];
+  }
+  // Wide: the venue's hero angle, pulled back to fit larger layouts.
+  const pull = 1 + Math.max(0, f.ext - 2) * 0.18;
+  return [[venue.cam[0] * pull + f.x, venue.cam[1] * Math.min(pull, 1.6), venue.cam[2] * pull + f.z], [f.x, 0.9, f.z]];
+}
+
+/** Point a camera straight down at the layout (plan view). */
+function frameTopDown(camera: THREE.Camera, x: number, z: number, ext: number) {
+  camera.position.set(x, 40, z + 0.001);
+  camera.lookAt(x, 0, z);
+  if (camera instanceof THREE.OrthographicCamera) {
+    camera.zoom = Math.max(14, Math.min(60, 300 / (ext * 2 + 8)));
+    camera.updateProjectionMatrix();
+  }
 }
 
 const TWEEN_S = 0.9;
@@ -43,16 +73,18 @@ export function CameraRig({ venue }: { venue: VenueDef }) {
 
   useEffect(() => {
     const controls = controlsRef.current;
+    const S = useDesignStore.getState().design;
     if (planView) {
       tween.current = null;
-      camera.position.set(0, 40, 0.001);
-      camera.lookAt(0, 0, 0);
-      controls?.target.set(0, 0, 0);
+      const f = layoutFrame(S);
+      frameTopDown(camera, f.x, f.z, f.ext);
+      controls?.target.set(f.x, 0, f.z);
       controls?.update();
       return;
     }
-    const toPos = new THREE.Vector3(...presetPosition(preset, venue));
-    const toTarget = new THREE.Vector3(...PRESET_TARGET[preset]);
+    const [p, t] = presetView(preset, S, venue);
+    const toPos = new THREE.Vector3(...p);
+    const toTarget = new THREE.Vector3(...t);
     if (!motion || !controls) {
       tween.current = null;
       camera.position.copy(toPos);
@@ -61,7 +93,7 @@ export function CameraRig({ venue }: { venue: VenueDef }) {
       return;
     }
     tween.current = { fromPos: camera.position.clone(), toPos, fromTarget: controls.target.clone(), toTarget, t: 0 };
-    // presetNonce lets "Reset camera" re-run the tween when the preset itself hasn't changed.
+    // presetNonce re-runs this when the same preset is requested again (Reset camera, a new layout).
   }, [preset, presetNonce, venue, camera, planView, motion]);
 
   useFrame((_, delta) => {
@@ -84,12 +116,14 @@ export function CameraRig({ venue }: { venue: VenueDef }) {
         makeDefault
         enableDamping
         dampingFactor={0.07}
+        screenSpacePanning
         enableRotate={!planView}
+        mouseButtons={planView ? { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN } : undefined}
         maxPolarAngle={planView ? 0 : Math.PI / 2 - 0.04}
-        minDistance={2.2}
-        maxDistance={venue.maxD ?? 22}
-        minZoom={12}
-        maxZoom={140}
+        minDistance={1.2}
+        maxDistance={Math.max(venue.maxD ?? 22, 30)}
+        minZoom={10}
+        maxZoom={160}
         autoRotate={motion && autoRotate && !planView}
         autoRotateSpeed={0.5}
         onStart={() => {

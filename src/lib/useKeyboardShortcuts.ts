@@ -38,15 +38,15 @@ export function useKeyboardShortcuts() {
         s.redo();
         return;
       }
-      if (mod || e.altKey || s.selection?.k !== 'item') return;
-
-      if (key === 'q') s.rotateSelected(-1);
-      else if (key === 'e') s.rotateSelected(1);
-      else if (key === 'd') s.duplicateSelected();
-      else if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (mod || e.altKey) return;
+      const k = s.selection?.k;
+      // Q/E rotate a selected piece or table; D duplicates; Delete removes a piece or a multi-selection.
+      if ((k === 'item' || k === 'table') && key === 'q') s.rotateSelected(1);
+      else if ((k === 'item' || k === 'table') && key === 'e') s.rotateSelected(-1);
+      else if (k === 'item' && key === 'd') s.duplicateSelected();
+      else if ((k === 'item' || k === 'multi') && (e.key === 'Delete' || e.key === 'Backspace')) {
         e.preventDefault();
         s.removeSelected();
-        s.showToast('Piece removed', true);
       }
     }
     window.addEventListener('keydown', onKey);

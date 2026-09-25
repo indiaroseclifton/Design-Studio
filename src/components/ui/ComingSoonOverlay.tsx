@@ -16,7 +16,7 @@ export function ComingSoonOverlay() {
         <div className="lbl">Coming soon</div>
         <h3 className="serif text-[28px] leading-tight">{comingSoon}</h3>
         <p className="text-[13px] leading-[1.5] opacity-70">
-          This part of the handoff isn't wired up yet — the Studio, Designs, Quote and Snapshot are ready to use.
+          This part of the handoff isn't built yet. The Studio, all 15 venues, the full catalogue, add-on packs, Designs, Quote and Snapshot are ready to use.
         </p>
         <button type="button" className="btn primary mt-1" onClick={dismissComingSoon}>
           Back to the Studio

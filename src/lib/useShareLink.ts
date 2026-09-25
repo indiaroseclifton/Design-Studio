@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { VENUES } from '../data/venues';
-import { normalizeDesign, useDesignStore } from '../store/designStore';
+import { useDesignStore } from '../store/designStore';
+import { normalizeDesign } from './designFormat';
 import { ungz64 } from './storage';
 
 /** Opens a design shared as `#d=<gzip+base64url>` and then clears the hash so a reload doesn't re-apply it. */
@@ -12,10 +12,10 @@ export function useShareLink() {
     ungz64(m[1])
       .then((text) => {
         const raw = JSON.parse(text);
+        // normalizeDesign resolves the venue by name when the link carries one.
         const clean = normalizeDesign(raw);
         if (!clean) throw new Error('not a design');
-        const byName = typeof raw.venueName === 'string' ? VENUES.findIndex((v) => v.name === raw.venueName) : -1;
-        loadDesign(byName >= 0 ? { ...clean, venue: byName } : clean);
+        loadDesign(clean);
         showToast('Opened a shared design', true);
       })
       .catch(() => showToast('That share link could not be opened'))

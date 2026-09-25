@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
-import { VENUES } from '../../data/venues';
+import { VENUES } from '../../engine/venues.gen';
 import { captureScene, downloadText, slug } from '../../lib/capture';
 import { gz64, readJSON, writeJSON } from '../../lib/storage';
-import { normalizeDesign, useDesignStore } from '../../store/designStore';
+import { useDesignStore } from '../../store/designStore';
+import { normalizeDesign } from '../../lib/designFormat';
 import type { Design } from '../../types';
 import { Modal } from './Modal';
 

@@ -9,6 +9,9 @@ import { ComingSoonOverlay } from './components/ui/ComingSoonOverlay';
 import { Letterbox } from './components/ui/Letterbox';
 import { DesignsModal } from './components/ui/DesignsModal';
 import { QuoteModal } from './components/ui/QuoteModal';
+import { AddonsModal } from './components/ui/AddonsModal';
+import { useEffect } from 'react';
+import { useVenuePhoto } from './lib/venuePhoto';
 import { useDesignStore } from './store/designStore';
 import { useKeyboardShortcuts } from './lib/useKeyboardShortcuts';
 import { useApplyTweaks } from './lib/useApplyTweaks';
@@ -19,6 +22,10 @@ export default function App() {
   useKeyboardShortcuts();
   useApplyTweaks();
   useShareLink();
+  const loadPhoto = useVenuePhoto((s) => s.load);
+  useEffect(() => {
+    loadPhoto();
+  }, [loadPhoto]);
 
   return (
     <div className="relative h-full w-full overflow-hidden">
@@ -32,6 +39,7 @@ export default function App() {
       <Toast />
       {modal === 'designs' && <DesignsModal />}
       {modal === 'quote' && <QuoteModal />}
+      {modal === 'addons' && <AddonsModal />}
       <ComingSoonOverlay />
     </div>
   );

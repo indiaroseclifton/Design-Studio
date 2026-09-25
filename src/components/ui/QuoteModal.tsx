@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { VENUES } from '../../data/venues';
-import { useTableLayout } from '../../lib/useTableLayout';
+import { VENUES } from '../../engine/venues.gen';
 import { CURRENCIES, DEFAULT_QUOTE, money, quoteCsv, quoteLines, quoteTotals, type QuoteLine, type QuoteSettings } from '../../lib/quote';
 import { captureScene, downloadText, slug } from '../../lib/capture';
 import { escapeHtml, readJSON, writeJSON } from '../../lib/storage';
 import { useDesignStore } from '../../store/designStore';
 import { Modal } from './Modal';
+import { hasTbl } from '../../engine/studio';
 
 const LS_KEY = 'vs2_quote';
 
@@ -48,7 +48,6 @@ export function QuoteModal() {
   const design = useDesignStore((s) => s.design);
   const closeModal = useDesignStore((s) => s.closeModal);
   const showToast = useDesignStore((s) => s.showToast);
-  const layout = useTableLayout();
   const venue = VENUES[design.venue] ?? VENUES[0];
   const [q, setQ] = useState<QuoteSettings>(() => ({ ...DEFAULT_QUOTE, ...readJSON<Partial<QuoteSettings>>(LS_KEY, {}) }));
 
@@ -56,16 +55,17 @@ export function QuoteModal() {
     writeJSON(LS_KEY, q);
   }, [q]);
 
-  const lines = useMemo(() => quoteLines(design, layout, venue, q.prices), [design, layout, venue, q.prices]);
+  const lines = useMemo(() => quoteLines(design, venue, q.prices), [design, venue, q.prices]);
   const totals = quoteTotals(lines, q);
   const cats = [...new Set(lines.map((l) => l.cat))];
   const m = (v: number) => money(q.cur, v);
-  const layoutNote = layout.tables.length
-    ? `${layout.tables.length} table${layout.tables.length > 1 ? 's' : ''}`
-    : design.table.layout === 'ceremony'
+  const nt = design.tables.length;
+  const layoutNote = hasTbl(design.table.mode)
+    ? `${nt} table${nt > 1 ? 's' : ''}`
+    : design.table.mode === 'ceremony'
       ? 'ceremony seating'
       : 'no tables';
-  const summary = `${venue.name} · ${design.table.guests} guests · ${layoutNote}`;
+  const summary = `${venue.name} · ${design.guests} guests · ${layoutNote}`;
 
   const setPrice = (key: string, v: number) => setQ((s) => ({ ...s, prices: { ...s.prices, [key]: Math.max(0, v || 0) } }));
 
