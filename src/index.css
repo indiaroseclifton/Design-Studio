@@ -1479,20 +1479,20 @@ body.fs-on .chrome.toolbar {
   opacity: 0.55;
 }
 
-/* ---------- Music curator: its own midnight look, with a coral accent ---------- */
+/* ---------- Music curator: neutral charcoal with the studio's champagne accent ---------- */
 .mu-root {
-  --ac: #ff8a65;
-  --acr: 255, 138, 101;
-  --ac2: #ffa585;
-  --text-on-accent: #2a1108;
-  --mu-card: #1b2140;
-  --mu-line: rgba(170, 185, 255, 0.12);
-  --mu-muted: #9aa3c0;
-  color: #eef0f8;
-  background: radial-gradient(ellipse at 20% 0%, #232a52, #0d1022 68%);
+  --mu-card: #232326;
+  --mu-panel: rgba(30, 30, 33, 0.78);
+  --mu-line: rgba(255, 255, 255, 0.09);
+  --mu-tint: rgba(255, 255, 255, 0.045);
+  --mu-hover: rgba(255, 255, 255, 0.08);
+  --mu-muted: #a8a49c;
+  --mu-text: #f4f1ea;
+  color: var(--mu-text);
+  background: radial-gradient(ellipse at 25% 0%, #2c2c30, #111113 70%);
 }
 .mu-root .fs-side {
-  background: rgba(18, 22, 44, 0.9);
+  background: rgba(22, 22, 24, 0.92);
   border-color: var(--mu-line);
 }
 .mu-root .chip,
@@ -1503,7 +1503,7 @@ body.fs-on .chrome.toolbar {
 .mu-root .st-piece,
 .mu-root .fs-tabs {
   border-color: var(--mu-line);
-  background-color: rgba(8, 10, 24, 0.45);
+  background-color: rgba(0, 0, 0, 0.3);
 }
 .mu-root .btn.primary,
 .mu-root .chip.on {
@@ -1516,7 +1516,7 @@ body.fs-on .chrome.toolbar {
 .mu-root .chip:hover,
 .mu-root .btn:hover:not(.primary),
 .mu-root .fs-tabs button:hover:not(.on) {
-  background: rgba(170, 185, 255, 0.1);
+  background: var(--mu-hover);
 }
 .mu-view {
   display: flex;
@@ -1543,7 +1543,7 @@ body.fs-on .chrome.toolbar {
   color: var(--mu-muted);
 }
 .mu-stats b {
-  color: #eef0f8;
+  color: var(--mu-text);
   font-weight: 500;
   font-size: 15px;
 }
@@ -1625,7 +1625,7 @@ body.fs-on .chrome.toolbar {
   gap: 10px;
   padding: 14px;
   border-radius: 14px;
-  background: rgba(20, 25, 50, 0.7);
+  background: var(--mu-panel);
   border: 1px solid var(--mu-line);
 }
 .mu-list > header,
@@ -1671,7 +1671,7 @@ body.fs-on .chrome.toolbar {
   gap: 10px;
   padding: 6px 8px;
   border-radius: 10px;
-  background: rgba(170, 185, 255, 0.05);
+  background: var(--mu-tint);
 }
 .mu-list li.pinned {
   background: rgba(var(--acr), 0.12);
@@ -1742,8 +1742,8 @@ body.fs-on .chrome.toolbar {
   justify-content: center;
   border-radius: 99px;
   font-size: 10px;
-  color: #eef0f8;
-  background: rgba(170, 185, 255, 0.1);
+  color: var(--mu-text);
+  background: var(--mu-hover);
   text-decoration: none;
 }
 .mu-link:hover {

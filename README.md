@@ -161,7 +161,7 @@ design, so saved designs, exports and share links carry it, and each feeds the o
     and eras, and songs like the ones you've pinned, each with its reason. One tap adds a song (a set
     grows to fit it) or picks it for a single-song moment.
   - Pin, remove, reshuffle and add your own songs, with a do-not-play list.
-  - A midnight-blue look with a coral accent, so it reads apart from the warm design studios.
+  - A neutral charcoal look with the studio's champagne accent.
   - Exports: a DJ brief PDF and a playlist CSV for import tools.
   - The order of service names the ceremony music, and the Storybook names the first-dance song.
 - **Attire & colour** (`src/attire/`, `src/components/attire/`):
