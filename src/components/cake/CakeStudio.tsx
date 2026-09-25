@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import {
   BORDERS,
   CAKE_COLOURS,
@@ -24,12 +24,15 @@ import {
   type CakeDesign,
   type Finish,
   type Tier,
+  refitCakePlaced,
 } from '../../engine/cakes';
 import { FCOL, FL } from '../../engine/catalogue.gen';
 import { newId } from '../../lib/designOps';
 import { cachedModelThumb, requestModelThumb } from '../../three/thumbnail';
 import { useDesignStore } from '../../store/designStore';
-import { StudioViewer, type Backdrop, type StudioView } from '../studio3d/StudioViewer';
+import { StudioViewer, type Backdrop, type Picker, type StudioView } from '../studio3d/StudioViewer';
+import { usePaletteDrag } from '../studio3d/drag';
+import { MAX_PLACED, type Vec3 } from '../../engine/placed';
 import { Sec, StemThumb, Stepper } from '../studio3d/ui';
 import { histReducer, useThumb } from '../studio3d/state';
 import { colourHex, colourName } from '../flower/guidance';
@@ -96,6 +99,15 @@ export function CakeStudio() {
   const [view, setView] = useState<StudioView>('front');
   const [viewNonce, setViewNonce] = useState(0);
   const [backdrop, setBackdrop] = useState<Backdrop>('dark');
+  const picker = useRef<Picker | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [placedPicker, setPlacedPicker] = useState<number | null>(null);
+  const [dropHint, setDropHint] = useState(false);
+  useEffect(() => {
+    if (!dropHint) return;
+    const t = setTimeout(() => setDropHint(false), 2600);
+    return () => clearTimeout(t);
+  }, [dropHint]);
 
   // Debounce rebuilds so stepping sizes doesn't rebuild the model on every click.
   const [shown, setShown] = useState(cake);
@@ -108,12 +120,33 @@ export function CakeStudio() {
     (fn: (d: CakeDesign) => void) => {
       const n = structuredClone(hist.now);
       fn(n);
+      // Hand-placed blooms stay on their tier when tiers or the stand change.
+      if (n.placed?.length && (n.stand !== hist.now.stand || JSON.stringify(n.tiers.map((t) => [t.d, t.h])) !== JSON.stringify(hist.now.tiers.map((t) => [t.d, t.h]))))
+        n.placed = refitCakePlaced(n.placed, hist.now, n);
       dispatch({ t: 'set', d: n });
     },
     [hist.now],
   );
   /** Edit the tiers in scope (all, or the chosen one). */
   const updateTiers = (fn: (t: Tier) => void) => update((d) => d.tiers.forEach((t, i) => (scope === 'all' || scope === i) && fn(t)));
+
+  const placedCount = cake.placed?.length ?? 0;
+  const drag = usePaletteDrag<string>(
+    picker,
+    (t, hit) => {
+      if (placedCount >= MAX_PLACED) return;
+      update((d) => void (d.placed = [...(d.placed ?? []), { t, c: FL[t].c, p: hit.p, n: hit.n, tw: Math.random() * 6.283 }]));
+      setSelected(placedCount);
+    },
+    () => setDropHint(true),
+  );
+  const removePlaced = (i: number) => {
+    setSelected(null);
+    setPlacedPicker(null);
+    update((d) => void d.placed?.splice(i, 1));
+  };
+  /** Blooms face out from the icing, tipped up a little so they read from the front. */
+  const orient = useCallback((_p: Vec3, s: Vec3): Vec3 => [s[0], s[1] + 0.35, s[2]], []);
 
   const dirty = JSON.stringify(cake) !== JSON.stringify(initial) || name !== initialName;
   const requestClose = useCallback(() => (dirty ? setConfirm('discard') : close()), [dirty, close]);
@@ -124,11 +157,17 @@ export function CakeStudio() {
       if (e.key === 'Escape') {
         e.preventDefault();
         if (pickerFor !== null) setPickerFor(null);
+        else if (selected !== null) setSelected(null);
         else if (confirm) setConfirm(null);
         else requestClose();
         return;
       }
       if (typing) return;
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selected !== null) {
+        e.preventDefault();
+        removePlaced(selected);
+        return;
+      }
       const mod = e.metaKey || e.ctrlKey,
         k = e.key.toLowerCase();
       if (mod && k === 'z') {
@@ -141,7 +180,9 @@ export function CakeStudio() {
     }
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [pickerFor, confirm, requestClose]);
+    // removePlaced only reads the latest cake through update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickerFor, confirm, requestClose, selected]);
 
   // Keep the scope valid when tiers are removed.
   const scoped = scope === 'all' || scope < cake.tiers.length ? scope : 'all';
@@ -175,11 +216,28 @@ export function CakeStudio() {
           build={(g) => buildCake(g, shown)}
           surf="table"
           frameKey={`${shown.tiers.map((t) => `${t.d}x${t.h}`).join(',')}|${shown.stand}|${shown.topper.kind}`}
-          turntable={turntable && motion}
+          turntable={turntable && motion && !drag.dragging}
           view={view}
           viewNonce={viewNonce}
           backdrop={backdrop}
+          placing={{
+            pickerRef: picker,
+            orient,
+            marker: 0.03,
+            selected,
+            onSelect: (i) => {
+              setSelected(i);
+              if (i !== null) setTab('decorate');
+            },
+            onMove: (i, hit) => update((d) => void (d.placed && d.placed[i] && Object.assign(d.placed[i], { p: hit.p, n: hit.n }))),
+          }}
         />
+        {drag.layer}
+        {dropHint && (
+          <div className="fs-drop-hint glass" role="status">
+            Drop it on the cake to place it there
+          </div>
+        )}
         <div className="fs-top">
           <div className="lbl">Cake Studio{editId ? ' · editing' : ''}</div>
           <input className="serif fs-name" aria-label="Cake name" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
@@ -219,7 +277,7 @@ export function CakeStudio() {
             {backdrop === 'dark' ? '◐ Light' : '◑ Dark'}
           </button>
         </div>
-        <div className="fs-hint">Drag to turn · Scroll to zoom · Ctrl+Z undo · Esc to close</div>
+        <div className="fs-hint">Drag flowers onto the cake · drag placed blooms to move them · Drag to turn · Ctrl+Z undo · Esc to close</div>
       </div>
 
       <aside className="fs-side glass">
@@ -396,38 +454,77 @@ export function CakeStudio() {
                         </div>
                       ))}
                     </div>
-                    <div className="lbl mt-1">Add a flower</div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {['rose', 'spray', 'peony', 'ranunculus', 'anemone', 'dahlia', 'hydrangea', 'babys', 'lavender', 'orchid', 'protea', 'carnation', 'tulip', 'calla', 'berries', 'sunflower']
-                        .filter((k) => FL[k])
-                        .map((k) => {
-                          const inCake = cake.flowers.stems.filter((s) => s.t === k).reduce((a, s) => a + s.n, 0);
-                          return (
-                            <button
-                              key={k}
-                              type="button"
-                              className={`fs-add ${inCake ? 'in' : ''}`}
-                              onClick={() =>
-                                update((d) => {
-                                  const ex = d.flowers.stems.find((s) => s.t === k);
-                                  if (ex) ex.n = Math.min(20, ex.n + 2);
-                                  else if (d.flowers.stems.length < 8) d.flowers.stems.push({ t: k, c: FL[k].c, n: 3 });
-                                })
-                              }
-                            >
-                              <StemThumb kind="flower" t={k} c={FL[k].c} />
-                              <span className="flex min-w-0 flex-col gap-0.5">
-                                <span className="truncate">{FL[k].n}</span>
-                                <small className="tag">{inCake ? `On the cake · ${inCake}` : '+ Add'}</small>
-                              </span>
-                            </button>
-                          );
-                        })}
-                    </div>
                     <label className="check">
                       <input type="checkbox" checked={cake.flowers.greenery} onChange={(e) => update((d) => void (d.flowers.greenery = e.target.checked))} />
                       <span>Tuck in greenery</span>
                     </label>
+                  </>
+                )}
+                <div className="lbl mt-1">Add a flower</div>
+                <p className="fs-hint-text">Click to add stems in the style above, or drag a flower onto the cake to place it exactly.</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {['rose', 'spray', 'peony', 'ranunculus', 'anemone', 'dahlia', 'hydrangea', 'babys', 'lavender', 'orchid', 'protea', 'carnation', 'tulip', 'calla', 'berries', 'sunflower']
+                    .filter((k) => FL[k])
+                    .map((k) => {
+                      const inCake = cake.flowers.stems.filter((s) => s.t === k).reduce((a, s) => a + s.n, 0);
+                      return (
+                        <button
+                          key={k}
+                          type="button"
+                          className={`fs-add ${inCake ? 'in' : ''}`}
+                          title="Click to add stems · drag onto the cake to place one exactly"
+                          {...drag.bind(k, FL[k].n, colourHex(FL[k].c))}
+                          onClick={() =>
+                            update((d) => {
+                              if (d.flowers.style === 'none') d.flowers.style = 'crescent';
+                              const ex = d.flowers.stems.find((s) => s.t === k);
+                              if (ex) ex.n = Math.min(20, ex.n + 2);
+                              else if (d.flowers.stems.length < 8) d.flowers.stems.push({ t: k, c: FL[k].c, n: 3 });
+                            })
+                          }
+                        >
+                          <StemThumb kind="flower" t={k} c={FL[k].c} />
+                          <span className="flex min-w-0 flex-col gap-0.5">
+                            <span className="truncate">{FL[k].n}</span>
+                            <small className="tag">{inCake ? `On the cake · ${inCake}` : '+ Add'}</small>
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+                {placedCount > 0 && (
+                  <>
+                    <div className="lbl mt-1">Placed by hand · {placedCount}</div>
+                    <div className="flex flex-col gap-1.5">
+                      {cake.placed!.map((pl, i) => (
+                        <div key={i} className={`fs-row ${selected === i ? 'sel' : ''}`} onClick={() => setSelected(i)}>
+                          <StemThumb kind="flower" t={pl.t} c={pl.c} className="fs-th sm" />
+                          <div className="min-w-0">
+                            <div className="truncate text-[13px]">{FL[pl.t]?.n}</div>
+                            <button type="button" className="fs-colbtn" aria-expanded={placedPicker === i} onClick={(e) => (e.stopPropagation(), setPlacedPicker(placedPicker === i ? null : i))}>
+                              <i style={{ background: colourHex(pl.c) }} />
+                              {colourName(pl.c)} ▾
+                            </button>
+                          </div>
+                          <span />
+                          <button type="button" className="fs-x" aria-label={`Remove the placed ${FL[pl.t]?.n.toLowerCase()}`} onClick={(e) => (e.stopPropagation(), removePlaced(i))}>
+                            ×
+                          </button>
+                          {placedPicker === i && (
+                            <div className="fs-pop">
+                              <div className="fs-cols">
+                                {Object.entries(FCOL).map(([k, [nm, hx]]) => (
+                                  <button key={k} type="button" title={nm} aria-label={nm} className={k === pl.c ? 'on' : ''} style={{ background: hx }} onClick={() => update((d) => void (d.placed![i].c = k))} />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className="link" onClick={() => (setSelected(null), update((d) => void delete d.placed))}>
+                      Clear all placed blooms
+                    </button>
                   </>
                 )}
               </Sec>

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { FCOL, FINS, FL, GR, I4, ITEMS, SHAPES, VESS, buildArrangement, fc, frame, stemTo, type Arrangement } from './catalogue.gen';
+import { FCOL, FINS, FL, GR, I4, ITEMS, SHAPES, VESS, fc, frame, stemTo, type Arrangement } from './catalogue.gen';
+import { buildFullArrangement, sanitizePlaced, type Placed } from './placed';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Builder, registerKind } from '../three/builder';
 import { PETAL, PETAL_LO, petalMaterial } from './botany';
@@ -17,6 +18,8 @@ export interface SavedArrangement extends Arrangement {
   shape: string;
   stems: Array<{ t: string; c: string; n: number }>;
   greens: Record<string, number>;
+  /** blooms dragged in and placed by hand, alongside the recipe */
+  placed?: Placed[];
 }
 
 export type Draft = Omit<SavedArrangement, 'id' | 'name'>;
@@ -51,7 +54,8 @@ export function sanitizeArrangement(raw: unknown): SavedArrangement | null {
   const greens: Record<string, number> = {};
   if (o.greens && typeof o.greens === 'object')
     for (const [k, v] of Object.entries(o.greens)) if (k in GR) greens[k] = Math.round(num(v, 0, MAX_GREENS, 0));
-  if (!stems.length) return null;
+  const placed = sanitizePlaced(o.placed);
+  if (!stems.length && !placed.length) return null;
   return {
     id: o.id,
     name: typeof o.name === 'string' && o.name.trim() ? o.name.trim().slice(0, 60) : 'Untitled arrangement',
@@ -62,6 +66,7 @@ export function sanitizeArrangement(raw: unknown): SavedArrangement | null {
     shape: typeof o.shape === 'string' && o.shape in SHAPES ? o.shape : 'dome',
     stems,
     greens,
+    ...(placed.length ? { placed } : {}),
     ...(typeof o.ribbon === 'string' && o.ribbon in FCOL ? { ribbon: o.ribbon } : {}),
   };
 }
@@ -79,9 +84,9 @@ export function registerCustom(r: SavedArrangement) {
     fp: Math.min(0.6, V.fp * (r.vessel === 'budvase' ? 1 : sz)),
     pal: false,
     kw: 'my flowers custom arrangement ' + r.stems.map((s) => FL[s.t]?.n ?? '').join(' '),
-    price: Math.round(18 + r.stems.reduce((a, s) => a + s.n * 4.5, 0) + (V.surf === 'floor' ? 120 : V.surf === 'hang' ? 200 : 0)),
+    price: Math.round(18 + r.stems.reduce((a, s) => a + s.n * 4.5, 0) + (r.placed?.filter((p) => !p.g).length ?? 0) * 4.5 + (V.surf === 'floor' ? 120 : V.surf === 'hang' ? 200 : 0)),
     build(g) {
-      buildArrangement(g, r);
+      buildFullArrangement(g, r);
     },
   };
 }

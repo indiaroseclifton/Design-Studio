@@ -5,7 +5,7 @@ import { CHAIRS, HANG, OVERLAYS, chairSpots, clothOf, fabricMat, hasTbl, makeCha
 import { DEF_TABLE, addItem, setAllPlaces } from '../lib/designOps';
 import { DEFAULT_DESIGN } from '../lib/designFormat';
 import { cutStem } from '../engine/flowers';
-import { buildArrangement, type Arrangement } from '../engine/catalogue.gen';
+import { buildFullArrangement, type FullArrangement } from '../engine/placed';
 import { disposeObject3D } from './utils';
 import type { Design, TableConfig } from '../types';
 
@@ -175,10 +175,10 @@ export function requestStemThumb(kind: 'flower' | 'green', t: string, c: string 
 }
 
 /** Queue a thumbnail of a whole Flower Studio arrangement (preset and vessel cards). */
-export function requestArrangementThumb(key: string, r: Arrangement, cb: (url: string) => void): () => void {
+export function requestArrangementThumb(key: string, r: FullArrangement, cb: (url: string) => void): () => void {
   return enqueue(`arr:${key}`, () => {
     const g = new THREE.Group();
-    buildArrangement(g, r);
+    buildFullArrangement(g, r);
     return shoot(g, new THREE.Vector3(0.55, 0.3, 1), 0.9);
   }, cb);
 }

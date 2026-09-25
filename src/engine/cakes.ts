@@ -4,6 +4,7 @@ import { FCOL, FL, I4, ITEMS, fc, frame } from './catalogue.gen';
 import { Builder, registerKind, type Builder as BuilderT } from '../three/builder';
 import { M, getSeedState, jit, lathe, mesh, noSh, pick, rnd, seed, setSeedState, shared } from '../three/utils';
 import { T } from '../three/textures';
+import { addPlaced, sanitizePlaced, type Placed, type Vec3 } from './placed';
 
 /*
  * The Cake Studio's model and 3D builder. A cake is a stack of tiers (round, square, hexagonal or heart),
@@ -44,6 +45,8 @@ export interface CakeDesign {
   flowers: { style: FlowerStyle; stems: Array<{ t: string; c: string; n: number }>; greenery: boolean };
   extras: { goldLeaf: boolean; berries: boolean; macarons: boolean; sprinkles: boolean };
   topper: { kind: ToppperKind; text: string; metal: MetalFinish };
+  /** blooms dragged in and placed by hand */
+  placed?: Placed[];
 }
 
 export interface SavedCake extends CakeDesign {
@@ -257,6 +260,7 @@ export function cakePrice(c: CakeDesign) {
     if (t.border !== 'none') p += 6;
   }
   p += c.flowers.style === 'none' ? 0 : c.flowers.stems.reduce((a, s) => a + s.n * 3, 0);
+  p += (c.placed?.length ?? 0) * 3;
   if (c.extras.goldLeaf) p += 25;
   if (c.extras.berries) p += 18;
   if (c.extras.macarons) p += 20;
@@ -302,6 +306,7 @@ export function sanitizeCake(raw: unknown): SavedCake | null {
       bc: colour(t.bc, 'white'),
     }));
   if (!tiers.length) return null;
+  const placed = sanitizePlaced(o.placed).filter((x) => !x.g);
   const f = (o.flowers ?? {}) as Record<string, unknown>;
   const x = (o.extras ?? {}) as Record<string, unknown>;
   const tp = (o.topper ?? {}) as Record<string, unknown>;
@@ -321,6 +326,7 @@ export function sanitizeCake(raw: unknown): SavedCake | null {
     },
     extras: { goldLeaf: x.goldLeaf === true, berries: x.berries === true, macarons: x.macarons === true, sprinkles: x.sprinkles === true },
     topper: { kind: oneOf(tp.kind, TOPPERS, 'none'), text: typeof tp.text === 'string' ? tp.text.slice(0, 24) : '', metal: oneOf(tp.metal, METALS, 'gold') },
+    ...(placed.length ? { placed } : {}),
   };
 }
 
@@ -1257,6 +1263,7 @@ export function buildCake(g: THREE.Group, c: CakeDesign) {
   }
   placeFlowers(B, c, tiers);
   extras(B, c, tiers);
+  addPlaced(g, c.placed, 0.03);
   if (c.topper.kind !== 'none') {
     const top = y;
     if (c.topper.kind === 'script') textTopper(g, c.topper.text.trim() || 'Love', c.topper.metal, top, false);
@@ -1272,3 +1279,36 @@ export const cakeFootprintCm = (c: CakeDesign) => c.tiers[0].d + (c.stand === 'n
 
 // Register saved cakes before a persisted design that uses them is loaded.
 for (const c of loadCakes()) registerCake(c);
+
+/** Size of a placed flower head on a cake, as the automatic styles use. */
+export const CAKE_BLOOM = 0.03;
+
+/**
+ * Keep hand-placed blooms on their tier when the tiers or stand change: each keeps its height within its
+ * tier and its place around it, scaled to the tier's new size.
+ */
+export function refitCakePlaced(placed: Placed[] | undefined, from: CakeDesign, to: CakeDesign): Placed[] | undefined {
+  if (!placed?.length) return placed;
+  const spans = (c: CakeDesign) => {
+    let y = STAND_H[c.stand];
+    return c.tiers.map((t) => {
+      const s = { y0: y, h: t.h / 100, r: t.d / 200 };
+      y += s.h;
+      return s;
+    });
+  };
+  const a = spans(from),
+    b = spans(to);
+  const top = (x: typeof a) => x[x.length - 1];
+  return placed.map((pl) => {
+    // The tier it sits on (or the top, for blooms above the cake; the base tier for the board).
+    let i = a.findIndex((s) => pl.p[1] <= s.y0 + s.h + 0.004);
+    if (i < 0) i = a.length - 1;
+    const s0 = a[i],
+      s1 = b[Math.min(i, b.length - 1)] ?? top(b);
+    const k = s1.r / s0.r;
+    const above = pl.p[1] - (s0.y0 + s0.h);
+    const y = above > 0 ? s1.y0 + s1.h + above : s1.y0 + ((pl.p[1] - s0.y0) / s0.h) * s1.h;
+    return { ...pl, p: [pl.p[0] * k, y, pl.p[2] * k] as Vec3 };
+  });
+}

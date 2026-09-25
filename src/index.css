@@ -911,7 +911,76 @@ select.inp option {
   transition: border-color 0.15s;
 }
 .fs-add {
-  cursor: pointer;
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* Greenery sprigs are picked up by their picture. */
+.fs-grip {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 7px;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.fs-grip:hover {
+  box-shadow: 0 0 0 1px rgba(var(--acr), 0.6);
+}
+.fs-row.sel {
+  border-color: var(--ac);
+  background: rgba(var(--acr), 0.1);
+}
+.fs-row {
+  cursor: default;
+}
+body.fs-dragging,
+body.fs-dragging * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  cursor: grabbing !important;
+}
+/* What follows the pointer while dragging a flower into the view. */
+.fs-ghost {
+  position: fixed;
+  z-index: 60;
+  transform: translate(14px, 14px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 99px;
+  background: rgba(22, 18, 14, 0.92);
+  border: 1px solid rgba(255, 240, 220, 0.2);
+  font: 500 12px Jost, sans-serif;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+.fs-ghost i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+}
+.fs-ghost.over {
+  border-color: var(--ac);
+  color: var(--ac);
+}
+.fs-drop-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  font-size: 12.5px;
+  white-space: nowrap;
 }
 .fs-add:hover {
   border-color: rgba(var(--acr), 0.5);

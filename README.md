@@ -85,6 +85,17 @@ Its components are in `src/components/flower/` and its logic in `src/engine/flow
   - Vessel-aware stem-count advice, a one-click **colour story** from any event palette, and a searchable
     flower grid showing what's already in the recipe.
   - Cancel and Esc ask before discarding unsaved changes.
+- **Placing by hand** (`src/engine/placed.ts`, `src/components/studio3d/drag.tsx`):
+  - Clicking a flower still adds stems that the recipe places automatically. Dragging it onto the
+    arrangement instead places one bloom exactly where it's dropped, facing out from the heart of the
+    arrangement. Greenery sprigs (except trailing ivy) can be dragged in by their picture.
+  - Placed blooms can be picked up and dragged anywhere on the arrangement; the camera holds still while
+    you do. Click one to select it (a ring shows which); Delete removes it.
+  - A **Placed by hand** list gives each one a colour and a remove button. Colour stories recolour them
+    too, and they count towards the stem total and price.
+  - Changing the vessel or size moves placed blooms onto the new shape.
+  - Mouse and pen drags start after a few pixels. On touch screens, press and hold a flower to pick it up,
+    so the list still scrolls.
 - **Saving:** Save to My Flowers or Save & place. A saved arrangement is a normal catalogue piece: it can be
   placed, dragged, stacked, quoted and re-edited via **✿ Edit in Flower Studio**. Arrangements persist in
   `localStorage` (`vs2_custom`) and are validated on load.
@@ -97,6 +108,11 @@ Its components are in `src/components/flower/` and its logic in `src/engine/flow
 Open it from the toolbar (**Cake Studio**), or from **New cake** under My Cakes or Desserts. The editor is in
 `src/components/cake/CakeStudio.tsx`, and the cake model and geometry are in `src/engine/cakes.ts`. It shares a
 3D stage with the Flower Studio (`src/components/studio3d/`).
+
+Flowers can be placed by hand on a cake too. Drag one from **Decorate** onto any tier, the board or the top
+and it sits in the icing, facing out; placed blooms can be dragged around, recoloured or removed, and they
+stay on their tier when tiers are resized or the stand changes. Clicking a flower still adds stems in the
+chosen style (switching on a crescent if the cake had none).
 
 - **Tiers:**
   - Up to 5 tiers, each round, square, hexagonal or heart-shaped.

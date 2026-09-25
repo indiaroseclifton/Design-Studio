@@ -29,12 +29,13 @@ export const SHAPE_NOTE: Record<string, string> = {
   tall: 'Height and movement',
 };
 
-export const stemTotal = (d: Draft) => d.stems.reduce((a, s) => a + s.n, 0);
+/** Stems in the recipe plus blooms placed by hand. */
+export const stemTotal = (d: Draft) => d.stems.reduce((a, s) => a + s.n, 0) + (d.placed?.filter((p) => !p.g).length ?? 0);
 
 /** The same estimate the catalogue uses for a saved arrangement (engine/flowers.ts registerCustom). */
 export function priceOf(d: Draft) {
   const surf = VESS[d.vessel]?.surf;
-  return Math.round(18 + d.stems.reduce((a, s) => a + s.n * 4.5, 0) + (surf === 'floor' ? 120 : surf === 'hang' ? 200 : 0));
+  return Math.round(18 + stemTotal(d) * 4.5 + (surf === 'floor' ? 120 : surf === 'hang' ? 200 : 0));
 }
 
 /** Approximate width across, in centimetres, for the size readout. */
