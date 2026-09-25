@@ -2,6 +2,7 @@ import { ITEMS } from '../engine/catalogue';
 import { CHAIRS, CLOTHS, DECOR, OVERLAYS, PALS, genTables } from '../engine/studio';
 import { VENUES } from '../engine/venues.gen';
 import { DEF_TABLE, newId, newSeed } from './designOps';
+import { sanitizeSuite } from '../stationery/model';
 import type { Design, PlacedItem, TableLayout, TablePos, TimeOfDay, Weather } from '../types';
 
 export const DEFAULT_DESIGN: Design = {
@@ -96,5 +97,6 @@ export function normalizeDesign(raw: unknown): Design | null {
       g: isHex(cp.g) ? cp.g : PALS.custom.g,
       f: isHex(cp.f) ? cp.f : PALS.custom.f,
     },
+    ...(o.stationery ? { stationery: sanitizeSuite(o.stationery) ?? undefined } : {}),
   };
 }

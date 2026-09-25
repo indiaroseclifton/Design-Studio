@@ -9,10 +9,11 @@ import * as ops from '../lib/designOps';
 import { customKey, loadCustom, registerCustom, saveCustomList, type SavedArrangement } from '../engine/flowers';
 import { cakeKey, loadCakes, registerCake, saveCakeList, type SavedCake } from '../engine/cakes';
 import { forgetThumbs } from '../three/thumbnail';
+import type { Suite } from '../stationery/model';
 
 export type ModalKind = 'designs' | 'quote' | 'addons';
 /** Full-screen overlays (only one at a time; opening one closes the studios and modals). */
-export type OverlayKind = 'lantern' | 'ar' | 'storybook';
+export type OverlayKind = 'lantern' | 'ar' | 'storybook' | 'stationery';
 
 const MAX_HISTORY = 80;
 
@@ -46,6 +47,8 @@ interface StoreState {
   setDrawer: (d: 'catalogue' | 'panel' | null) => void;
   openOverlay: (o: OverlayKind) => void;
   closeOverlay: () => void;
+  /** Save the Stationery Studio's suite onto the design (undoable). */
+  saveStationery: (s: Suite) => void;
   search: string;
   activeCategory: string;
   /** true while a drag gesture is live (history already captured at its start) */
@@ -179,6 +182,11 @@ export const useDesignStore = create<StoreState>()(
         setDrawer: (d) => set({ drawer: d }),
         openOverlay: (o) => set({ overlay: o, studio: { open: false, editId: null }, cakeStudio: { open: false, editId: null }, modal: null }),
         closeOverlay: () => set({ overlay: null }),
+        saveStationery: (suite) => {
+          commit((d) => void (d.stationery = suite));
+          set({ overlay: null });
+          toast('Stationery saved to the design', true);
+        },
         search: '',
         activeCategory: 'templates',
         gesture: false,

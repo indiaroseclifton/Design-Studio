@@ -198,8 +198,37 @@ export const taper = (g: THREE.Object3D, B: Builder, x: number, y: number, z: nu
   flame(B, x, y + h + 0.025, z, 0.32);
 };
 
+/*
+ * Paper pieces in the scene (place cards, table numbers, menus, signs) can show the design's stationery
+ * suite. The Stationery Studio registers a provider (src/stationery/paperArt.ts); without a suite it returns
+ * null and the prototype's plain cards are drawn.
+ */
+export type PaperKind = 'placecard' | 'tablenum' | 'welcome' | 'menu' | 'seating';
+type PaperArt = (kind: PaperKind, main: string) => THREE.Texture | null;
+let paperArt: PaperArt | null = null;
+export const setPaperArt = (f: PaperArt | null) => {
+  paperArt = f;
+};
+
+/** A printed card face from the suite, or the builder's own plain card when there's no suite. */
+export function paperCard(g: THREE.Object3D, kind: PaperKind, w: number, h: number, d: number, x: number, y: number, z: number, rx: number, fallback: () => void) {
+  const t = paperArt?.(kind, '');
+  if (!t) return fallback();
+  const pm = M('#fbf8f1', 0.7),
+    fm = new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 });
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [pm, pm, pm, pm, fm, pm]);
+  m.position.set(x, y, z);
+  m.rotation.x = rx;
+  m.castShadow = true;
+  g.add(m);
+}
+
 /** Canvas text on paper, for menus, signs and escort cards. Script text auto-shrinks to fit. */
-export function textTex(main: string, sub = '', o: { w?: number; h?: number; bg?: string; border?: string; ink?: string; fs?: number } = {}) {
+export function textTex(main: string, sub = '', o: { w?: number; h?: number; bg?: string; border?: string; ink?: string; fs?: number; kind?: PaperKind } = {}) {
+  if (o.kind && paperArt) {
+    const t = paperArt(o.kind, main);
+    if (t) return t;
+  }
   const w = o.w || 512,
     h = o.h || 360,
     c = document.createElement('canvas');

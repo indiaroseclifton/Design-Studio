@@ -89,6 +89,14 @@ src = re.sub(r"(\[\[[^\[\]]*(?:\],\[[^\[\]]*)*\]\])\.forEach\(\(\[", _as_const, 
 
 # Spot fixes where the prototype leaned on JS looseness.
 FIXES = [
+    # Stationery: paper pieces ask the Stationery Studio's suite for their face (engine/florals.ts paperCard).
+    ("textTex(c.text||'Guest Name','',{w:384,h:256,fs:80}", "textTex(c.text||'Guest Name','',{w:384,h:256,fs:80,kind:'placecard'}"),
+    ("textTex(t,num?'Table':'',{w:300,h:420,fs:num?170:64}", "textTex(t,num?'Table':'',{w:300,h:420,fs:num?170:64,kind:'tablenum'}"),
+    ("textTex(c.text||'Welcome','to our celebration',{w:512,h:700,fs:130,border:'#c9a25a'}", "textTex(c.text||'Welcome','to our celebration',{w:512,h:700,fs:130,border:'#c9a25a',kind:'welcome'}"),
+    ("box(g,.12,.19,.004,M('#fbf8f1',.7),0,.11,0).rotation.x=-.12;box(g,.07,.004,.0045,M('#8a7a6a',.7),0,.17,.004).rotation.x=-.12",
+     "paperCard(g,'menu',.12,.19,.004,0,.11,0,-.12,()=>{box(g,.12,.19,.004,M('#fbf8f1',.7),0,.11,0).rotation.x=-.12;box(g,.07,.004,.0045,M('#8a7a6a',.7),0,.17,.004).rotation.x=-.12})"),
+    ("box(bd,.6,.08,.005,M(p.b[1],.7),0,.5,.02);for(let c=0;c<4;c++)for(let r=0;r<5;r++)box(bd,.19,.16,.005,M('#f2ece0',.7),-.33+c*.22,.3-r*.19,.02);",
+     "paperCard(bd,'seating',.94,1.14,.005,0,0,.018,0,()=>{box(bd,.6,.08,.005,M(p.b[1],.7),0,.5,.02);for(let c=0;c<4;c++)for(let r=0;r<5;r++)box(bd,.19,.16,.005,M('#f2ece0',.7),-.33+c*.22,.3-r*.19,.02)});"),
     ('o.position.set(...q)', 'o.position.set(q[0],q[1],q[2])'),
     ('const arm=(x,z,ry)=>', 'const arm=(x:number,z:number,ry:number)=>'),
     ('ITEMS.cake.build(s,B2,p)', "ITEMS.cake.build(s,B2,p,{m:'round',len:1.96,o:{}})"),
@@ -135,7 +143,7 @@ import { M, box, cyl, getSeedState, jit, lathe, mesh, noSh, pick, rnd, seed, set
 import { T, tm, planks, tiles, bricks } from '../three/textures';
 import { Builder, flame, registerKind } from '../three/builder';
 import { brass, china, clay, coupeGeo, fluteGeo, glassM, glassOpen, gobletGeo, ironM, silver, smokeM, stoneM, tumblerGeo, velvetM, wax, wineGeo, woodM } from './materials';
-import { addBloom, bloomsAlong, cluster, needle, placeB, runnerB, taper, textTex, trail } from './florals';
+import { addBloom, bloomsAlong, cluster, needle, paperCard, placeB, runnerB, taper, textTex, trail } from './florals';
 import { CHAIRS, PALS, clothTex, fabricMat, makeChair, type Pal } from './studio';
 import type { CatalogueItem, TableLayout } from '../types';
 

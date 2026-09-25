@@ -1,15 +1,20 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import * as THREE from 'three';
 import { ITEMS, itemGroup } from '../../engine/catalogue';
 import { disposeObject3D } from '../../three/utils';
 import { placement } from '../../lib/designOps';
 import { useDesignStore } from '../../store/designStore';
 import type { Design, PlacedItem } from '../../types';
+import { paperFontsVersion, subscribePaper, syncPaper } from '../../stationery/paperArt';
+
+/** Pieces printed from the Stationery Studio's suite: rebuilt when the suite changes. */
+const PAPER_TYPES = new Set(['placecard', 'tablenum', 'easel', 'menu_card', 'seating_chart']);
 
 /** Everything that changes how a piece is *built* (as opposed to where it sits). */
-function buildKey(d: Design, it: PlacedItem) {
+function buildKey(d: Design, it: PlacedItem, paper: string) {
   const def = ITEMS[it.type];
   return JSON.stringify([
+    PAPER_TYPES.has(it.type) ? paper : 0,
     it.type,
     def.pal === false ? '' : it.pal,
     it.pal === 'custom' ? d.customPalette : 0,
@@ -47,12 +52,14 @@ export function ItemsLayer({ rootRef }: { rootRef: React.MutableRefObject<THREE.
     };
   }, [root, rootRef]);
 
+  const fonts = useSyncExternalStore(subscribePaper, paperFontsVersion);
   useLayoutEffect(() => {
+    const paper = syncPaper(design) + fonts;
     const seen = new Set<string>();
     for (const it of design.items) {
       if (!ITEMS[it.type]) continue;
       seen.add(it.id);
-      const key = buildKey(design, it);
+      const key = buildKey(design, it, paper);
       let b = cache.current.get(it.id);
       if (!b || b.key !== key) {
         if (b) {
@@ -76,7 +83,7 @@ export function ItemsLayer({ rootRef }: { rootRef: React.MutableRefObject<THREE.
         disposeObject3D(b.g);
         cache.current.delete(id);
       }
-  }, [design, root]);
+  }, [design, root, fonts]);
 
   useEffect(
     () => () => {

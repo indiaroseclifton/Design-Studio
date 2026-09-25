@@ -125,6 +125,8 @@ export interface Design {
   /** palette for newly placed pieces */
   palette: string;
   customPalette: { b: string[]; g: string; f: string };
+  /** the Stationery Studio's suite (src/stationery/model.ts) */
+  stationery?: import('./stationery/model').Suite;
 }
 
 export type Selection = { k: 'item'; id: string } | { k: 'multi'; ids: string[] } | { k: 'table'; idx: number } | { k: 'chairs' } | null;

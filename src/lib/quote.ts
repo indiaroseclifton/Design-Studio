@@ -2,6 +2,7 @@ import { CATL, ITEMS, defaultPrice } from '../engine/catalogue';
 import { CHAIRS, CLOTHS, DECOR, OVERLAYS, chairSpots, hasTbl } from '../engine/studio';
 import { placement } from './designOps';
 import type { Design, VenueDef } from '../types';
+import { PIECES, PIECE_ORDER, pieceQty } from '../stationery/model';
 
 export interface QuoteSettings {
   cur: string;
@@ -29,8 +30,8 @@ export interface QuoteLine {
 /** Build the quote from what's actually in the scene (the prototype's `quoteLines`). */
 export function quoteLines(S: Design, venue: VenueDef, prices: Record<string, number>): QuoteLine[] {
   const L: QuoteLine[] = [];
-  const add = (key: string, name: string, qty: number, cat: string) => {
-    if (qty > 0) L.push({ key, name, qty, cat, price: prices[key] ?? defaultPrice(key) });
+  const add = (key: string, name: string, qty: number, cat: string, price?: number) => {
+    if (qty > 0) L.push({ key, name, qty, cat, price: prices[key] ?? price ?? defaultPrice(key) });
   };
   const m = S.table.mode,
     t = S.table;
@@ -50,6 +51,9 @@ export function quoteLines(S: Design, venue: VenueDef, prices: Record<string, nu
   const cnt = new Map<string, number>();
   for (const i of S.items) if (placement(S, i).visible) cnt.set(i.type, (cnt.get(i.type) ?? 0) + 1);
   for (const [k, q] of cnt) add('item:' + k, ITEMS[k].name, q, CATL[ITEMS[k].cat] || 'Other');
+  // Printing for the Stationery Studio's suite.
+  const st = S.stationery;
+  if (st) for (const k of PIECE_ORDER) if (st.pieces[k]) add('stationery:' + k, PIECES[k].n, pieceQty(k, st, S.guests, S.tables.length), 'Stationery', PIECES[k].price);
   return L;
 }
 

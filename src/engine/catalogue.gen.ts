@@ -25,7 +25,7 @@ import {
   wineGeo,
   woodM,
 } from './materials';
-import { addBloom, bloomsAlong, cluster, needle, placeB, runnerB, taper, textTex, trail } from './florals';
+import { addBloom, bloomsAlong, cluster, needle, paperCard, placeB, runnerB, taper, textTex, trail } from './florals';
 import { CHAIRS, PALS, clothTex, fabricMat, makeChair, type Pal } from './studio';
 import type { CatalogueItem, TableLayout } from '../types';
 
@@ -1424,7 +1424,10 @@ defineItems({
     price: 2.5,
     build(g, _B, _p, c) {
       const pm = M('#fbf8f1', 0.7),
-        fm = new THREE.MeshStandardMaterial({ map: textTex(c.text || 'Guest Name', '', { w: 384, h: 256, fs: 80 }), roughness: 0.8 });
+        fm = new THREE.MeshStandardMaterial({
+          map: textTex(c.text || 'Guest Name', '', { w: 384, h: 256, fs: 80, kind: 'placecard' }),
+          roughness: 0.8,
+        });
       for (const s of [-1, 1]) {
         const cd = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.002), s > 0 ? [pm, pm, pm, pm, fm, pm] : pm);
         cd.position.set(0, 0.028, s * 0.011);
@@ -1451,7 +1454,7 @@ defineItems({
         num = /^\d+$/.test(t),
         pm = M('#fbf8f1', 0.7),
         fm = new THREE.MeshStandardMaterial({
-          map: textTex(t, num ? 'Table' : '', { w: 300, h: 420, fs: num ? 170 : 64 }),
+          map: textTex(t, num ? 'Table' : '', { w: 300, h: 420, fs: num ? 170 : 64, kind: 'tablenum' }),
           roughness: 0.8,
         });
       const cd = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.004), [pm, pm, pm, pm, fm, fm]);
@@ -1474,7 +1477,7 @@ defineItems({
       B.add('rod', [0, 0.8, -0.28], [0.015, 1.7, 0.015], '#6b4a30', [0.3, 0, 0]);
       const bm = M('#fbf8f1', 0.6),
         fm = new THREE.MeshStandardMaterial({
-          map: textTex(c.text || 'Welcome', 'to our celebration', { w: 512, h: 700, fs: 130, border: '#c9a25a' }),
+          map: textTex(c.text || 'Welcome', 'to our celebration', { w: 512, h: 700, fs: 130, border: '#c9a25a', kind: 'welcome' }),
           roughness: 0.7,
         });
       const bd = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.85, 0.02), [bm, bm, bm, bm, fm, bm]);
@@ -2988,9 +2991,11 @@ defineItems({
       g.add(bd);
       box(bd, 1, 1.2, 0.03, M('#fbf8f1', 0.6), 0, 0, 0);
       box(bd, 1.04, 1.24, 0.02, brass, 0, 0, -0.01);
-      box(bd, 0.6, 0.08, 0.005, M(p.b[1], 0.7), 0, 0.5, 0.02);
-      for (let c = 0; c < 4; c++)
-        for (let r = 0; r < 5; r++) box(bd, 0.19, 0.16, 0.005, M('#f2ece0', 0.7), -0.33 + c * 0.22, 0.3 - r * 0.19, 0.02);
+      paperCard(bd, 'seating', 0.94, 1.14, 0.005, 0, 0, 0.018, 0, () => {
+        box(bd, 0.6, 0.08, 0.005, M(p.b[1], 0.7), 0, 0.5, 0.02);
+        for (let c = 0; c < 4; c++)
+          for (let r = 0; r < 5; r++) box(bd, 0.19, 0.16, 0.005, M('#f2ece0', 0.7), -0.33 + c * 0.22, 0.3 - r * 0.19, 0.02);
+      });
       cluster(B, [-0.44, 1.84, 0.12], [0.18, 0.1, 0.08], 10, p, 0.04, true);
     },
   },
@@ -4358,8 +4363,10 @@ defineItems({
     price: 4,
     build(g) {
       box(g, 0.08, 0.012, 0.05, brass, 0, 0.006, 0);
-      box(g, 0.12, 0.19, 0.004, M('#fbf8f1', 0.7), 0, 0.11, 0).rotation.x = -0.12;
-      box(g, 0.07, 0.004, 0.0045, M('#8a7a6a', 0.7), 0, 0.17, 0.004).rotation.x = -0.12;
+      paperCard(g, 'menu', 0.12, 0.19, 0.004, 0, 0.11, 0, -0.12, () => {
+        box(g, 0.12, 0.19, 0.004, M('#fbf8f1', 0.7), 0, 0.11, 0).rotation.x = -0.12;
+        box(g, 0.07, 0.004, 0.0045, M('#8a7a6a', 0.7), 0, 0.17, 0.004).rotation.x = -0.12;
+      });
     },
   },
   photo_frames: {
