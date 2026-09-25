@@ -121,6 +121,40 @@ Open it from the toolbar (**Cake Studio**), or from **New cake** under My Cakes 
   with **Edit in Cake Studio**. Cakes persist in `localStorage` (`vs2_cakes`), and exports and share links
   carry them.
 
+### Storybook, Brass Lantern and AR
+
+All three open from the toolbar (Storybook directly; the others under **More**) and replace whatever
+full-screen view was open.
+
+- **Storybook** (`src/storybook/`, `src/components/overlays/StorybookOverlay.tsx`):
+  - A 3D hardback on a candle-lit table, ported from the prototype. Its leaves curl as they turn: drag a
+    corner, click a page, or use the arrows, chapter dots or arrow keys. Space plays or pauses; Esc closes.
+  - It tells the design in nine chapters. Photographs are rendered from the studio's camera presets, and the
+    text uses the venue, layout, linens and chairs. Pop-ups include the venue's silhouette and miniatures of
+    the whole layout and of one table.
+  - It has generative piano music with page-turn sounds; sound on or off is remembered.
+  - The couple's names and date are remembered in `vs2_story`.
+- **Brass Lantern:** the handoff's self-contained cocktail menu designer
+  (`public/modules/brass-lantern.html`), shown full screen under the toolbar.
+- **AR viewer** (`src/components/overlays/ArViewer.tsx`):
+  - The tables and pieces, or just the selected pieces, are exported to GLB and shown in `<model-viewer>`.
+    On phones, model-viewer hands off to WebXR, Scene Viewer or Quick Look.
+  - Options: life-size or a 1:10 tabletop model.
+  - model-viewer is loaded from jsDelivr on first use, as in the prototype. If it can't load, the `.glb`
+    can still be downloaded.
+
+### Phones, tablets and drag-and-drop
+
+- **Screens up to 860px wide:**
+  - The catalogue and the settings column become drawers, opened by **Catalogue** and **Venue** in the
+    toolbar. Placing a piece closes the catalogue so you can see the result.
+  - Selecting a piece opens the settings drawer with its inspector first.
+  - The venue strip is compact, and less-used actions move under **More**.
+- **Drag-and-drop:** catalogue cards can also be dragged onto the scene. A piece lands where it's dropped:
+  on a stand that takes it, on the nearest table (for tabletop pieces), or on the floor. Clicking a card
+  still places it automatically.
+- Studios, overlays and modals are code-split and load the first time they're opened.
+
 ### Porting approach
 
 `scripts/port-prototype.py` copies the prototype's item, pack, template, flower-engine and venue builders
@@ -144,14 +178,33 @@ called texture methods on it, so that venue failed to build.
   - Round tablecloths that fall to the floor in soft pleats, with a rolled edge.
   - Cupped rose, peony and ranunculus petals.
   - Chairs with rounded cushions, turned legs, stretchers and a woven rattan back.
+- **Scenery** (`src/engine/foliage.ts`):
+  - Trees, hedges and shrubs are smooth, lumpy clumps with a leaf normal map, shaded darker underneath and
+    in the creases, instead of faceted 20-sided balls.
+  - Tree crowns have limbs and more, smaller clumps.
+  - Rocks are smooth boulders, the lakeside pines have tiered drooping boughs, and hay bales are softened
+    blocks of straw.
+- **Timber:** long boards in closely related tones with fine grain, knots and bevelled edges, tiling
+  seamlessly (barn walls, decks and dance floors).
+- **Water:** rougher, less mirror-like sea and lake materials, so a low sun leaves a glitter path instead of
+  a blown-out column.
+- **Tabletop:**
+  - Candle flames are additive teardrops with a hot core and a blue base, instead of solid glowing blobs.
+    This applies to every candle, lantern and torch.
+  - Folded napkins have a turned-back flap and a rose.
+  - Hydrangeas are built from four-petal florets.
+  - Lace overlays use alpha-to-coverage, so they don't shimmer.
+- **Performance:** the catalogue's rose, peony and ranunculus heads bake from a coarser petal and stay
+  indexed. A rose drops from 66,000 to 4,000 vertices, which also brings the AR export of a full table
+  from about 200 MB to about 23 MB.
 - **Render quality tweak:** High adds ambient occlusion, 8× MSAA and 4K shadows; Standard suits laptops
   and tablets.
 
 ## Deferred
 
-Storybook, Brass Lantern and the AR viewer still show a "coming soon" overlay. Also still to do:
-drag-and-drop from the catalogue (click-to-place is implemented), GLB uploads, the lookbook PDF, and the
-≤860px responsive drawer layout.
+- GLB uploads.
+- The lookbook PDF.
+- Brass Lantern menus linked to the Quote. The handoff notes that in production they should share state.
 
 See `docs/design_handoff_event_studio/README.md` (the original handoff bundle) for the full original spec,
 including the working HTML/three.js prototype and screenshots.

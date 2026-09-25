@@ -1184,3 +1184,16 @@ body.fs-on .chrome.toolbar {
     display: none;
   }
 }
+
+.lazy-wait {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 8, 6, 0.55);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}

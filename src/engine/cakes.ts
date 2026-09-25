@@ -533,25 +533,77 @@ function ombreMap(top: string, base: string) {
   });
 }
 
+/**
+ * Marbled fondant: soft clouds of the vein colour, a few long meandering veins (a blurred halo under a crisp
+ * core) and fine branches off them. Drawn three times across so it wraps seamlessly around the tier.
+ */
 function marbleMap(base: string, vein: string) {
-  return cachedTex(`map:marble:${base}:${vein}`, (x, w, h) => {
+  return cachedTex(`map:marble2:${base}:${vein}`, (x, w, h) => {
     x.fillStyle = base;
     x.fillRect(0, 0, w, h);
-    for (let k = 0; k < 14; k++) {
-      let px = rnd() * w,
-        py = rnd() * h;
-      x.strokeStyle = vein;
-      x.globalAlpha = 0.18 + rnd() * 0.45;
-      x.lineWidth = 0.6 + rnd() * 2.4;
-      x.beginPath();
-      x.moveTo(px, py);
-      for (let s = 0; s < 22; s++) {
-        px += (rnd() - 0.3) * 38;
-        py += (rnd() - 0.5) * 30;
-        x.lineTo(px, py);
-      }
-      x.stroke();
+    const wrapDraw = (f: (dx: number) => void) => {
+      for (const dx of [-w, 0, w]) f(dx);
+    };
+    // Clouds.
+    x.filter = 'blur(18px)';
+    for (let i = 0; i < 10; i++) {
+      const cx = rnd() * w,
+        cy = rnd() * h,
+        r = 30 + rnd() * 70;
+      x.globalAlpha = 0.05 + rnd() * 0.07;
+      x.fillStyle = vein;
+      wrapDraw((dx) => {
+        x.beginPath();
+        x.ellipse(cx + dx, cy, r * 1.6, r, rnd() * 3, 0, 7);
+        x.fill();
+      });
     }
+    const veinPath = (len: number, step: number) => {
+      const pts: Array<[number, number]> = [];
+      let px = rnd() * w,
+        py = rnd() * h,
+        a = (rnd() - 0.5) * 1.2;
+      for (let s = 0; s < len; s++) {
+        a += (rnd() - 0.5) * 0.7;
+        px += Math.cos(a) * step;
+        py += Math.sin(a) * step * 0.7;
+        pts.push([px, py]);
+      }
+      return pts;
+    };
+    const stroke = (pts: Array<[number, number]>, width: number, alpha: number, blur: number) => {
+      x.filter = blur ? `blur(${blur}px)` : 'none';
+      x.globalAlpha = alpha;
+      x.strokeStyle = vein;
+      x.lineWidth = width;
+      x.lineJoin = x.lineCap = 'round';
+      wrapDraw((dx) => {
+        x.beginPath();
+        pts.forEach(([px, py], i) => (i ? x.lineTo(px + dx, py) : x.moveTo(px + dx, py)));
+        x.stroke();
+      });
+    };
+    for (let k = 0; k < 5; k++) {
+      const pts = veinPath(40, 14);
+      stroke(pts, 7, 0.14, 5);
+      stroke(pts, 1.4 + rnd() * 1.4, 0.55 + rnd() * 0.3, 0);
+      // Branches off the main vein.
+      for (let b = 0; b < 3; b++) {
+        const [sx, sy] = pts[Math.floor(rnd() * pts.length)];
+        const br: Array<[number, number]> = [[sx, sy]];
+        let a = rnd() * 6.28,
+          px = sx,
+          py = sy;
+        for (let s = 0; s < 10; s++) {
+          a += (rnd() - 0.5) * 0.9;
+          px += Math.cos(a) * 9;
+          py += Math.sin(a) * 9;
+          br.push([px, py]);
+        }
+        stroke(br, 0.8, 0.35 + rnd() * 0.25, 0);
+      }
+    }
+    x.filter = 'none';
     x.globalAlpha = 1;
   });
 }
