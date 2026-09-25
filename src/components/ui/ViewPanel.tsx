@@ -19,13 +19,15 @@ export function ViewPanel() {
   const showZone = useDesignStore((s) => s.showZone);
   const setShowZone = useDesignStore((s) => s.setShowZone);
   const clearAll = useDesignStore((s) => s.clearAll);
-  const showComingSoon = useDesignStore((s) => s.showComingSoon);
+  const showToast = useDesignStore((s) => s.showToast);
+  const planView = useDesignStore((s) => s.planView);
+  const setPlanView = useDesignStore((s) => s.setPlanView);
 
   return (
     <section className="glass flex flex-col gap-2 p-3.5">
       <div className="lbl">View</div>
       <div className="grid grid-cols-2 gap-1.5">
-        <button type="button" className="btn" onClick={() => showComingSoon('Plan view')}>
+        <button type="button" className={`btn ${planView ? 'on' : ''}`} onClick={() => setPlanView(!planView)}>
           Plan view
         </button>
         <button type="button" className="btn" onClick={() => setCameraPreset('wide')}>
@@ -34,7 +36,7 @@ export function ViewPanel() {
       </div>
       <div className="flex flex-wrap gap-1">
         {CAMS.map(([v, l]) => (
-          <button key={v} type="button" className={`chip ${cameraPreset === v ? 'on' : ''}`} onClick={() => setCameraPreset(v)}>
+          <button key={v} type="button" className={`chip ${!planView && cameraPreset === v ? 'on' : ''}`} onClick={() => setCameraPreset(v)}>
             {l}
           </button>
         ))}
@@ -52,7 +54,15 @@ export function ViewPanel() {
       </button>
       <div className="flex items-center justify-between text-[11.5px] opacity-80">
         <span>{design.items.length ? `${design.items.length} piece${design.items.length > 1 ? 's' : ''}` : 'No pieces yet'}</span>
-        <button type="button" className="link" onClick={clearAll}>
+        <button
+          type="button"
+          className="link"
+          disabled={!design.items.length}
+          onClick={() => {
+            clearAll();
+            showToast('Cleared all pieces', true);
+          }}
+        >
           Clear all
         </button>
       </div>

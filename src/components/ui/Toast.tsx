@@ -15,7 +15,7 @@ export function Toast() {
   if (!toast) return null;
 
   return (
-    <div className="glass fixed left-1/2 z-[6] flex -translate-x-1/2 items-center gap-2 rounded-full py-1.5 pl-4 pr-2 text-[12.5px]" style={{ bottom: 170 }}>
+    <div className="glass fixed left-1/2 z-[30] flex -translate-x-1/2 items-center gap-2 rounded-full py-1.5 pl-4 pr-2 text-[12.5px]" style={{ bottom: 170 }}>
       <span>{toast.msg}</span>
       {toast.undoable && (
         <button

@@ -173,6 +173,7 @@ export const plight = (g: THREE.Object3D, c: string, i: number, d: number, x: nu
 
 export const flick = (tk: Array<(t: number) => void>, l: THREE.PointLight, base: number, sp = 1) => {
   const ph = Math.random() * 9;
+  l.userData.flick = true;
   tk.push((t) => {
     l.intensity = base * (0.82 + 0.1 * Math.sin(t * 9 * sp + ph) + 0.08 * Math.sin(t * 23 * sp + ph * 2));
   });

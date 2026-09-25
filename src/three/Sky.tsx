@@ -28,9 +28,11 @@ export interface SkyProps {
   sunCol: string;
   cloud?: number;
   cloudCol?: string;
+  /** sun intensity; the glow is scaled by min(1, sunI / 3) as in the prototype */
+  sunI?: number;
 }
 
-export function Sky({ top, hor, bot, sunDir, sunCol, cloud = 0.35, cloudCol = '#fff6e6' }: SkyProps) {
+export function Sky({ top, hor, bot, sunDir, sunCol, cloud = 0.35, cloudCol = '#fff6e6', sunI = 3 }: SkyProps) {
   const uniforms = useMemo(
     () => ({
       top: { value: new THREE.Color(top) },
@@ -50,11 +52,11 @@ export function Sky({ top, hor, bot, sunDir, sunCol, cloud = 0.35, cloudCol = '#
     uniforms.top.value.set(top);
     uniforms.hor.value.set(hor);
     uniforms.bot.value.set(bot);
-    uniforms.sunDir.value.set(...sunDir);
-    uniforms.sunCol.value.set(sunCol);
+    uniforms.sunDir.value.set(...sunDir).normalize();
+    uniforms.sunCol.value.set(sunCol).multiplyScalar(Math.min(1, sunI / 3));
     uniforms.cloudCol.value.set(cloudCol);
     uniforms.cloud.value = cloud;
-  }, [uniforms, top, hor, bot, sunDir, sunCol, cloud, cloudCol]);
+  }, [uniforms, top, hor, bot, sunDir, sunCol, cloud, cloudCol, sunI]);
 
   const ref = useRef<THREE.ShaderMaterial>(null);
   useFrame((state) => {

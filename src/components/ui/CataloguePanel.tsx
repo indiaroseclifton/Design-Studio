@@ -80,7 +80,7 @@ export function CataloguePanel() {
   }
 
   return (
-    <aside className="glass fixed left-4 top-4 z-[3] flex w-[330px] flex-col overflow-hidden" style={{ bottom: 130 }}>
+    <aside className="glass chrome fixed left-4 top-4 z-[3] flex w-[330px] flex-col overflow-hidden" style={{ bottom: 130 }}>
       <div className="flex flex-col gap-[9px] p-3.5 pb-2.5" style={{ borderBottom: '1px solid var(--hairline)' }}>
         <div className="flex items-baseline justify-between gap-2.5">
           <div className="flex min-w-0 flex-col gap-1">

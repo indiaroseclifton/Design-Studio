@@ -16,8 +16,8 @@ export function VenueStrip() {
             className="flex shrink-0 flex-col gap-1.5 rounded-[10px] p-1.5 pb-2 text-left transition-colors hover:bg-white/[0.07]"
             style={{
               flex: '1 0 118px',
-              border: `1px solid ${active ? 'rgba(243,217,164,.7)' : 'transparent'}`,
-              background: active ? 'rgba(243,217,164,.08)' : 'transparent',
+              border: `1px solid ${active ? 'rgba(var(--acr),.7)' : 'transparent'}`,
+              background: active ? 'rgba(var(--acr),.08)' : 'transparent',
             }}
             onClick={() => setVenue(i)}
           >
