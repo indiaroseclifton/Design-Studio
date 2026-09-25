@@ -6,8 +6,14 @@ import { VenueStrip } from './components/ui/VenueStrip';
 import { HintPill } from './components/ui/HintPill';
 import { Toast } from './components/ui/Toast';
 import { ComingSoonOverlay } from './components/ui/ComingSoonOverlay';
+import { DesignsModal } from './components/ui/DesignsModal';
+import { QuoteModal } from './components/ui/QuoteModal';
+import { AddonsModal } from './components/ui/AddonsModal';
+import { useDesignStore } from './store/designStore';
 
 export default function App() {
+  const modal = useDesignStore((s) => s.modal);
+
   return (
     <div className="relative h-full w-full overflow-hidden">
       <StudioCanvas />
@@ -18,6 +24,9 @@ export default function App() {
       <HintPill />
       <Toast />
       <ComingSoonOverlay />
+      {modal === 'designs' && <DesignsModal />}
+      {modal === 'quote' && <QuoteModal />}
+      {modal === 'addons' && <AddonsModal />}
     </div>
   );
 }

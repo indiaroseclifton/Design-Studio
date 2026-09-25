@@ -229,3 +229,19 @@ input[type='range'] {
   accent-color: var(--ac);
   width: 100%;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    color: #111;
+  }
+}

@@ -7,6 +7,7 @@ import { useTableLayout } from '../../lib/useTableLayout';
 import { PlacedItems } from './PlacedItems';
 import { CameraRig } from './CameraRig';
 import { useDesignStore } from '../../store/designStore';
+import { registerSceneCanvas } from '../../three/snapshot';
 import type { Mood } from '../../types';
 
 const MOOD_FILTER: Record<Mood, string> = {
@@ -32,8 +33,10 @@ export function StudioCanvas() {
     <div className="absolute inset-0" style={{ filter: MOOD_FILTER[mood] }}>
       <Canvas
         shadows
+        gl={{ preserveDrawingBuffer: true }}
         camera={{ fov: 45, near: 0.1, far: 1200, position: venue.cam }}
         onPointerMissed={() => select(null)}
+        onCreated={({ gl }) => registerSceneCanvas(gl.domElement)}
       >
         <color attach="background" args={[skyHor]} />
         <fog attach="fog" args={[fogColor, fogNear, fogFar]} />

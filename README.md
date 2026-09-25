@@ -25,13 +25,15 @@ npm run build    # type-check + production build
 npm run lint      # oxlint
 ```
 
-## What's implemented (first pass: scaffold + Studio core)
+## What's implemented
 
 - **Venues** — two fully procedural venues ported from the handoff (Rustic Barn, Grand Ballroom), each
   with its own sky shader, fog, lighting rig and geometry (`src/data/venues.ts`).
-- **Catalogue** — ~20 placeable pieces across Linens, Tableware, Florals, Candles & light, and
-  Furniture & lighting (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail
+- **Catalogue** — ~26 placeable pieces across Linens, Tableware, Florals, Candles & light, Furniture &
+  lighting, and two add-on packs (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail
   (`src/three/thumbnail.ts`).
+- **Add-ons** — toggle packs (Lounge & rooms, Signage & displays) from the Add-ons modal to reveal extra
+  catalogue categories and pieces, persisted to `localStorage` (`src/data/addonPacks.ts`).
 - **Placement** — click a catalogue card to place it on the table, floor or ceiling; select a "host"
   item (one with a `top` surface) to enter decorating mode and stack stackable pieces on it.
 - **Tables & guests** — Round / Banquet / Ceremony / Empty layouts, a guests slider that adds tables,
@@ -40,14 +42,20 @@ npm run lint      # oxlint
   custom colour, and edit text on signage/menu cards.
 - **Undo/redo** — snapshot-based history wired to the toolbar.
 - **Camera** — Wide / Guest's eye / Couple's view / Overhead presets, orbit controls, slow-orbit toggle.
+- **Snapshot** — downloads a PNG of the current 3D view; also used as the thumbnail when saving a design.
+- **Designs modal** — save/load/rename/delete named designs (with a live snapshot thumbnail) to
+  `localStorage`, plus JSON export/import of the current design (`src/components/ui/DesignsModal.tsx`).
+- **Quote modal** — a priced, category-grouped line-item table computed from what's actually placed
+  (respecting mirrored table counts), with editable unit prices, service/tax percentages, CSV export, and
+  a print/Save-as-PDF button (`src/components/ui/QuoteModal.tsx`).
 
-## Deferred (not in this pass)
+## Deferred
 
-Flower Studio, Storybook, Brass Lantern, the AR viewer, and the Designs/Quote/Add-ons modals are stubbed
-with a "coming soon" overlay from the toolbar — they're substantial features in their own right and were
-scoped out of this first pass by design. Also deferred: the full 277-item catalogue and all 15 venues
-(two are implemented as a proof of the pattern), drag-and-drop placement (click-to-place is implemented
-instead), plan view, multi-select, per-table rotation, and the placement-zone/weather visualizations.
+Flower Studio, Storybook, Brass Lantern, and the AR viewer are stubbed with a "coming soon" overlay from
+the toolbar — they're substantial features in their own right and were scoped out by design. Also
+deferred: the full 277-item catalogue and all 15 venues (two are implemented as a proof of the pattern),
+drag-and-drop placement (click-to-place is implemented instead), plan view, multi-select, per-table
+rotation, and the placement-zone/weather visualizations.
 
 See `docs/design_handoff_event_studio/README.md` (the original handoff bundle) for the full original spec,
 including the working HTML/three.js prototype and screenshots.

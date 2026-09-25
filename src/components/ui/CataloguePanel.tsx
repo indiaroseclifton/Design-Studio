@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { CATEGORIES, ITEM_LIST, ITEMS } from '../../data/catalogue';
+import { ADDON_PACKS } from '../../data/addonPacks';
 import { PALETTES, getPalette } from '../../data/palettes';
 import { isStackable, useDesignStore } from '../../store/designStore';
 import { useTableLayout } from '../../lib/useTableLayout';
@@ -24,6 +25,8 @@ export function CataloguePanel() {
   const select = useDesignStore((s) => s.select);
   const showToast = useDesignStore((s) => s.showToast);
   const showComingSoon = useDesignStore((s) => s.showComingSoon);
+  const packsOn = useDesignStore((s) => s.packsOn);
+  const openModal = useDesignStore((s) => s.openModal);
   const { tables } = useTableLayout();
 
   const palette = getPalette(design.palette);
@@ -31,9 +34,16 @@ export function CataloguePanel() {
   const hostDef = hostItem ? ITEMS[hostItem.type] : null;
   const decorating = Boolean(hostDef?.top);
 
+  const availableItems = useMemo(() => ITEM_LIST.filter((it) => !it.addon || packsOn.includes(it.addon)), [packsOn]);
+
+  const categoryChips = useMemo(() => {
+    const addonChips = ADDON_PACKS.filter((p) => packsOn.includes(p.id)).map((p) => ({ id: p.categoryId, label: p.categoryLabel, addon: true }));
+    return [...CATEGORIES.map((c) => ({ ...c, addon: false })), ...addonChips];
+  }, [packsOn]);
+
   const filtered = useMemo(
-    () => ITEM_LIST.filter((it) => (!activeCategory || it.cat === activeCategory) && matchesSearch(it, search)),
-    [activeCategory, search],
+    () => availableItems.filter((it) => (!activeCategory || it.cat === activeCategory) && matchesSearch(it, search)),
+    [availableItems, activeCategory, search],
   );
 
   const sections = useMemo(() => {
@@ -101,11 +111,19 @@ export function CataloguePanel() {
           <button type="button" className={`chip ${!activeCategory ? 'on' : ''}`} onClick={() => setCategory(null)}>
             All
           </button>
-          {CATEGORIES.map((c) => (
-            <button key={c.id} type="button" className={`chip ${activeCategory === c.id ? 'on' : ''}`} onClick={() => setCategory(c.id)}>
+          {categoryChips.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={`chip ${c.addon ? 'addon' : ''} ${activeCategory === c.id ? 'on' : ''}`}
+              onClick={() => setCategory(c.id)}
+            >
               {c.label}
             </button>
           ))}
+          <button type="button" className="chip addon" onClick={() => openModal('addons')}>
+            ＋ More packs
+          </button>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">

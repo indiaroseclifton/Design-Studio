@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import type { Accent, CameraPreset, Design, Mood, PlacedItem, Selection, TableLayout, TimeOfDay, UIMode, Weather } from '../types';
 import { ITEMS } from '../data/catalogue';
+import { captureSceneSnapshot } from '../three/snapshot';
+import {
+  loadEnabledPacks,
+  loadSavedDesigns,
+  persistEnabledPacks,
+  persistSavedDesigns,
+  type SavedDesign,
+} from '../lib/storage';
 
 const DEFAULT_DESIGN: Design = {
   venue: 0,
@@ -28,6 +36,8 @@ interface PlaceItemInput {
   on?: string;
 }
 
+export type ModalName = 'designs' | 'quote' | 'addons';
+
 interface StoreState {
   design: Design;
   history: Design[];
@@ -41,8 +51,12 @@ interface StoreState {
   showZone: boolean;
   toast: ToastState | null;
   comingSoon: string | null;
+  modal: ModalName | null;
   search: string;
   activeCategory: string | null;
+  packsOn: string[];
+  savedDesigns: SavedDesign[];
+  quoteSettings: { servicePct: number; taxPct: number };
 
   setVenue: (i: number) => void;
   setTime: (t: TimeOfDay) => void;
@@ -81,9 +95,21 @@ interface StoreState {
   dismissToast: () => void;
   showComingSoon: (name: string) => void;
   dismissComingSoon: () => void;
+  openModal: (name: ModalName) => void;
+  closeModal: () => void;
 
   setSearch: (s: string) => void;
   setCategory: (c: string | null) => void;
+
+  togglePack: (id: string) => void;
+
+  saveDesign: (name: string) => void;
+  loadDesign: (id: string) => void;
+  renameDesign: (id: string, name: string) => void;
+  deleteDesign: (id: string) => void;
+  importDesign: (design: Design) => void;
+
+  setQuoteSetting: (key: keyof StoreState['quoteSettings'], value: number) => void;
 }
 
 function snapshot(d: Design): Design {
@@ -111,8 +137,12 @@ export const useDesignStore = create<StoreState>((set, get) => {
     showZone: false,
     toast: null,
     comingSoon: null,
+    modal: null,
     search: '',
     activeCategory: null,
+    packsOn: loadEnabledPacks(),
+    savedDesigns: loadSavedDesigns(),
+    quoteSettings: { servicePct: 20, taxPct: 8 },
 
     setVenue: (i) => commit((d) => ({ ...d, venue: i })),
     setTime: (t) => commit((d) => ({ ...d, time: t })),
@@ -211,9 +241,55 @@ export const useDesignStore = create<StoreState>((set, get) => {
     dismissToast: () => set({ toast: null }),
     showComingSoon: (name) => set({ comingSoon: name }),
     dismissComingSoon: () => set({ comingSoon: null }),
+    openModal: (name) => set({ modal: name }),
+    closeModal: () => set({ modal: null }),
 
     setSearch: (s) => set({ search: s }),
     setCategory: (c) => set({ activeCategory: c }),
+
+    togglePack: (id) => {
+      const next = get().packsOn.includes(id) ? get().packsOn.filter((p) => p !== id) : [...get().packsOn, id];
+      persistEnabledPacks(next);
+      set({ packsOn: next });
+    },
+
+    saveDesign: (name) => {
+      const entry: SavedDesign = {
+        id: crypto.randomUUID(),
+        name: name.trim() || 'Untitled design',
+        savedAt: Date.now(),
+        design: snapshot(get().design),
+        thumbnail: captureSceneSnapshot(),
+      };
+      const next = [entry, ...get().savedDesigns];
+      persistSavedDesigns(next);
+      set({ savedDesigns: next });
+      get().showToast('Design saved');
+    },
+    loadDesign: (id) => {
+      const entry = get().savedDesigns.find((d) => d.id === id);
+      if (!entry) return;
+      commit(() => snapshot(entry.design));
+      set({ selection: null, modal: null });
+      get().showToast(`Loaded “${entry.name}”`);
+    },
+    renameDesign: (id, name) => {
+      const next = get().savedDesigns.map((d) => (d.id === id ? { ...d, name: name.trim() || d.name } : d));
+      persistSavedDesigns(next);
+      set({ savedDesigns: next });
+    },
+    deleteDesign: (id) => {
+      const next = get().savedDesigns.filter((d) => d.id !== id);
+      persistSavedDesigns(next);
+      set({ savedDesigns: next });
+    },
+    importDesign: (design) => {
+      commit(() => snapshot(design));
+      set({ selection: null });
+      get().showToast('Design imported');
+    },
+
+    setQuoteSetting: (key, value) => set((s) => ({ quoteSettings: { ...s.quoteSettings, [key]: value } })),
   };
 });
 

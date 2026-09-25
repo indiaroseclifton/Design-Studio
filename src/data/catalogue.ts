@@ -432,6 +432,119 @@ export const ITEMS: Record<string, CatalogueItem> = {
       box(g, 0.75, 0.02, 0.5, M('#fff', 0.6, 0, { map: textTexture(text ?? 'Welcome', { size: 48, serif: true }) }), 0, 0.85, 0).rotation.x = -0.12;
     },
   },
+
+  ottoman: {
+    id: 'ottoman',
+    name: 'Velvet ottoman',
+    cat: 'lounge',
+    sec: 'Seating',
+    group: 'lounge',
+    surf: 'floor',
+    fp: 0.22,
+    price: 65,
+    kw: 'ottoman pouf lounge seating',
+    addon: 'lounge-plus',
+    pal: true,
+    build(g, { palette, color }) {
+      cyl(g, 0.22, 0.22, 0.32, M(color ?? palette.f, 0.75), 0, 0.16, 0, 20);
+    },
+  },
+  coffee_table: {
+    id: 'coffee_table',
+    name: 'Lounge coffee table',
+    cat: 'lounge',
+    sec: 'Tables',
+    group: 'lounge',
+    surf: 'floor',
+    fp: 0.3,
+    price: 90,
+    kw: 'coffee table lounge low table',
+    addon: 'lounge-plus',
+    pal: false,
+    top: { h: 0.32, w: 0.6, d: 0.6 },
+    build(g) {
+      const wood = M('#5b4634', 0.7);
+      box(g, 0.6, 0.03, 0.6, wood, 0, 0.32, 0);
+      for (const [x, z] of [
+        [-0.26, -0.26],
+        [0.26, -0.26],
+        [-0.26, 0.26],
+        [0.26, 0.26],
+      ] as [number, number][]) {
+        cyl(g, 0.018, 0.018, 0.3, wood, x, 0.15, z);
+      }
+    },
+  },
+  bar_cart: {
+    id: 'bar_cart',
+    name: 'Bar cart',
+    cat: 'lounge',
+    sec: 'Bar',
+    group: 'lounge',
+    surf: 'floor',
+    fp: 0.25,
+    price: 140,
+    kw: 'bar cart drinks trolley lounge',
+    addon: 'lounge-plus',
+    pal: false,
+    top: { h: 0.75, r: 0.22 },
+    build(g) {
+      const metal = M('#c9a25a', 0.3, 0.8);
+      cyl(g, 0.22, 0.22, 0.02, metal, 0, 0.75, 0, 24);
+      cyl(g, 0.18, 0.18, 0.02, metal, 0, 0.4, 0, 24);
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI * 2;
+        cyl(g, 0.012, 0.012, 0.75, metal, Math.cos(a) * 0.19, 0.375, Math.sin(a) * 0.19);
+      }
+    },
+  },
+
+  neon_sign: {
+    id: 'neon_sign',
+    name: 'Neon sign',
+    cat: 'signage',
+    sec: 'Signage',
+    group: 'signage',
+    surf: 'floor',
+    fp: 0.1,
+    price: 140,
+    kw: 'neon sign light up custom text',
+    addon: 'signage-plus',
+    hasText: true,
+    pal: true,
+    build(g, { builder, palette, color }) {
+      const c = color ?? palette.b[0] ?? '#f2bcc0';
+      const neon = M(c, 0.3, 0, { emissive: c, emissiveIntensity: 2 });
+      const stand = M('#222', 0.6);
+      box(g, 0.9, 0.5, 0.03, M('#111', 0.7), 0, 1.1, 0);
+      box(g, 0.8, 0.02, 0.02, neon, 0, 1.3, 0.02);
+      box(g, 0.8, 0.02, 0.02, neon, 0, 0.9, 0.02);
+      box(g, 0.02, 0.42, 0.02, neon, -0.42, 1.1, 0.02);
+      box(g, 0.02, 0.42, 0.02, neon, 0.42, 1.1, 0.02);
+      for (let i = 0; i < 6; i++) builder.add('glow', [-0.35 + i * 0.14, 1.1, 0.03], 0.02, c, null, 4);
+      box(g, 0.04, 1.1, 0.04, stand, -0.4, 0.55, -0.05);
+      box(g, 0.04, 1.1, 0.04, stand, 0.4, 0.55, -0.05);
+      builder.flush();
+    },
+  },
+  escort_display: {
+    id: 'escort_display',
+    name: 'Escort card display',
+    cat: 'signage',
+    sec: 'Signage',
+    group: 'signage',
+    surf: 'floor',
+    fp: 0.5,
+    price: 220,
+    kw: 'escort card display wall seating chart',
+    addon: 'signage-plus',
+    pal: true,
+    build(g, { palette, color }) {
+      const c = color ?? palette.f;
+      box(g, 1.6, 1.4, 0.04, M(c, 0.8), 0, 0.9, 0);
+      for (let x = -0.7; x <= 0.7; x += 0.28) box(g, 0.02, 1.3, 0.02, M('#c9a25a', 0.4, 0.6), x, 0.9, 0.03);
+    },
+  },
 };
 
 export const ITEM_LIST: CatalogueItem[] = Object.values(ITEMS);
