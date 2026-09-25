@@ -27,8 +27,11 @@ npm run lint      # oxlint
 
 ## What's implemented
 
-- **Venues** — two fully procedural venues ported from the handoff (Rustic Barn, Grand Ballroom), each
-  with its own sky shader, fog, lighting rig and geometry (`src/data/venues.ts`).
+- **Venues** — 14 of the 15 venues, fully procedural and ported from the handoff (Rustic Barn, Tuscan
+  Villa, Beach at Sunset, English Garden, Grand Ballroom, Glass Conservatory, Vineyard at Dusk, Enchanted
+  Woodland, City Rooftop, Desert Oasis, Garden Marquee, French Château, Lakeside Dock, Industrial Loft),
+  each with its own sky shader, fog, lighting rig and geometry (`src/data/venues.ts`). Five chair styles
+  (cross, chiavari, rattan, bent bistro, ghost acrylic) cover all of them.
 - **Catalogue** — ~26 placeable pieces across Linens, Tableware, Florals, Candles & light, Furniture &
   lighting, and two add-on packs (`src/data/catalogue.ts`), each with a live three.js-rendered thumbnail
   (`src/three/thumbnail.ts`).
@@ -53,7 +56,7 @@ npm run lint      # oxlint
 
 Flower Studio, Storybook, Brass Lantern, and the AR viewer are stubbed with a "coming soon" overlay from
 the toolbar — they're substantial features in their own right and were scoped out by design. Also
-deferred: the full 277-item catalogue and all 15 venues (two are implemented as a proof of the pattern),
+deferred: the full 277-item catalogue and the "Your Venue" custom photo-upload venue (needs its own upload UI),
 drag-and-drop placement (click-to-place is implemented instead), plan view, multi-select, per-table
 rotation, and the placement-zone/weather visualizations.
 

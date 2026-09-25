@@ -914,7 +914,7 @@ const DESERT_OASIS: VenueDef = {
     env: 0.35,
     bloom: 0.7,
   },
-  cam: [6.4, 2.3, 8.4],
+  cam: [8.5, 3.4, 11],
   chair: { type: 'rattan', color: '#b88a55', seat: '#efe3cf' },
   cloth: '#efe3cf',
   build(g, B, tk) {
