@@ -1,6 +1,15 @@
 import * as THREE from 'three';
 import { M, jit, pick, rnd } from './utils';
 
+const _c = new THREE.Color(),
+  _hsl = { h: 0, s: 0, l: 0 };
+/** Round 'leaf' clumps: greyish-brown ones are rocks, everything else is foliage (see engine/foliage.ts). */
+const clumpKind = (c: string) => {
+  _c.set(c).getHSL(_hsl);
+  const green = _hsl.h > 0.13 && _hsl.h < 0.5 && _hsl.s > 0.12;
+  return !green && _hsl.s < 0.3 && _hsl.l < 0.6 && KINDS.stone ? 'stone' : 'foliage';
+};
+
 export type Vec3Tuple = [number, number, number];
 type KindFactory = () => [THREE.BufferGeometry, THREE.Material];
 
@@ -54,7 +63,11 @@ export function Builder(g: THREE.Object3D): Builder {
     add(k, p, s = 1, c = '#fff', r = null, e = 1) {
       // A flat, elongated "leaf" is a leaf blade (foliage in arrangements, fronds, ferns); round ones stay
       // as clumps (shrubs, canopies). See engine/botany.ts.
-      if (k === 'leaf' && Array.isArray(s) && s[1] * 2.2 < Math.max(s[0], s[2]) && KINDS.blade) k = 'blade';
+      if (k === 'leaf') {
+        if (Array.isArray(s) && s[1] * 2.2 < Math.max(s[0], s[2])) {
+          if (KINDS.blade) k = 'blade';
+        } else if (KINDS.foliage) k = clumpKind(c);
+      }
       (acc[k] ??= []).push([p as Vec3Tuple, s as number | Vec3Tuple, c, r as Vec3Tuple | null, e]);
     },
     addM(k, m, c = '#fff', e = 1) {
@@ -63,16 +76,27 @@ export function Builder(g: THREE.Object3D): Builder {
     tree(x, z, op = {}) {
       const h = op.h ?? 4.5,
         s = op.s ?? 1,
-        y0 = op.y ?? 0;
+        y0 = op.y ?? 0,
+        leaf = op.leaf ?? '#4f6b35';
       B.add('trunk', [x, y0 + h / 2, z], [0.22 * s, h, 0.22 * s], op.bark ?? '#5b4634');
-      const n = op.n ?? 7;
-      for (let i = 0; i < n; i++)
-        B.add(
-          'leaf',
-          [x + (rnd() - 0.5) * 2.4 * s, y0 + h + (rnd() - 0.3) * 1.6 * s, z + (rnd() - 0.5) * 2.4 * s],
-          (0.9 + rnd() * 0.9) * s,
-          jit(op.leaf ?? '#4f6b35', 0.12),
-        );
+      // Two or three limbs splaying into the crown.
+      const limbs = 2 + Math.floor(rnd() * 2);
+      for (let i = 0; i < limbs; i++) {
+        const a = (i / limbs) * Math.PI * 2 + rnd();
+        B.add('trunk', [x + Math.sin(a) * 0.35 * s, y0 + h - 0.1 * s, z + Math.cos(a) * 0.35 * s], [0.09 * s, 1.1 * s, 0.09 * s], op.bark ?? '#5b4634', [0.6, a, 0]);
+      }
+      // A crown of overlapping clumps on a dome: a dense core, then lobes around it that are lighter on top
+      // (where the sun catches new growth) and darker underneath.
+      const cy = y0 + h + 0.35 * s;
+      B.add('leaf', [x, cy, z], [1.35 * s, 1.1 * s, 1.35 * s], jit(leaf, 0.06), [0, rnd() * 6, 0]);
+      const n = Math.round((op.n ?? 7) * 1.6);
+      for (let i = 0; i < n; i++) {
+        const a = i * 2.39996 + rnd() * 0.5,
+          u = 1 - 2 * ((i + 0.5) / n) * 0.8,
+          r = Math.sqrt(1 - u * u);
+        const col = '#' + new THREE.Color(jit(leaf, 0.1)).offsetHSL(0, 0, u * 0.05).getHexString();
+        B.add('leaf', [x + Math.sin(a) * r * 1.25 * s, cy + u * 0.95 * s, z + Math.cos(a) * r * 1.25 * s], (0.55 + rnd() * 0.4) * s, col, [rnd() * 3, rnd() * 6, 0]);
+      }
     },
     cypress(x, z, h = 7, y0 = 0) {
       B.add('trunk', [x, y0 + 0.6, z], [0.12, 1.2, 0.12], '#4a3a2a');
@@ -143,7 +167,7 @@ export function Builder(g: THREE.Object3D): Builder {
         const t = i / n;
         const p: Vec3Tuple = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t - sag * 4 * t * (1 - t), a[2] + (b[2] - a[2]) * t];
         if (prev) wires.push(...prev, ...p);
-        if (i > 0 && i < n) B.add('glow', [p[0], p[1] - 0.07, p[2]], 0.045, c, null, e);
+        if (i > 0 && i < n) B.add('glow', [p[0], p[1] - 0.07, p[2]], 0.034, c, null, e);
         prev = p;
       }
     },

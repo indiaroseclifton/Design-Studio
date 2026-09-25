@@ -1,18 +1,22 @@
 import { VENUES } from '../../engine/venues.gen';
 import { captureScene, downloadUrl, slug } from '../../lib/capture';
-import { useDesignStore, type ModalKind } from '../../store/designStore';
+import { useEffect, useRef, useState } from 'react';
+import { useDesignStore, type ModalKind, type OverlayKind } from '../../store/designStore';
 
-type ToolbarKey = ModalKind | 'flower' | 'cake' | 'snapshot' | 'storybook' | 'lantern' | 'ar';
+type ToolbarKey = ModalKind | OverlayKind | 'flower' | 'cake' | 'snapshot';
 
-const OVERLAY_BUTTONS: Array<{ key: ToolbarKey; label: string }> = [
-  { key: 'flower', label: '✿ Flower Studio' },
-  { key: 'cake', label: 'Cake Studio' },
+const MAIN: Array<{ key: ToolbarKey; label: string; title?: string }> = [
+  { key: 'flower', label: '✿ Flowers', title: 'Flower Studio' },
+  { key: 'cake', label: 'Cakes', title: 'Cake Studio' },
   { key: 'designs', label: 'Designs' },
   { key: 'quote', label: 'Quote' },
-  { key: 'snapshot', label: 'Snapshot' },
   { key: 'storybook', label: 'Storybook' },
-  { key: 'lantern', label: 'Brass Lantern' },
-  { key: 'ar', label: 'View in AR' },
+];
+const MORE: Array<{ key: ToolbarKey; label: string; note: string }> = [
+  { key: 'snapshot', label: 'Snapshot', note: 'Save this view as an image' },
+  { key: 'ar', label: 'View in AR', note: 'Place the design in your room' },
+  { key: 'lantern', label: 'Brass Lantern', note: 'Design the cocktail menu' },
+  { key: 'addons', label: 'Add-ons', note: 'Switch catalogue packs on or off' },
 ];
 
 const btnClass = 'rounded-[9px] px-3 max-[1180px]:px-2 py-2 text-[12.5px] font-medium whitespace-nowrap hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed';
@@ -24,9 +28,11 @@ export function TopToolbar() {
   const undo = useDesignStore((s) => s.undo);
   const redo = useDesignStore((s) => s.redo);
   const modal = useDesignStore((s) => s.modal);
+  const overlay = useDesignStore((s) => s.overlay);
   const openModal = useDesignStore((s) => s.openModal);
   const closeModal = useDesignStore((s) => s.closeModal);
-  const showComingSoon = useDesignStore((s) => s.showComingSoon);
+  const openOverlay = useDesignStore((s) => s.openOverlay);
+  const closeOverlay = useDesignStore((s) => s.closeOverlay);
   const showToast = useDesignStore((s) => s.showToast);
   const venueIndex = useDesignStore((s) => s.design.venue);
   const studioOpen = useDesignStore((s) => s.studio.open);
@@ -35,6 +41,28 @@ export function TopToolbar() {
   const cakeOpen = useDesignStore((s) => s.cakeStudio.open);
   const openCakeStudio = useDesignStore((s) => s.openCakeStudio);
   const closeCakeStudio = useDesignStore((s) => s.closeCakeStudio);
+  const [menu, setMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // The More menu closes on an outside click or Esc.
+  useEffect(() => {
+    if (!menu) return;
+    const down = (e: PointerEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenu(false);
+    };
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setMenu(false);
+      }
+    };
+    window.addEventListener('pointerdown', down);
+    window.addEventListener('keydown', key, true);
+    return () => {
+      window.removeEventListener('pointerdown', down);
+      window.removeEventListener('keydown', key, true);
+    };
+  }, [menu]);
 
   function snapshot() {
     const url = captureScene();
@@ -46,62 +74,75 @@ export function TopToolbar() {
     showToast('Snapshot saved');
   }
 
-  function onClick(key: ToolbarKey, label: string) {
-    if (key === 'flower') {
-      if (studioOpen) closeStudio();
-      else openStudio();
+  const isOn = (k: ToolbarKey) => modal === k || overlay === k || (k === 'flower' && studioOpen) || (k === 'cake' && cakeOpen);
+
+  function onClick(key: ToolbarKey) {
+    setMenu(false);
+    if (key === 'flower') return studioOpen ? closeStudio() : openStudio();
+    if (key === 'cake') return cakeOpen ? closeCakeStudio() : openCakeStudio();
+    if (key === 'snapshot') {
+      // A snapshot needs the studio scene on screen.
+      closeStudio();
+      closeCakeStudio();
+      closeOverlay();
+      closeModal();
+      requestAnimationFrame(() => requestAnimationFrame(snapshot));
       return;
     }
-    if (key === 'cake') {
-      if (cakeOpen) closeCakeStudio();
-      else openCakeStudio();
-      return;
-    }
-    // Any other toolbar action closes an open studio first.
-    if (studioOpen) closeStudio();
-    if (cakeOpen) closeCakeStudio();
-    if (key === 'designs' || key === 'quote') {
+    if (key === 'designs' || key === 'quote' || key === 'addons') {
+      closeStudio();
+      closeCakeStudio();
+      closeOverlay();
       if (modal === key) closeModal();
       else openModal(key);
-    } else if (key === 'snapshot') {
-      snapshot();
-    } else {
-      closeModal();
-      showComingSoon(label.replace('✿ ', ''));
+      return;
     }
+    if (overlay === key) closeOverlay();
+    else openOverlay(key);
   }
+
+  const moreOn = MORE.some((m) => isOn(m.key));
 
   return (
     <div
-      className="glass chrome toolbar fixed top-4 z-[25] flex flex-wrap items-center justify-center gap-0.5 p-1"
-      // max-width keeps it inside the gap between the side panels, so it wraps instead of overlapping them.
+      className="glass chrome toolbar fixed top-4 z-[25] flex items-center justify-center gap-0.5 p-1"
+      role="toolbar"
+      aria-label="Studio"
+      // max-width keeps it inside the gap between the side panels.
       style={
-        studioOpen || cakeOpen
+        studioOpen || cakeOpen || overlay
           ? { left: 16, right: 16, width: 'max-content', maxWidth: 'calc(100vw - 32px)', marginInline: 'auto' }
           : { left: 358, right: 304, width: 'max-content', maxWidth: 'calc(100vw - 662px)', marginInline: 'auto' }
       }
     >
-      <button type="button" className={btnClass} disabled={!history.length} onClick={undo} title="Undo (Ctrl+Z)">
-        ↶ Undo
+      <button type="button" className={btnClass} disabled={!history.length} onClick={undo} title="Undo (Ctrl+Z)" aria-label="Undo">
+        ↶
       </button>
-      <button type="button" className={btnClass} disabled={!future.length} onClick={redo} title="Redo (Ctrl+Shift+Z)">
-        ↷ Redo
+      <button type="button" className={btnClass} disabled={!future.length} onClick={redo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo">
+        ↷
       </button>
       <span className="mx-1 h-[18px] w-px" style={{ background: 'rgba(255,240,220,.15)' }} />
-      {OVERLAY_BUTTONS.map((b) => (
-        <button key={b.key} type="button" className={btnClass} style={modal === b.key || (b.key === 'flower' && studioOpen) || (b.key === 'cake' && cakeOpen) ? onStyle : undefined} onClick={() => onClick(b.key, b.label)}>
+      {MAIN.map((b) => (
+        <button key={b.key} type="button" className={btnClass} title={b.title} aria-pressed={isOn(b.key)} style={isOn(b.key) ? onStyle : undefined} onClick={() => onClick(b.key)}>
           {b.label}
         </button>
       ))}
       <span className="mx-1 h-[18px] w-px" style={{ background: 'rgba(255,240,220,.15)' }} />
-      <button type="button" className={btnClass} style={modal === 'addons' ? onStyle : undefined} onClick={() => {
-          closeStudio();
-          closeCakeStudio();
-          if (modal === 'addons') closeModal();
-          else openModal('addons');
-        }}>
-        ＋ Add-ons
-      </button>
+      <div ref={menuRef} className="relative">
+        <button type="button" className={btnClass} aria-haspopup="menu" aria-expanded={menu} style={moreOn || menu ? onStyle : undefined} onClick={() => setMenu(!menu)}>
+          More ▾
+        </button>
+        {menu && (
+          <div className="tb-menu glass" role="menu">
+            {MORE.map((m) => (
+              <button key={m.key} type="button" role="menuitem" className={isOn(m.key) ? 'on' : ''} onClick={() => onClick(m.key)}>
+                <b>{m.label}</b>
+                <small>{m.note}</small>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

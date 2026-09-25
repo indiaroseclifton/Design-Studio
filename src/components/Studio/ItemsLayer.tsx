@@ -36,7 +36,7 @@ const ringGeo = new THREE.RingGeometry(1, 1.07, 72);
 export function ItemsLayer({ rootRef }: { rootRef: React.MutableRefObject<THREE.Group | null> }) {
   const design = useDesignStore((s) => s.design);
   const selection = useDesignStore((s) => s.selection);
-  const root = useMemo(() => new THREE.Group(), []);
+  const root = useMemo(() => Object.assign(new THREE.Group(), { name: 'design-items' }), []);
   const rings = useMemo(() => new THREE.Group(), []);
   const cache = useRef(new Map<string, Built>());
 

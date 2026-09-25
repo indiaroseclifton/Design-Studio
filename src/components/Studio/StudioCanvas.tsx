@@ -101,7 +101,7 @@ export function StudioCanvas() {
   const motion = useDesignStore((s) => s.motion);
   const planView = useDesignStore((s) => s.planView);
   // The Flower Studio covers the scene; stop rendering it underneath.
-  const paused = useDesignStore((s) => s.studio.open || s.cakeStudio.open);
+  const paused = useDesignStore((s) => s.studio.open || s.cakeStudio.open || !!s.overlay);
   const photo = useVenuePhoto((s) => s.photo);
   const itemsRoot = useRef<THREE.Group | null>(null);
 

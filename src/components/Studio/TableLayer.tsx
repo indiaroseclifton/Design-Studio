@@ -28,7 +28,7 @@ export function TableLayer({ venue }: { venue: VenueDef }) {
   // placing a vase must not rebuild every table and chair.
   const sig = JSON.stringify([table, tables, guests, table.decorPal === 'custom' ? custom : null, venue.name]);
   const group = useMemo(() => {
-    const g = new THREE.Group();
+    const g = Object.assign(new THREE.Group(), { name: 'design-tables' });
     if (hasTbl(m)) {
       const cl = clothOf(table, venue.cloth),
         cm = cl.bare ? null : fabricMat(cl),

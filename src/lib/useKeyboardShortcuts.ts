@@ -16,10 +16,14 @@ export function useKeyboardShortcuts() {
       const s = useDesignStore.getState();
 
       // The Flower Studio handles its own keys (Esc with a discard check, and its own undo).
-      if (s.studio.open || s.cakeStudio.open) return;
+      // The studios and the Storybook handle their own keys.
+      if (s.studio.open || s.cakeStudio.open || s.overlay === 'storybook') return;
+      if (s.overlay) {
+        if (e.key === 'Escape') s.closeOverlay();
+        return;
+      }
       if (e.key === 'Escape') {
         if (s.modal) s.closeModal();
-        else if (s.comingSoon) s.dismissComingSoon();
         else if (s.tweaks.ui === 'cinematic') s.setTweak('ui', 'studio');
         else if (s.planView) s.setPlanView(false);
         else s.select(null);

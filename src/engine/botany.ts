@@ -26,6 +26,8 @@ interface PetalOpts {
   ruffle?: number;
   /** 0 = pointed tip, 1 = broad rounded tip */
   round?: number;
+  /** grid resolution across and along the petal */
+  res?: [number, number];
 }
 
 /** Width profile along the petal, 0 at the base to 1 at the tip: narrow claw, widest past the middle, rounded tip. */
@@ -38,9 +40,8 @@ function petalWidth(t: number, round: number) {
   return Math.pow(Math.max(0, 1 - Math.pow(u, p)), 1 / p);
 }
 
-export function petalGeometry({ cup = 1.1, reflex = 0.9, ruffle = 0.07, round = 0.8 }: PetalOpts = {}) {
-  const nu = 12,
-    nv = 14;
+export function petalGeometry({ cup = 1.1, reflex = 0.9, ruffle = 0.07, round = 0.8, res = [12, 14] }: PetalOpts = {}) {
+  const [nu, nv] = res;
   const pos: number[] = [],
     col: number[] = [],
     uv: number[] = [],
@@ -151,9 +152,12 @@ export const leafMaterial = () =>
     side: THREE.DoubleSide,
   });
 
-let petalGeo: THREE.BufferGeometry | null = null;
+let petalGeo: THREE.BufferGeometry | null = null,
+  petalLo: THREE.BufferGeometry | null = null;
 let bladeGeo: THREE.BufferGeometry | null = null;
 export const PETAL = () => (petalGeo ??= shared(petalGeometry()));
+/** A coarser petal for flower heads that are only ever seen a few centimetres across (catalogue pieces). */
+export const PETAL_LO = () => (petalLo ??= shared(petalGeometry({ res: [6, 8] })));
 export const BLADE = () => (bladeGeo ??= shared(bladeGeometry()));
 
 // Replaces the prototype's sphere petal (registered by catalogue.gen.ts; the later registration wins).

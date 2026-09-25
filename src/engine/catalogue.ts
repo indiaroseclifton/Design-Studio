@@ -4,6 +4,7 @@ import { seed } from '../three/utils';
 import { Builder } from '../three/builder';
 import { ITEMS, PACKS, TEMPLATES } from './catalogue.gen';
 // Side effect: registers saved Flower Studio arrangements into ITEMS before a persisted design is loaded.
+import './foliage';
 import './flowers';
 // Same for saved Cake Studio cakes.
 import './cakes';

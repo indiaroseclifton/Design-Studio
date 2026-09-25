@@ -875,3 +875,245 @@ body.fs-on .chrome.toolbar {
   opacity: 0.6;
   text-align: right;
 }
+
+/* ---------- Brass Lantern & AR overlays ---------- */
+.bl-root {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  background: #0f0a07;
+  padding-top: 76px;
+}
+.bl-root iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+.ar-root {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: radial-gradient(ellipse at 50% 40%, #3a2f26, #120d0a 75%);
+  color: var(--ink, #f4ece0);
+}
+.ar-wait {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.8;
+  pointer-events: none;
+}
+.ar-top {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+}
+.ar-top > * {
+  pointer-events: auto;
+}
+.ar-top h3 {
+  font-size: 34px;
+  line-height: 1.1;
+  margin: 4px 0 6px;
+}
+.ar-top p {
+  max-width: 460px;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+.ar-x {
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+}
+.ar-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+  max-width: calc(100vw - 32px);
+}
+.ar-bar .seg {
+  display: inline-grid;
+  grid-auto-flow: column;
+}
+
+/* ---------- Storybook ---------- */
+.sb-root {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #0c0907;
+  color: #f4ece0;
+}
+.sb-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+.sb-top {
+  position: absolute;
+  top: 18px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+.sb-top > * {
+  pointer-events: auto;
+}
+.sb-chap {
+  font-size: 30px;
+  font-style: italic;
+  transition: opacity 0.22s ease;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+.sb-x {
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+}
+.sb-intro {
+  position: absolute;
+  left: max(24px, 7vw);
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(380px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+}
+.sb-intro h2 {
+  font-size: 38px;
+  line-height: 1.05;
+}
+.sb-intro p {
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+.sb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+.sb-field .inp {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 14px;
+}
+.sb-nav {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.sb-arrow {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 26px;
+  line-height: 1;
+  background: rgba(28, 23, 18, 0.7);
+  border: 1px solid rgba(255, 240, 220, 0.15);
+  color: inherit;
+}
+.sb-arrow:disabled {
+  opacity: 0.3;
+}
+.sb-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.sb-dots button {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 240, 220, 0.35);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.sb-dots button.on {
+  width: 22px;
+  background: var(--ac);
+}
+@media (max-width: 860px) {
+  .sb-intro {
+    left: 50%;
+    top: auto;
+    bottom: 84px;
+    transform: translateX(-50%);
+  }
+  .sb-chap {
+    font-size: 22px;
+  }
+}
+
+/* ---------- Toolbar "More" menu ---------- */
+.tb-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 230px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 2px;
+  background: var(--modal-bg, rgba(28, 23, 18, 0.97));
+}
+.tb-menu button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-align: left;
+}
+.tb-menu button:hover,
+.tb-menu button:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+.tb-menu button.on b {
+  color: var(--ac);
+}
+.tb-menu b {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.tb-menu small {
+  font-size: 11px;
+  opacity: 0.6;
+}

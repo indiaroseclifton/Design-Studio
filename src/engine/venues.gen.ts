@@ -84,9 +84,9 @@ export const VENUES: VenueDef[] = [
       plight(g, '#ffb866', 8, 14, 0, 4.8, 6.5);
       for (let l = 0; l < 2; l++)
         for (let z = -10.5; z < -3; z += 1.15)
-          B.add('box', [-7.2, 0.25 + l * 0.5, z + l * 0.5], [1.1, 0.5, 0.55], jit('#c9a358', 0.08), [0, Math.PI / 2, 0]);
+          B.add('bale', [-7.2, 0.25 + l * 0.5, z + l * 0.5], [1.1, 0.5, 0.55], jit('#c9a358', 0.08), [0, Math.PI / 2, 0]);
       for (const z of [5, 6.2, 8.5])
-        B.add('box', [-7.1, 0.25, z], [1.1, 0.5, 0.55], jit('#c9a358', 0.08), [0, Math.PI / 2 + rnd() * 0.3, 0]);
+        B.add('bale', [-7.1, 0.25, z], [1.1, 0.5, 0.55], jit('#c9a358', 0.08), [0, Math.PI / 2 + rnd() * 0.3, 0]);
       for (const z of [-8, -5.5]) {
         B.add('rod', [6.9, 0.45, z], [0.38, 0.9, 0.38], '#6b4428');
         B.add('metal', [6.9, 0.2, z], [0.39, 0.04, 0.39], '#333');
@@ -256,12 +256,19 @@ export const VENUES: VenueDef[] = [
       );
       sand.rotation.x = -Math.PI / 2;
       sand.castShadow = false;
-      const wet = mesh(g, new THREE.PlaneGeometry(600, 8), M('#a98b66', 0.4), 0, -0.12, -11.5);
+      const wet = mesh(g, new THREE.PlaneGeometry(600, 8), M('#a98b66', 0.62), 0, -0.12, -11.5);
       wet.rotation.x = -Math.PI / 2 + 0.035;
       wet.castShadow = false;
       const oc = new THREE.PlaneGeometry(600, 300, 140, 70);
       oc.rotateX(-Math.PI / 2);
-      const ocean = mesh(g, oc, M('#1f5a6c', 0.16, 0.3), 0, -0.08, -158);
+      const ocean = mesh(
+        g,
+        oc,
+        new THREE.MeshPhysicalMaterial({ color: '#1f5a6c', roughness: 0.32, specularIntensity: 0.28 }),
+        0,
+        -0.08,
+        -158,
+      );
       ocean.castShadow = false;
       const base = oc.attributes.position.array.slice();
       tk.push((t) => {
@@ -1333,7 +1340,7 @@ export const VENUES: VenueDef[] = [
     build(g, B, tk) {
       const wg = new THREE.PlaneGeometry(600, 600, 100, 100);
       wg.rotateX(-Math.PI / 2);
-      const water = mesh(g, wg, M('#2a4a5a', 0.12, 0.35), 0, -0.7, 0);
+      const water = mesh(g, wg, new THREE.MeshPhysicalMaterial({ color: '#2a4a5a', roughness: 0.24, specularIntensity: 0.4 }), 0, -0.7, 0);
       water.castShadow = false;
       const base = wg.attributes.position.array.slice();
       tk.push((t) => {
@@ -1368,7 +1375,7 @@ export const VENUES: VenueDef[] = [
         if (z < 0 && Math.abs(x) < 30 && r < 70) continue;
         const h = 6 + rnd() * 6;
         B.add('trunk', [x, -0.3 + 0.8, z], [0.18, 1.6, 0.18], '#4a3a2a');
-        B.add('cone', [x, h / 2 + 0.8, z], [h * 0.28, h, h * 0.28], jit('#2a4030', 0.06));
+        B.add('pine', [x, h / 2 + 0.8, z], [h * 0.3, h, h * 0.3], jit('#2a4030', 0.06), [0, rnd() * 6, 0]);
       }
       for (let i = 0; i < 9; i++) {
         const x = -160 + i * 40 + rnd() * 20,

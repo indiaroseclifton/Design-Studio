@@ -226,6 +226,17 @@ OUT = {'src/engine/catalogue.gen.ts': header + src + '\n'}
 # ------------------------------------------------------------------------------------------- venues
 vsrc = '\n'.join(html[456 - 1:767])
 VFIXES = [
+    # Realism: the prototype's near-mirror sea and lake turned a low sun into a blown-out column of glare
+    # (and bloom spread it across the sand). Rougher water keeps a softer glitter path.
+    ("M('#1f5a6c',.16,.3)", "new THREE.MeshPhysicalMaterial({color:'#1f5a6c',roughness:.32,specularIntensity:.28})"),
+    ("M('#a98b66',.4)", "M('#a98b66',.62)"),
+    ("M('#2a4a5a',.12,.35)", "new THREE.MeshPhysicalMaterial({color:'#2a4a5a',roughness:.24,specularIntensity:.4})"),
+    # Lakeside pines: tiered boughs (engine/foliage.ts) instead of plain cones. The cone's origin is its centre;
+    # the pine's is too, so position and scale carry over.
+    ("B.add('cone',[x,h/2+.8,z],[h*.28,h,h*.28],jit('#2a4030',.06))", "B.add('pine',[x,h/2+.8,z],[h*.3,h,h*.3],jit('#2a4030',.06),[0,rnd()*6,0])"),
+    # Hay bales get a straw texture and softened edges (engine/foliage.ts) instead of plain boxes.
+    ("B.add('box',[-7.2,.25+l*.5,z+l*.5],[1.1,.5,.55]", "B.add('bale',[-7.2,.25+l*.5,z+l*.5],[1.1,.5,.55]"),
+    ("B.add('box',[-7.1,.25,z],[1.1,.5,.55]", "B.add('bale',[-7.1,.25,z],[1.1,.5,.55]"),
     ('const SCENES=[', 'export const VENUES: VenueDef[] = ['),
     # "Your Venue" receives the uploaded photo as a build argument instead of reading a global.
     ("build(g,B,tk){const fl=mesh(g,new THREE.CircleGeometry(30", "build(g,B,tk,venuePhoto){const fl=mesh(g,new THREE.CircleGeometry(30"),

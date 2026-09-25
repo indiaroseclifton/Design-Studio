@@ -7,7 +7,7 @@ export function useApplyTweaks() {
   const accent = useDesignStore((s) => s.tweaks.accent);
   const ui = useDesignStore((s) => s.tweaks.ui);
   const motion = useDesignStore((s) => s.motion);
-  const studio = useDesignStore((s) => s.studio.open || s.cakeStudio.open);
+  const studio = useDesignStore((s) => s.studio.open || s.cakeStudio.open || !!s.overlay);
 
   useEffect(() => {
     const a = ACCENTS[accent] ?? ACCENTS.champagne;

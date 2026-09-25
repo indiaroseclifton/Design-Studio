@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { FCOL, FINS, FL, GR, I4, ITEMS, SHAPES, VESS, buildArrangement, fc, frame, stemTo, type Arrangement } from './catalogue.gen';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Builder, registerKind } from '../three/builder';
-import { petalMaterial } from './botany';
+import { PETAL, PETAL_LO, petalMaterial } from './botany';
 import { disposeObject3D, getSeedState, jit, rnd, seed, setSeedState, shared } from '../three/utils';
 
 export { FCOL, FINS, FL, GR, SHAPES, VESS };
@@ -186,7 +186,10 @@ function bakeHead(t: string, seedN: number): THREE.BufferGeometry {
       o.getMatrixAt(i, m);
       if (o.instanceColor) o.getColorAt(i, c);
       else c.set('#ffffff');
-      const geo = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(m);
+      // Petals use the coarse petal, and everything stays indexed: a baked head is instanced hundreds of
+      // times across a room, so its vertex count matters far more than in the Flower Studio.
+      const src0 = o.geometry === PETAL() ? PETAL_LO() : o.geometry;
+      const geo = (src0.index ? src0.clone() : mergeVertices(src0.clone())).applyMatrix4(m);
       // Fold the instance colour into vertex colours so everything merges under one material.
       const n = geo.attributes.position.count,
         src = geo.attributes.color,

@@ -11,6 +11,8 @@ import { cakeKey, loadCakes, registerCake, saveCakeList, type SavedCake } from '
 import { forgetThumbs } from '../three/thumbnail';
 
 export type ModalKind = 'designs' | 'quote' | 'addons';
+/** Full-screen overlays (only one at a time; opening one closes the studios and modals). */
+export type OverlayKind = 'lantern' | 'ar' | 'storybook';
 
 const MAX_HISTORY = 80;
 
@@ -38,7 +40,9 @@ interface StoreState {
   packsOn: string[];
   modal: ModalKind | null;
   toast: ToastState | null;
-  comingSoon: string | null;
+  overlay: OverlayKind | null;
+  openOverlay: (o: OverlayKind) => void;
+  closeOverlay: () => void;
   search: string;
   activeCategory: string;
   /** true while a drag gesture is live (history already captured at its start) */
@@ -105,8 +109,6 @@ interface StoreState {
 
   showToast: (msg: string, undoable?: boolean) => void;
   dismissToast: () => void;
-  showComingSoon: (name: string) => void;
-  dismissComingSoon: () => void;
 
   setSearch: (s: string) => void;
   setCategory: (c: string) => void;
@@ -168,7 +170,9 @@ export const useDesignStore = create<StoreState>()(
         packsOn: [],
         modal: null,
         toast: null,
-        comingSoon: null,
+        overlay: null,
+        openOverlay: (o) => set({ overlay: o, studio: { open: false, editId: null }, cakeStudio: { open: false, editId: null }, modal: null }),
+        closeOverlay: () => set({ overlay: null }),
         search: '',
         activeCategory: 'templates',
         gesture: false,
@@ -176,7 +180,7 @@ export const useDesignStore = create<StoreState>()(
         flowersVersion: 0,
 
         openStudio: (editId = null) =>
-          set({ studio: { open: true, editId }, cakeStudio: { open: false, editId: null }, selection: null, modal: null, comingSoon: null }),
+          set({ studio: { open: true, editId }, cakeStudio: { open: false, editId: null }, selection: null, modal: null, overlay: null }),
         closeStudio: () => set({ studio: { open: false, editId: null } }),
         saveArrangement: (r, place) => {
           const list = loadCustom().filter((x) => x.id !== r.id);
@@ -220,7 +224,7 @@ export const useDesignStore = create<StoreState>()(
         cakeStudio: { open: false, editId: null },
         cakesVersion: 0,
         openCakeStudio: (editId = null) =>
-          set({ cakeStudio: { open: true, editId }, studio: { open: false, editId: null }, selection: null, modal: null, comingSoon: null }),
+          set({ cakeStudio: { open: true, editId }, studio: { open: false, editId: null }, selection: null, modal: null, overlay: null }),
         closeCakeStudio: () => set({ cakeStudio: { open: false, editId: null } }),
         saveCake: (c, place) => {
           const list = loadCakes().filter((x) => x.id !== c.id);
@@ -447,13 +451,11 @@ export const useDesignStore = create<StoreState>()(
             return { packsOn, activeCategory };
           }),
         setPacks: (ids) => set((s) => ({ packsOn: ids, activeCategory: ids.includes(s.activeCategory) || !s.packsOn.includes(s.activeCategory) ? s.activeCategory : 'templates' })),
-        openModal: (m) => set({ modal: m, comingSoon: null }),
+        openModal: (m) => set({ modal: m, overlay: null }),
         closeModal: () => set({ modal: null }),
 
         showToast: toast,
         dismissToast: () => set({ toast: null }),
-        showComingSoon: (name) => set({ comingSoon: name }),
-        dismissComingSoon: () => set({ comingSoon: null }),
 
         setSearch: (s) => set({ search: s }),
         setCategory: (c) => set({ activeCategory: c, search: '' }),

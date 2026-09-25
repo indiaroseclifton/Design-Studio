@@ -5,13 +5,15 @@ import { RightColumn } from './components/ui/RightColumn';
 import { VenueStrip } from './components/ui/VenueStrip';
 import { HintPill } from './components/ui/HintPill';
 import { Toast } from './components/ui/Toast';
-import { ComingSoonOverlay } from './components/ui/ComingSoonOverlay';
 import { Letterbox } from './components/ui/Letterbox';
 import { DesignsModal } from './components/ui/DesignsModal';
 import { QuoteModal } from './components/ui/QuoteModal';
 import { AddonsModal } from './components/ui/AddonsModal';
 import { FlowerStudio } from './components/flower/FlowerStudio';
 import { CakeStudio } from './components/cake/CakeStudio';
+import { BrassLantern } from './components/overlays/BrassLantern';
+import { ArViewer } from './components/overlays/ArViewer';
+import { StorybookOverlay } from './components/overlays/StorybookOverlay';
 import { useEffect } from 'react';
 import { useVenuePhoto } from './lib/venuePhoto';
 import { useDesignStore } from './store/designStore';
@@ -23,6 +25,7 @@ export default function App() {
   const modal = useDesignStore((s) => s.modal);
   const studio = useDesignStore((s) => s.studio);
   const cakeStudio = useDesignStore((s) => s.cakeStudio);
+  const overlay = useDesignStore((s) => s.overlay);
   useKeyboardShortcuts();
   useApplyTweaks();
   useShareLink();
@@ -47,7 +50,9 @@ export default function App() {
       {modal === 'designs' && <DesignsModal />}
       {modal === 'quote' && <QuoteModal />}
       {modal === 'addons' && <AddonsModal />}
-      <ComingSoonOverlay />
+      {overlay === 'lantern' && <BrassLantern />}
+      {overlay === 'ar' && <ArViewer />}
+      {overlay === 'storybook' && <StorybookOverlay />}
     </div>
   );
 }
