@@ -2046,7 +2046,7 @@ defineItems({
 });
 
 // ---------- flower engine (Flower Studio) ----------
-registerKind('petal', () => [new THREE.SphereGeometry(1, 10, 7), M('#fff', 0.6, 0, { side: THREE.DoubleSide })]);
+/* The petal kind is registered by engine/botany.ts. */
 registerKind('coin', () => [new THREE.CylinderGeometry(1, 1, 1, 14), M('#fff', 0.7)]);
 registerKind('trumpet', () => [
   lathe(

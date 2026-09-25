@@ -52,6 +52,9 @@ export function Builder(g: THREE.Object3D): Builder {
 
   const B: Builder = {
     add(k, p, s = 1, c = '#fff', r = null, e = 1) {
+      // A flat, elongated "leaf" is a leaf blade (foliage in arrangements, fronds, ferns); round ones stay
+      // as clumps (shrubs, canopies). See engine/botany.ts.
+      if (k === 'leaf' && Array.isArray(s) && s[1] * 2.2 < Math.max(s[0], s[2]) && KINDS.blade) k = 'blade';
       (acc[k] ??= []).push([p as Vec3Tuple, s as number | Vec3Tuple, c, r as Vec3Tuple | null, e]);
     },
     addM(k, m, c = '#fff', e = 1) {

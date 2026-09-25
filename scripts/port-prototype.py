@@ -110,6 +110,8 @@ FIXES = [
     ("const c=noSh(mesh(g,new THREE.ConeGeometry(1.4,.45,", "noSh(mesh(g,new THREE.ConeGeometry(1.4,.45,"),
     (",rr=Math.hypot(ps.getX(k),ps.getZ(k));", ";"),
     ("const ox=px*1.12,oz=", "const oz="),
+    # Petals are drawn by engine/botany.ts (curved, shaded surfaces) instead of the prototype's squashed spheres.
+    ("registerKind('petal',()=>[new THREE.SphereGeometry(1,10,7),M('#fff',.6,0,{side:THREE.DoubleSide})]);", "/* The petal kind is registered by engine/botany.ts. */"),
     ("const FINS=", "export const FINS: Record<string, string>="),
     # The Flower Studio (src/components/flower) draws cut-stem thumbnails with these.
     ("const I4=new THREE.Matrix4(),", "export const I4=new THREE.Matrix4();const "),

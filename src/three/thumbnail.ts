@@ -5,6 +5,7 @@ import { CHAIRS, HANG, OVERLAYS, chairSpots, clothOf, fabricMat, hasTbl, makeCha
 import { DEF_TABLE, addItem, setAllPlaces } from '../lib/designOps';
 import { DEFAULT_DESIGN } from '../lib/designFormat';
 import { cutStem } from '../engine/flowers';
+import { buildArrangement, type Arrangement } from '../engine/catalogue.gen';
 import { disposeObject3D } from './utils';
 import type { Design, TableConfig } from '../types';
 
@@ -172,6 +173,16 @@ export const stemKey = (kind: 'flower' | 'green', t: string, c?: string) => `ste
 export function requestStemThumb(kind: 'flower' | 'green', t: string, c: string | undefined, cb: (url: string) => void): () => void {
   return enqueue(stemKey(kind, t, c), () => shoot(cutStem(kind, t, c), new THREE.Vector3(0.15, 0.3, 1), 0.8, 104, 128), cb);
 }
+
+/** Queue a thumbnail of a whole Flower Studio arrangement (preset and vessel cards). */
+export function requestArrangementThumb(key: string, r: Arrangement, cb: (url: string) => void): () => void {
+  return enqueue(`arr:${key}`, () => {
+    const g = new THREE.Group();
+    buildArrangement(g, r);
+    return shoot(g, new THREE.Vector3(0.55, 0.3, 1), 0.9);
+  }, cb);
+}
+export const cachedArrangementThumb = (key: string) => cache.get(`arr:${key}`);
 
 function pump() {
   const next = waiting.entries().next();
