@@ -99,7 +99,8 @@ export const spoonGeo = S(
     bowl.scale(0.02, 0.006, 0.032);
     bowl.rotateX(Math.PI);
     bowl.translate(0, 0.006, -0.058);
-    return mergeGeometries([handle.toNonIndexed(), bowl.toNonIndexed()])!;
+    const flatten = (g: THREE.BufferGeometry) => (g.index ? g.toNonIndexed() : g);
+    return mergeGeometries([flatten(handle), flatten(bowl)])!;
   })(),
 );
 
