@@ -121,6 +121,51 @@ Open it from the toolbar (**Cake Studio**), or from **New cake** under My Cakes 
   with **Edit in Cake Studio**. Cakes persist in `localStorage` (`vs2_cakes`), and exports and share links
   carry them.
 
+### Planning studios: Stationery, Menu & Bar, Music, Attire
+
+These open from **Studios** in the toolbar, alongside the Flower and Cake Studios. Each is saved on the
+design, so saved designs, exports and share links carry it, and each feeds the others.
+
+- **Stationery Studio** (`src/stationery/`, `src/components/stationery/`):
+  - A whole paper suite: save-the-date, invitation, RSVP, details card, order of service, menu, bar menu,
+    place cards, table numbers, welcome sign, seating chart, favour tags and thank-you cards.
+  - 7 themes plus paper, foil, type pairing, ornament, edge and ink. Watercolour florals are painted in
+    the design's palette, and accents are kept legible on every paper.
+  - Wording comes from the couple's names, date and venue. The invitation writes the date and time out in
+    words.
+  - Views: a flat lay of the suite (envelope, silk ribbon, wax seal) or one piece at a time.
+  - Print-ready PDFs (jsPDF, loaded on demand) at 300 dpi, with 3 mm bleed and crop marks, several to a
+    sheet. Place cards print one per guest and table numbers one per table. There's also a PNG for
+    sending digitally.
+  - The scene's place cards, table numbers, menu stands, welcome easel and seating chart show the suite
+    (`paperCard` / `textTex` in `src/engine/florals.ts`).
+  - The Quote gains a Stationery section.
+  - Typefaces are bundled with Fontsource (`src/fonts.ts`), so canvases and print files never fall back
+    to system fonts.
+- **Menu & Bar** (`src/menu/`, `src/components/menu/`):
+  - Courses from 7 cuisine presets, fully editable, with dietary tags on each dish. "Guests choose"
+    courses put meal choices on the RSVP card.
+  - The bar: style, hours, welcome drink, toast and wines, plus up to six signature drinks from a
+    library, or named after the couple.
+  - A per-course dietary coverage check, the drinks order, and costs. Costs go into the Quote under
+    Catering.
+  - The stationery menu, the bar menu (with illustrated glasses) and the Storybook's Feast chapter all
+    print from it.
+- **Music** (`src/music/`, `src/components/music/`):
+  - The day's moments, from guests arriving to the last song, timed from the ceremony.
+  - A library of about 160 wedding songs, with approximate tempo and energy. Curation scores energy fit,
+    genre and era preferences and must-plays, never repeats a song, and shapes the party with a warm-up,
+    peaks and breathers.
+  - An energy-across-the-day chart, with a crosshair tooltip and keyboard stepping.
+  - Pin, remove, reshuffle and add your own songs, with a do-not-play list.
+  - Exports: a DJ brief PDF and a playlist CSV for import tools.
+  - The order of service names the ceremony music, and the Storybook names the first-dance song.
+- **Attire & colour** (`src/attire/`, `src/components/attire/`):
+  - The wedding party by role, each with garment, fabric and colour.
+  - Palette-based schemes: matching, mismatched, ombré or neutrals.
+  - A harmony check per outfit, plus a warning when an outfit would blend into the backdrop.
+  - A fashion-illustration line-up beside a paint-chip colour story, downloadable as an image.
+
 ### Storybook, Brass Lantern and AR
 
 All three open from the toolbar (Storybook directly; the others under **More**) and replace whatever
