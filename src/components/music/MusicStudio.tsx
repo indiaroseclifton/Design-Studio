@@ -1,154 +1,62 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useDesignStore } from '../../store/designStore';
 import { downloadText } from '../../lib/capture';
-import { GENRES as GENRE_NAMES, ERAS, FORMATS, MOMENTS, MOMENT_ORDER, TRACK_MIN, clock, curate, dayStart, defaultMusic, playlistCsv, searchLinks, type Era, type Format, type MomentId, type MusicPlan, type Segment, type Track } from '../../music/model';
-import type { Genre } from '../../music/library';
+import { GENRES as GENRE_NAMES, ERAS, FORMATS, MOMENTS, MOMENT_ORDER, TRACK_MIN, clock, curate, dayStart, defaultMusic, playlistCsv, recommend, searchLinks, type Era, type Format, type MomentId, type MusicPlan, type Segment } from '../../music/model';
+import type { Genre, Song } from '../../music/library';
 import { Sec, Stepper } from '../studio3d/ui';
 import { histReducer } from '../studio3d/state';
 
 /*
- * Music curator: the day as an energy curve, and a curated playlist for each moment. Pin songs to keep
- * them, remove the ones you don't want, add your own; the curve and timings follow.
+ * Music curator: the day as a row of moments, a curated playlist for the chosen one, and recommended
+ * songs to add. Pin songs to keep them, remove the ones you don't want, add your own; timings follow.
  */
 
 type Tab = 'moments' | 'style' | 'requests' | 'export';
-const LINE = '#d95926'; // validated against the panel surface (dataviz: lightness band, chroma, 3:1 contrast)
+const PAGE = 6;
 
 function hue(s: string) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
   return h;
 }
-function Cover({ t }: { t: Track }) {
+function Cover({ t, big }: { t: Song; big?: boolean }) {
   const h = hue(t.title + t.artist);
   return (
-    <span className="mu-cover" style={{ background: `linear-gradient(135deg, hsl(${h} 45% 42%), hsl(${(h + 40) % 360} 55% 22%))` }} aria-hidden>
+    <span className={`mu-cover ${big ? 'big' : ''}`} style={{ background: `linear-gradient(135deg, hsl(${h} 55% 52%), hsl(${(h + 50) % 360} 60% 28%))` }} aria-hidden>
       {t.title.replace(/[^A-Za-z0-9]/g, '').slice(0, 1)}
     </span>
   );
 }
 
-/** Energy across the day: a stepped line of each track's energy over clock time, moments as bands. */
-function EnergyChart({ segs, start, sel, onSel }: { segs: Segment[]; start: number; sel: MomentId; onSel: (m: MomentId) => void }) {
+/** The day as a row of moment cards: when it starts, what it is, and what's playing. */
+function Timeline({ segs, start, sel, onSel }: { segs: Segment[]; start: number; sel: MomentId; onSel: (m: MomentId) => void }) {
   const host = useRef<HTMLDivElement>(null);
-  const [w, setW] = useState(800);
-  const [hover, setHover] = useState<{ x: number; t: Track | null; mins: number } | null>(null);
   useEffect(() => {
-    const el = host.current!;
-    const ro = new ResizeObserver(() => setW(el.clientWidth));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const H = 190,
-    L = 58,
-    R = 14,
-    T = 26,
-    B = 26;
-  const total = segs.length ? segs[segs.length - 1].start + segs[segs.length - 1].minutes : 1;
-  const pw = Math.max(10, w - L - R),
-    ph = H - T - B;
-  const X = (m: number) => L + (m / total) * pw;
-  const Y = (e: number) => T + ((5 - e) / 4) * ph;
-  const tracks = segs.flatMap((s) => s.tracks.map((t) => ({ t, seg: s })));
-  // Stepped path, broken where there's no music (the vows).
-  let d = '',
-    area = '';
-  for (const s of segs) {
-    if (!s.tracks.length) continue;
-    const pts: Array<[number, number]> = [];
-    s.tracks.forEach((t, i) => {
-      const x0 = X(t.at),
-        x1 = X(Math.min(s.start + s.minutes, i === s.tracks.length - 1 ? s.start + s.minutes : t.at + TRACK_MIN));
-      pts.push([x0, Y(t.energy)], [x1, Y(t.energy)]);
-    });
-    d += 'M' + pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join('L');
-    area += `M${pts[0][0].toFixed(1)},${Y(1) + ph / 4}` + pts.map(([x, y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join('') + `L${pts[pts.length - 1][0].toFixed(1)},${Y(1) + ph / 4}Z`;
-  }
-  const at = (mins: number) => tracks.find(({ t, seg }) => mins >= t.at && mins < Math.min(seg.start + seg.minutes, t.at + TRACK_MIN) + (seg.tracks.length === 1 ? seg.minutes : 0))?.t ?? null;
-  const move = (clientX: number) => {
-    const r = host.current!.getBoundingClientRect();
-    const x = Math.min(L + pw, Math.max(L, clientX - r.left));
-    const mins = ((x - L) / pw) * total;
-    setHover({ x, t: at(mins), mins });
-  };
-  const idx = hover?.t ? tracks.findIndex((x) => x.t.id === hover.t!.id) : -1;
-  const step = (dlt: number) => {
-    const i = Math.max(0, Math.min(tracks.length - 1, (idx < 0 ? 0 : idx) + dlt));
-    const t = tracks[i]?.t;
-    if (t) setHover({ x: X(t.at + 0.01), t, mins: t.at });
-  };
-  // Clock labels at segment starts, skipping ones that would collide.
-  const ticks = segs.reduce<Segment[]>((acc, s) => (acc.length && X(s.start) - X(acc[acc.length - 1].start) < 44 ? acc : [...acc, s]), []);
+    const row = host.current,
+      card = row?.querySelector<HTMLElement>('.mu-card.on');
+    if (!row || !card) return;
+    // Scroll the row only (scrollIntoView would also move the page).
+    if (card.offsetLeft < row.scrollLeft || card.offsetLeft + card.offsetWidth > row.scrollLeft + row.clientWidth) row.scrollTo({ left: card.offsetLeft - 24, behavior: 'smooth' });
+  }, [sel]);
   return (
-    <div
-      ref={host}
-      className="mu-chart"
-      tabIndex={0}
-      role="img"
-      aria-label="Energy of the music across the day"
-      onPointerMove={(e) => move(e.clientX)}
-      onPointerLeave={() => setHover(null)}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowRight') step(1);
-        else if (e.key === 'ArrowLeft') step(-1);
-        else return;
-        e.preventDefault();
-      }}
-    >
-      <svg width={w} height={H}>
-        {segs.map((s) => {
-          const x0 = X(s.start),
-            x1 = X(s.start + s.minutes),
-            on = s.id === sel;
+    <div ref={host} className="mu-line" role="tablist" aria-label="Moments of the day">
+      {segs.map((s) => {
+        if (s.id === 'ceremony')
           return (
-            <g key={s.id + s.start} onClick={() => s.id !== 'ceremony' && onSel(s.id)} style={{ cursor: s.id === 'ceremony' ? 'default' : 'pointer' }}>
-              <rect x={x0} y={T} width={Math.max(1, x1 - x0)} height={ph} fill={on ? 'rgba(217,89,38,.14)' : s.id === 'ceremony' ? 'rgba(255,240,220,.015)' : 'rgba(255,240,220,.035)'} />
-              <line x1={x0} x2={x0} y1={T} y2={T + ph} stroke="rgba(255,240,220,.1)" />
-              {x1 - x0 > 64 && (
-                <text x={x0 + 6} y={T - 8} className={`mu-band ${on ? 'on' : ''}`}>
-                  {s.id === 'ceremony' ? 'Vows' : MOMENTS[s.id].n}
-                </text>
-              )}
-            </g>
+            <div key="vows" className="mu-vows" aria-hidden>
+              Vows
+            </div>
           );
-        })}
-        {[1, 3, 5].map((e) => (
-          <g key={e}>
-            <line x1={L} x2={L + pw} y1={Y(e)} y2={Y(e)} stroke="rgba(255,240,220,.08)" />
-            <text x={L - 8} y={Y(e) + 4} textAnchor="end" className="mu-axis">
-              {e === 5 ? 'Peak' : e === 3 ? 'Lively' : 'Hushed'}
-            </text>
-          </g>
-        ))}
-        <path d={area} fill={LINE} opacity={0.16} />
-        <path d={d} fill="none" stroke={LINE} strokeWidth={2} strokeLinejoin="round" />
-        {ticks.map((s) => (
-          <text key={'t' + s.start} x={X(s.start)} y={H - 8} textAnchor={X(s.start) > L + pw - 40 ? 'end' : 'start'} className="mu-axis">
-            {clock(start + s.start)}
-          </text>
-        ))}
-        {hover && (
-          <g pointerEvents="none">
-            <line x1={hover.x} x2={hover.x} y1={T} y2={T + ph} stroke="rgba(255,240,220,.5)" strokeWidth={1} />
-            {hover.t && <circle cx={hover.x} cy={Y(hover.t.energy)} r={5} fill={LINE} stroke="#1f1914" strokeWidth={2} />}
-          </g>
-        )}
-      </svg>
-      {hover && (
-        <div className="mu-tip" style={{ left: Math.min(hover.x + 12, w - 230) }} role="status">
-          <b>{clock(start + hover.mins)}</b>
-          {hover.t ? (
-            <>
-              <span className="mu-tip-t">{hover.t.title}</span>
-              <span className="mu-tip-s">
-                {hover.t.artist} · energy {hover.t.energy} of 5
-              </span>
-            </>
-          ) : (
-            <span className="mu-tip-s">The vows: no music</span>
-          )}
-        </div>
-      )}
+        const id = s.id;
+        const M = MOMENTS[id];
+        return (
+          <button key={id} type="button" role="tab" aria-selected={sel === id} className={`mu-card ${sel === id ? 'on' : ''}`} onClick={() => onSel(id)}>
+            <span className="mu-card-t">{clock(start + s.start)}</span>
+            <b>{M.n}</b>
+            <small>{M.single ? (s.tracks[0]?.title ?? 'Choose a song') : `${s.tracks.length} songs · ${Math.round(s.minutes)} min`}</small>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -211,6 +119,29 @@ export function MusicStudio() {
 
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   const mp = plan.moments.find((m) => m.id === sel)!;
+  const M = MOMENTS[sel];
+  const recs = useMemo(() => recommend(plan, sel, segs), [plan, sel, segs]);
+  const [page, setPage] = useState(0);
+  const shown = recs.slice(page * PAGE, page * PAGE + PAGE);
+  const [added, setAdded] = useState('');
+  useEffect(() => {
+    if (!added) return;
+    const t = setTimeout(() => setAdded(''), 2200);
+    return () => clearTimeout(t);
+  }, [added]);
+  /** Pin a song into the chosen moment: it replaces a single-song moment's choice, and lengthens a full set. */
+  function choose(song: Song) {
+    moment(sel, (m) => {
+      if (M.single) m.pins = [song.id];
+      else if (!m.pins.includes(song.id)) {
+        m.pins.push(song.id);
+        const slots = Math.max(1, Math.round(m.minutes / TRACK_MIN));
+        if (m.pins.length > slots) m.minutes = Math.min(360, Math.ceil((m.pins.length * TRACK_MIN) / 5) * 5);
+      }
+      m.bans = m.bans.filter((b) => b !== song.id);
+    });
+    if (!M.single) setAdded(song.title);
+  }
 
   async function brief() {
     setBusy('Preparing the DJ brief…');
@@ -234,55 +165,76 @@ export function MusicStudio() {
   return (
     <div className="fs-root mu-root" role="dialog" aria-label="Music curator">
       <div className="fs-view mu-view">
-        <div className="fs-top mu-top">
-          <div className="lbl">Music · {FORMATS[plan.format].n}</div>
-          <div className="serif fs-name mn-title">The soundtrack</div>
-          <div className="fs-sub">
-            {songs} songs · {hours.toFixed(1)} hours from {clock(start)}
+        <header className="mu-top">
+          <div>
+            <div className="lbl">Music · {FORMATS[plan.format].n}</div>
+            <div className="serif mu-title">The soundtrack</div>
           </div>
-        </div>
-        <div className="mu-body">
-          <EnergyChart segs={segs} start={start} sel={sel} onSel={setSel} />
-          <div className="mu-chips" role="tablist" aria-label="Moments">
-            {MOMENT_ORDER.filter((id) => plan.moments.find((m) => m.id === id)?.on).map((id) => (
-              <button key={id} type="button" role="tab" aria-selected={sel === id} className={`chip ${sel === id ? 'on' : ''}`} onClick={() => setSel(id)}>
-                {MOMENTS[id].n}
-              </button>
-            ))}
+          <div className="mu-stats">
+            <span>
+              <b>{songs}</b> songs
+            </span>
+            <span>
+              <b>{hours.toFixed(1)}</b> hours
+            </span>
+            <span>
+              from <b>{clock(start)}</b>
+            </span>
           </div>
-          {selSeg && mp.on ? (
-            <section className="mu-list" aria-label={MOMENTS[sel].n}>
+        </header>
+        <Timeline segs={segs} start={start} sel={sel} onSel={(m) => (setSel(m), setPage(0))} />
+        {selSeg && mp.on ? (
+          <div className="mu-body">
+            <section className="mu-list" aria-label={`${M.n} playlist`}>
               <header>
                 <div>
-                  <h3 className="serif">{MOMENTS[sel].n}</h3>
+                  <h3 className="serif">{M.n}</h3>
                   <p>
-                    {clock(start + selSeg.start)} · {MOMENTS[sel].note}
+                    {clock(start + selSeg.start)} · {M.note}
                   </p>
                 </div>
-                <button type="button" className="btn" onClick={() => moment(sel, (m) => void (m.seed = Math.floor(Math.random() * 1e6)))} title="Keep pinned songs; choose the rest again">
-                  ↻ Reshuffle
-                </button>
+                {!M.single && (
+                  <button type="button" className="btn mu-btn" onClick={() => moment(sel, (m) => void (m.seed = Math.floor(Math.random() * 1e6)))} title="Keep pinned songs; choose the rest again">
+                    ↻ Reshuffle
+                  </button>
+                )}
               </header>
-              <ol>
-                {selSeg.tracks.map((t) => {
-                  const links = searchLinks(t);
-                  return (
+              {M.single && selSeg.tracks[0] ? (
+                <div className="mu-hero">
+                  <Cover t={selSeg.tracks[0]} big />
+                  <div className="mu-hero-t">
+                    <span className="lbl">{selSeg.tracks[0].pinned ? 'Your choice' : 'Our suggestion'}</span>
+                    <b className="serif">{selSeg.tracks[0].title}</b>
+                    <span>
+                      {selSeg.tracks[0].artist} · {selSeg.tracks[0].year}
+                    </span>
+                    <div className="mu-hero-acts">
+                      <a className="btn mu-btn" href={searchLinks(selSeg.tracks[0]).spotify} target="_blank" rel="noreferrer">
+                        ▶ Listen
+                      </a>
+                      {!selSeg.tracks[0].pinned && (
+                        <button type="button" className="btn primary mu-btn" onClick={() => choose(selSeg.tracks[0])}>
+                          Keep this song
+                        </button>
+                      )}
+                    </div>
+                    <p className="mu-hint">Or pick one of the recommendations.</p>
+                  </div>
+                </div>
+              ) : (
+                <ol className="scroll">
+                  {selSeg.tracks.map((t) => (
                     <li key={t.id} className={t.pinned ? 'pinned' : ''}>
                       <span className="mu-time">{clock(start + t.at)}</span>
                       <Cover t={t} />
                       <span className="mu-song">
                         <b>{t.title}</b>
                         <small>
-                          {t.artist} · {t.year} · ~{t.bpm} bpm
+                          {t.artist} · {t.year}
                         </small>
                       </span>
-                      <span className="mu-energy" aria-label={`Energy ${t.energy} of 5`} title={`Energy ${t.energy} of 5`}>
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <i key={i} className={i <= t.energy ? 'on' : ''} />
-                        ))}
-                      </span>
-                      <a className="mu-link" href={links.spotify} target="_blank" rel="noreferrer" aria-label={`Find ${t.title} on Spotify`}>
-                        Listen ↗
+                      <a className="mu-link" href={searchLinks(t).spotify} target="_blank" rel="noreferrer" aria-label={`Listen to ${t.title} on Spotify`}>
+                        ▶
                       </a>
                       <button type="button" className={`fs-mini ${t.pinned ? 'on' : ''}`} aria-pressed={t.pinned} title={t.pinned ? 'Unpin' : 'Keep this song'} aria-label={`${t.pinned ? 'Unpin' : 'Pin'} ${t.title}`} onClick={() => moment(sel, (m) => void (m.pins = toggle(m.pins, t.id)))}>
                         ★
@@ -291,19 +243,58 @@ export function MusicStudio() {
                         ×
                       </button>
                     </li>
-                  );
-                })}
-              </ol>
+                  ))}
+                </ol>
+              )}
               {mp.bans.length > 0 && (
                 <button type="button" className="link" onClick={() => moment(sel, (m) => void (m.bans = []))}>
                   Bring back {mp.bans.length} removed song{mp.bans.length > 1 ? 's' : ''}
                 </button>
               )}
             </section>
-          ) : (
-            <p className="fs-hint-text">This moment is switched off.</p>
-          )}
-        </div>
+            <section className="mu-recs" aria-label={`Recommended for ${M.n.toLowerCase()}`}>
+              <header>
+                <h3>Recommended for {M.n.toLowerCase()}</h3>
+                {recs.length > PAGE && (
+                  <button type="button" className="link" onClick={() => setPage((p) => ((p + 1) * PAGE >= recs.length ? 0 : p + 1))}>
+                    More suggestions ↻
+                  </button>
+                )}
+              </header>
+              {shown.length ? (
+                <ul>
+                  {shown.map(({ song, reason }) => (
+                    <li key={song.id}>
+                      <Cover t={song} />
+                      <span className="mu-song">
+                        <b>{song.title}</b>
+                        <small>
+                          {song.artist} · {song.year}
+                        </small>
+                        <em>{reason}</em>
+                      </span>
+                      <a className="mu-link" href={searchLinks(song).spotify} target="_blank" rel="noreferrer" aria-label={`Listen to ${song.title} on Spotify`}>
+                        ▶
+                      </a>
+                      <button type="button" className="mu-add" aria-label={`${M.single ? 'Use' : 'Add'} ${song.title}`} onClick={() => choose(song)}>
+                        {M.single ? 'Use' : '+ Add'}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mu-hint">Every song we know for this moment is already in your playlist.</p>
+              )}
+              {added && (
+                <p className="mu-toast" role="status">
+                  Added “{added}”
+                </p>
+              )}
+            </section>
+          </div>
+        ) : (
+          <p className="mu-hint mu-off">This moment is switched off. Turn it on in the Moments tab.</p>
+        )}
       </div>
 
       <aside className="fs-side glass">

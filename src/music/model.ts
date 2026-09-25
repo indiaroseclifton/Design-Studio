@@ -262,3 +262,60 @@ export function sanitizeMusic(raw: unknown): MusicPlan | null {
     custom,
   };
 }
+
+/* ------------------------------------------------------------------ recommendations */
+
+/** The songs couples choose most for each moment. */
+const FAVOURITES: Partial<Record<MomentId, string[]>> = {
+  processional: ['Canon in D', 'A Thousand Years', 'Can’t Help Falling in Love', 'Turning Page', 'Bridal Chorus', 'River Flows in You', 'Here Comes the Sun'],
+  signing: ['Somewhere Over the Rainbow', 'Lucky', 'The Book of Love', 'What a Wonderful World', 'Clair de Lune'],
+  recessional: ['Signed, Sealed, Delivered I’m Yours', 'Marry You', 'Wedding March', 'Here Comes the Sun', 'Ain’t No Mountain High Enough', 'Love Story'],
+  drinks: ['Fly Me to the Moon', 'Valerie', 'Lovely Day', 'Put Your Records On', 'Better Together'],
+  dinner: ['La Vie en Rose', 'At Last', 'The Way You Look Tonight', 'Stand by Me', 'Let’s Stay Together'],
+  firstdance: ['Perfect', 'At Last', 'Can’t Help Falling in Love', 'All of Me', 'Thinking Out Loud', 'Make You Feel My Love', 'A Thousand Years', 'Die with a Smile', 'Until I Found You', 'Tennessee Whiskey'],
+  party: ['September', 'Uptown Funk', 'Mr. Brightside', 'I Wanna Dance with Somebody', 'Dancing Queen', 'Don’t Stop Me Now', 'Shut Up and Dance', 'Crazy in Love'],
+  last: ['Don’t Stop Believin’', '(I’ve Had) The Time of My Life', '500 Miles (I’m Gonna Be)', 'Sweet Caroline', 'Angels'],
+  arrival: ['Clair de Lune', 'Gymnopédie No. 1', 'Nuvole Bianche', 'Bloom', 'Air on the G String'],
+};
+export const isFavourite = (id: MomentId, s: Song) => !!FAVOURITES[id]?.includes(s.title);
+
+export interface Recommendation {
+  song: Song;
+  reason: string;
+}
+
+/**
+ * Songs to suggest for a moment that aren't already playing anywhere: wedding favourites first, then
+ * songs matching the couple's genres and eras, songs like the ones they've pinned, and the right energy.
+ */
+export function recommend(plan: MusicPlan, id: MomentId, segs: Segment[] = curate(plan)): Recommendation[] {
+  const M = MOMENTS[id];
+  const mp = plan.moments.find((m) => m.id === id)!;
+  const playing = new Set(segs.flatMap((s) => s.tracks.map((t) => t.id)));
+  const banAll = lines(plan.doNotPlay);
+  const pinned = plan.moments.flatMap((m) => m.pins).map((p) => songOf(p, plan)).filter((s): s is Song => !!s);
+  const [lo, hi] = M.energy;
+  const out: Array<Recommendation & { score: number }> = [];
+  for (const s of [...SONGS, ...plan.custom]) {
+    if (!s.moments.includes(M.code) || playing.has(s.id) || mp.bans.includes(s.id) || mentioned(s, banAll)) continue;
+    const like = pinned.find((p) => p.id !== s.id && p.genres.some((g) => s.genres.includes(g)) && Math.abs(p.year - s.year) <= 12);
+    const genre = plan.genres.find((g) => s.genres.includes(g));
+    const era = plan.eras.includes(eraOf(s.year));
+    const fav = isFavourite(id, s);
+    const fits = s.energy >= lo && s.energy <= hi;
+    const score = (fav ? 4 : 0) + (genre ? 3 : 0) + (era ? 2 : 0) + (like ? 2 : 0) + (fits ? 1.5 : 0) - (fits ? 0 : Math.min(Math.abs(s.energy - lo), Math.abs(s.energy - hi)));
+    const reason = fav
+      ? 'A wedding favourite'
+      : genre
+        ? `Matches your ${GENRES[genre].toLowerCase()} pick`
+        : like
+          ? `Similar to “${like.title}”`
+          : era
+            ? `From the ${ERAS[eraOf(s.year)]}`
+            : fits
+              ? `Right feel for ${M.n.toLowerCase()}`
+              : 'Something different';
+    out.push({ song: s, reason, score });
+  }
+  return out.sort((a, b) => b.score - a.score || b.song.year - a.song.year).map(({ song, reason }) => ({ song, reason }));
+}
