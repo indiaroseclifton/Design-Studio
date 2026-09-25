@@ -47,6 +47,7 @@ const ArViewer = lazy(() =>
   })),
 );
 const StationeryStudio = lazy(() => import('./components/stationery/StationeryStudio').then((m) => ({ default: m.StationeryStudio })));
+const MenuPlanner = lazy(() => import('./components/menu/MenuPlanner').then((m) => ({ default: m.MenuPlanner })));
 const StorybookOverlay = lazy(() =>
   import('./components/overlays/StorybookOverlay').then((m) => ({
     default: m.StorybookOverlay,
@@ -89,6 +90,7 @@ export default function App() {
         {overlay === 'ar' && <ArViewer />}
         {overlay === 'storybook' && <StorybookOverlay />}
         {overlay === 'stationery' && <StationeryStudio />}
+        {overlay === 'menu' && <MenuPlanner />}
       </Suspense>
     </div>
   );

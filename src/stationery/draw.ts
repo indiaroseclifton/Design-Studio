@@ -32,6 +32,10 @@ export interface DrawCtx {
   tables: number;
   /** menu from the Menu planner, when there is one (otherwise the suite's own menu text) */
   menu?: MenuCourse[];
+  /** meal choices guests make on the RSVP card (Menu planner) */
+  choices?: Array<{ course: string; options: string[] }>;
+  /** the bar, for the bar menu (Menu planner) */
+  bar?: { welcome: string; signatures: Array<{ name: string; desc: string; glass: string; colour: string; zero?: boolean }>; wine: { red: string; white: string; sparkling: string } };
 }
 export interface DrawOpts {
   /** the guest's name (place card) or table number / name (table number) */
@@ -181,7 +185,9 @@ interface Block {
   tone?: Tone;
   /** gap after, in u */
   gap?: number;
-  kind?: 'text' | 'rule' | 'write' | 'mono';
+  kind?: 'text' | 'rule' | 'write' | 'mono' | 'art';
+  /** 'art' blocks: draw into the given box (centre x, top y, height) */
+  draw?: (x: X, cx: number, y: number, h: number) => void;
 }
 const T = (t: string, role: Role, s: number, tone: Tone = 'ink', gap = 2): Block => ({ t, role, s, tone, gap, kind: 'text' });
 const RULE = (gap = 3): Block => ({ t: '', role: 'body', s: 2.4, gap, kind: 'rule' });
@@ -234,7 +240,7 @@ function stack(x: X, c: DrawCtx, I: Inks, blocks: Block[], bx: number, by: numbe
         }
       }
       const lh = f.script && b.role === 'head' ? 1.18 : b.role === 'caps' ? 1.5 : 1.28;
-      const h = b.kind === 'rule' ? px * 1.2 : b.kind === 'write' ? px * 2 : px * lh * text.length;
+      const h = b.kind === 'art' ? px : b.kind === 'rule' ? px * 1.2 : b.kind === 'write' ? px * 2 : px * lh * text.length;
       laid.push({ b, px, lines: text, h });
       total += h + (b.gap ?? 2) * u * k;
     }
@@ -246,7 +252,9 @@ function stack(x: X, c: DrawCtx, I: Inks, blocks: Block[], bx: number, by: numbe
   for (const L of laid) {
     const { b, px } = L;
     const f = fontFor(c, b.role);
-    if (b.kind === 'rule') {
+    if (b.kind === 'art') {
+      b.draw?.(x, cx, y, L.h);
+    } else if (b.kind === 'rule') {
       divider(x, cx, y + L.h / 2, Math.min(bw * 0.5, 34 * u), I, u);
     } else if (b.kind === 'write') {
       x.font = fontCss(fontFor(c, 'body'), px);
@@ -673,8 +681,10 @@ function blocksFor(k: PieceKind, c: DrawCtx, o: DrawOpts): Block[] {
         T(w.rsvpBy ? `by ${dateShort(w.rsvpBy)}` : 'at your earliest convenience', 'italic', 4.6, 'soft', 3.5),
         WRITE('M', 2),
         T('○  Joyfully accepts        ○  Regretfully declines', 'body', 4.2, 'ink', 3),
+        // Meal choices from the Menu planner.
+        ...(c.choices ?? []).flatMap((ch) => [T(ch.course, 'caps', 2.8, 'accent', 0.8), T(ch.options.map((o) => '○ ' + o).join('     '), 'body', 3.6, 'ink', 2)]),
         WRITE('Dietary requirements', 1.5),
-        WRITE('Song request', 0),
+        ...(c.choices?.length ? [] : [WRITE('Song request', 0)]),
       ];
     case 'details': {
       const lines: Block[] = [T('The details', 'head', 11, 'foil', 4)];
@@ -694,6 +704,17 @@ function blocksFor(k: PieceKind, c: DrawCtx, o: DrawOpts): Block[] {
         RULE(4),
         ...courses.flatMap((m) => [T(m.course, 'caps', 3.4, 'accent', 1.2), T(m.dish, 'body', 6, 'ink', 0.8), ...(m.desc ? [T(m.desc, 'italic', 4.2, 'soft', 5)] : [])]),
         T(dateShort(w.date), 'caps', 3, 'soft', 0),
+      ];
+    }
+    case 'barmenu': {
+      const bar = c.bar;
+      const sigs = bar?.signatures ?? [];
+      return [
+        T('Signature drinks', 'head', 12, 'foil', 1.5),
+        T(w.names, 'italic', 3.6, 'soft', 4),
+        ...(sigs.length ? [{ t: '', role: 'body' as Role, s: 11, gap: 5, kind: 'art' as const, draw: (x: X, cx: number, y: number, h: number) => glassRow(x, sigs, inksOf(c), cx, y, h / 11) }] : []),
+        ...sigs.flatMap((d) => [T(d.name, 'body', 5.6, 'ink', 0.6), T(d.desc + (d.zero ? ' · alcohol-free' : ''), 'italic', 3.6, 'soft', 4)]),
+        ...(bar ? [RULE(3), T('Also pouring', 'caps', 2.8, 'accent', 1), T([bar.wine.sparkling, bar.wine.white, bar.wine.red].filter(Boolean).join('  ·  '), 'body', 3.6, 'ink', 0)] : []),
       ];
     }
     case 'placecard':
@@ -738,6 +759,86 @@ function seatingGrid(x: X, c: DrawCtx, I: Inks, bx: number, by: number, bw: numb
       cy = gy + Math.floor(i / cols) * ch;
     const blocks = [T(t.name, 'caps', 2.6 * k, 'accent', 1.2 * k), ...(t.guests.length ? t.guests.map((g) => T(g, 'body', 2.9 * k, 'ink', 0.5 * k)) : [T('Guests to come', 'italic', 2.6 * k, 'soft', 0)])];
     stack(x, c, I, blocks, cx + u, cy, cw - 2 * u, ch - u, u, rows === 1 ? 'center' : 'top');
+  });
+}
+
+/** A row of little illustrated glasses, one per signature drink, filled with its colour. */
+function glassRow(x: X, sigs: Array<{ glass: string; colour: string }>, I: Inks, midX: number, y: number, u: number) {
+  const n = sigs.length,
+    gap = 16 * u,
+    x0 = midX - ((n - 1) * gap) / 2;
+  sigs.forEach((s, i) => {
+    const cx = x0 + i * gap,
+      h = 9 * u;
+    x.save();
+    x.lineWidth = u * 0.3;
+    x.strokeStyle = I.soft;
+    x.fillStyle = rgba(s.colour, 0.85);
+    const bowl = (path: () => void, liquidTop: number) => {
+      x.save();
+      path();
+      x.clip();
+      x.fillRect(cx - 6 * u, y + liquidTop, 12 * u, h);
+      x.restore();
+      path();
+      x.stroke();
+    };
+    const stem = (top: number) => {
+      x.beginPath();
+      x.moveTo(cx, y + top);
+      x.lineTo(cx, y + h);
+      x.moveTo(cx - 2 * u, y + h);
+      x.lineTo(cx + 2 * u, y + h);
+      x.stroke();
+    };
+    if (s.glass === 'coupe') {
+      bowl(() => {
+        x.beginPath();
+        x.moveTo(cx - 3.4 * u, y + 2 * u);
+        x.quadraticCurveTo(cx, y + 6.4 * u, cx + 3.4 * u, y + 2 * u);
+        x.closePath();
+      }, 2.8 * u);
+      stem(4.2 * u);
+    } else if (s.glass === 'martini') {
+      bowl(() => {
+        x.beginPath();
+        x.moveTo(cx - 3.6 * u, y + 1.5 * u);
+        x.lineTo(cx + 3.6 * u, y + 1.5 * u);
+        x.lineTo(cx, y + 5.2 * u);
+        x.closePath();
+      }, 2.2 * u);
+      stem(5.2 * u);
+    } else if (s.glass === 'flute') {
+      bowl(() => {
+        x.beginPath();
+        x.moveTo(cx - 1.3 * u, y);
+        x.lineTo(cx + 1.3 * u, y);
+        x.lineTo(cx + 1 * u, y + 5.5 * u);
+        x.quadraticCurveTo(cx, y + 6.4 * u, cx - 1 * u, y + 5.5 * u);
+        x.closePath();
+      }, 1.4 * u);
+      stem(6.2 * u);
+    } else if (s.glass === 'wine') {
+      bowl(() => {
+        x.beginPath();
+        x.moveTo(cx - 2.4 * u, y + 0.6 * u);
+        x.lineTo(cx + 2.4 * u, y + 0.6 * u);
+        x.quadraticCurveTo(cx + 2.8 * u, y + 5.4 * u, cx, y + 5.6 * u);
+        x.quadraticCurveTo(cx - 2.8 * u, y + 5.4 * u, cx - 2.4 * u, y + 0.6 * u);
+        x.closePath();
+      }, 2.6 * u);
+      stem(5.6 * u);
+    } else {
+      // Rocks (short) or highball (tall) tumbler.
+      const tall = s.glass === 'highball';
+      const gw = tall ? 2.2 * u : 3 * u,
+        top = tall ? 0 : 3.4 * u;
+      bowl(() => {
+        x.beginPath();
+        x.rect(cx - gw, y + top, gw * 2, h - top);
+      }, top + (h - top) * 0.3);
+    }
+    x.restore();
   });
 }
 

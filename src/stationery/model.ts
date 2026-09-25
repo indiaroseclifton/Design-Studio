@@ -4,7 +4,7 @@
  * share links, and the 3D scene's place cards, table numbers, menus and signs can show it.
  */
 
-export type PieceKind = 'savethedate' | 'invitation' | 'rsvp' | 'details' | 'menu' | 'placecard' | 'tablenum' | 'welcome' | 'program' | 'seating' | 'favour' | 'thankyou';
+export type PieceKind = 'savethedate' | 'invitation' | 'rsvp' | 'details' | 'menu' | 'barmenu' | 'placecard' | 'tablenum' | 'welcome' | 'program' | 'seating' | 'favour' | 'thankyou';
 export type ThemeId = 'garden' | 'classic' | 'deco' | 'minimal' | 'rustic' | 'celestial' | 'wreath';
 export type PaperId = 'cotton' | 'ivory' | 'white' | 'kraft' | 'blush' | 'sage' | 'navy' | 'black';
 export type FoilId = 'none' | 'gold' | 'rosegold' | 'silver' | 'copper';
@@ -31,6 +31,7 @@ export const PIECES: Record<PieceKind, PieceDef> = {
   rsvp: { n: 'RSVP card', note: 'Reply card with choices', mm: [127, 89], price: 1.1 },
   details: { n: 'Details card', note: 'Timings, dress code, website', mm: [127, 178], price: 1.4 },
   menu: { n: 'Menu', note: 'One per place, DL size', mm: [99, 210], price: 1.9 },
+  barmenu: { n: 'Bar menu', note: 'Signature drinks, framed at the bar', mm: [210, 297], price: 12 },
   placecard: { n: 'Place cards', note: 'Folded tent cards, one per guest', mm: [90, 55], fold: true, price: 0.9 },
   tablenum: { n: 'Table numbers', note: 'One per table, for a stand', mm: [100, 140], price: 3.5 },
   welcome: { n: 'Welcome sign', note: 'A1 board for the easel', mm: [594, 841], big: true, price: 65 },
@@ -39,7 +40,7 @@ export const PIECES: Record<PieceKind, PieceDef> = {
   favour: { n: 'Favour tags', note: 'Small tags for favours', mm: [50, 90], price: 0.5 },
   thankyou: { n: 'Thank-you cards', note: 'Sent after the day', mm: [148, 105], price: 1.4 },
 };
-export const PIECE_ORDER: PieceKind[] = ['savethedate', 'invitation', 'rsvp', 'details', 'program', 'menu', 'placecard', 'tablenum', 'welcome', 'seating', 'favour', 'thankyou'];
+export const PIECE_ORDER: PieceKind[] = ['savethedate', 'invitation', 'rsvp', 'details', 'program', 'menu', 'barmenu', 'placecard', 'tablenum', 'welcome', 'seating', 'favour', 'thankyou'];
 
 export const PAPERS: Record<PaperId, { n: string; c: string; ink: string; soft: string; tex: 'cotton' | 'smooth' | 'kraft' }> = {
   cotton: { n: 'Cotton rag', c: '#fbf8f2', ink: '#3b3129', soft: '#8a7a6a', tex: 'cotton' },
@@ -156,7 +157,7 @@ export function defaultSuite(names = 'Olivia & James', date = ''): Suite {
       dress: 'Black tie optional',
       note: '',
     },
-    pieces: { savethedate: true, invitation: true, rsvp: true, details: true, menu: true, placecard: true, tablenum: true, welcome: true, program: true, seating: true, favour: false, thankyou: false },
+    pieces: { savethedate: true, invitation: true, rsvp: true, details: true, menu: true, barmenu: false, placecard: true, tablenum: true, welcome: true, program: true, seating: true, favour: false, thankyou: false },
     spares: 5,
     guests: '',
     program: DEFAULT_PROGRAM,
@@ -321,6 +322,7 @@ export function pieceQty(k: PieceKind, s: Suite, guests: number, tables: number)
     details: households,
     program: guests,
     menu: guests,
+    barmenu: 2,
     placecard: listed || guests,
     tablenum: tables,
     welcome: 1,
@@ -328,6 +330,6 @@ export function pieceQty(k: PieceKind, s: Suite, guests: number, tables: number)
     favour: guests,
     thankyou: households,
   }[k];
-  const perPiece = k === 'welcome' || k === 'seating' || k === 'tablenum' || k === 'placecard' ? 0 : s.spares;
+  const perPiece = k === 'welcome' || k === 'seating' || k === 'tablenum' || k === 'placecard' || k === 'barmenu' ? 0 : s.spares;
   return base + perPiece;
 }

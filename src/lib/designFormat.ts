@@ -3,6 +3,7 @@ import { CHAIRS, CLOTHS, DECOR, OVERLAYS, PALS, genTables } from '../engine/stud
 import { VENUES } from '../engine/venues.gen';
 import { DEF_TABLE, newId, newSeed } from './designOps';
 import { sanitizeSuite } from '../stationery/model';
+import { sanitizePlan } from '../menu/model';
 import type { Design, PlacedItem, TableLayout, TablePos, TimeOfDay, Weather } from '../types';
 
 export const DEFAULT_DESIGN: Design = {
@@ -98,5 +99,6 @@ export function normalizeDesign(raw: unknown): Design | null {
       f: isHex(cp.f) ? cp.f : PALS.custom.f,
     },
     ...(o.stationery ? { stationery: sanitizeSuite(o.stationery) ?? undefined } : {}),
+    ...(o.menu ? { menu: sanitizePlan(o.menu) ?? undefined } : {}),
   };
 }

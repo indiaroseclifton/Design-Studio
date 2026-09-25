@@ -27,6 +27,7 @@ import {
   type TypeId,
   type Wording,
 } from '../../stationery/model';
+import { drawCtxFor } from '../../stationery/ctx';
 import { loadStationeryFonts, paperFontsVersion, subscribePaper } from '../../stationery/paperArt';
 import { Sec, Stepper } from '../studio3d/ui';
 import { histReducer } from '../studio3d/state';
@@ -141,7 +142,7 @@ export function StationeryStudio() {
   }, []);
 
   const pal = useMemo(() => palOf(design.palette, design.customPalette), [design.palette, design.customPalette]);
-  const ctx: DrawCtx = useMemo(() => ({ suite, pal, venueName: VENUES[design.venue]?.name ?? '', tables: design.tables.length }), [suite, pal, design.venue, design.tables.length]);
+  const ctx: DrawCtx = useMemo(() => drawCtxFor(design, suite), [design, suite]);
 
   const update = useCallback((fn: (s: Suite) => void) => {
     const n = structuredClone(hist.now);
@@ -361,9 +362,15 @@ export function StationeryStudio() {
               <Sec label="Seating chart" hint="Optional. One table per line, e.g. “Table One: Amelia, Ben”. Left empty, the guest list is shared across your tables.">
                 <textarea className="inp st-area" aria-label="Seating chart" rows={4} value={suite.seating} onChange={(e) => update((s) => void (s.seating = e.target.value))} />
               </Sec>
-              <Sec label="Menu" hint="One course per line: Course | Dish | details.">
-                <textarea className="inp st-area" aria-label="Menu" rows={4} value={suite.menu} onChange={(e) => update((s) => void (s.menu = e.target.value))} />
-              </Sec>
+              {design.menu ? (
+                <Sec label="Menu">
+                  <p className="fs-hint-text">The menu, reply-card meal choices and bar menu come from the Menu &amp; Bar planner.</p>
+                </Sec>
+              ) : (
+                <Sec label="Menu" hint="One course per line: Course | Dish | details. Or plan it properly in Studios → Menu & Bar.">
+                  <textarea className="inp st-area" aria-label="Menu" rows={4} value={suite.menu} onChange={(e) => update((s) => void (s.menu = e.target.value))} />
+                </Sec>
+              )}
               <Sec label="Order of service" hint="One item per line.">
                 <textarea className="inp st-area" aria-label="Order of service" rows={6} value={suite.program} onChange={(e) => update((s) => void (s.program = e.target.value))} />
               </Sec>

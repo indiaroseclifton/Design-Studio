@@ -1,9 +1,8 @@
 import * as THREE from 'three';
 import { setPaperArt, type PaperKind } from '../engine/florals';
-import { palOf } from '../engine/studio';
-import { VENUES } from '../engine/venues.gen';
 import { shared } from '../three/utils';
 import { pieceCanvas, type DrawCtx } from './draw';
+import { drawCtxFor } from './ctx';
 import { FONT_FAMILIES, PIECES, type PieceKind } from './model';
 import type { Design } from '../types';
 
@@ -27,11 +26,11 @@ function clear() {
 
 /** Point the scene's paper pieces at this design's suite. Returns a key that changes whenever they should be rebuilt. */
 export function syncPaper(S: Design): string {
-  const key = S.stationery ? JSON.stringify([S.stationery, S.palette, S.palette === 'custom' ? S.customPalette : 0, S.venue, S.tables.length, fontsReady]) : '';
+  const key = S.stationery ? JSON.stringify([S.stationery, S.menu ?? 0, S.palette, S.palette === 'custom' ? S.customPalette : 0, S.venue, S.tables.length, fontsReady]) : '';
   if (key !== ctxKey) {
     ctxKey = key;
     clear();
-    ctx = S.stationery ? { suite: S.stationery, pal: palOf(S.palette, S.customPalette), venueName: VENUES[S.venue]?.name ?? '', tables: S.tables.length } : null;
+    ctx = S.stationery ? drawCtxFor(S, S.stationery) : null;
   }
   return key;
 }

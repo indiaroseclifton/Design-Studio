@@ -11,6 +11,7 @@ import { ITEMS, itemGroup } from '../../engine/catalogue';
 import { VENUES } from '../../engine/venues.gen';
 import { CHAIRS, CLOTHS, DECOR, OVERLAYS, hasTbl, palOf } from '../../engine/studio';
 import { useDesignStore } from '../../store/designStore';
+import { menuForCards } from '../../menu/model';
 import type { Design } from '../../types';
 
 /*
@@ -178,6 +179,8 @@ export function StorybookOverlay() {
         layoutNear: layoutClone(S, true),
         cake,
         champagne,
+        // The Feast chapter prints the planned menu (canapés and late-night food aside).
+        ...(S.menu ? { feast: menuForCards({ ...S.menu, courses: S.menu.courses.filter((c) => !/canap|late/i.test(c.course)) }).map((m) => [m.course, m.dish, m.desc] as [string, string, string]) } : {}),
       };
       b.setContent(content.current);
       setLoading('');

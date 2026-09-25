@@ -81,6 +81,8 @@ export interface BookContent {
   layoutNear: THREE.Object3D | null;
   cake: THREE.Object3D | null;
   champagne: THREE.Object3D | null;
+  /** courses from the Menu & Bar planner: [course, dish, details] */
+  feast?: Array<[string, string, string]>;
 }
 
 interface Side {
@@ -447,11 +449,13 @@ export class Book {
         ch({
           num: 'V',
           title: 'The Feast',
-          menu: [
-            ['To start', 'Burrata & grilled peach', 'hazelnut · honey · rocket'],
-            ['The main', 'Slow-roasted lamb', 'rosemary potatoes · salsa verde'],
-            ['To finish', f.cake, 'with a coupe of champagne'],
-          ],
+          menu: c.feast?.length
+            ? c.feast.slice(0, 4)
+            : [
+                ['To start', 'Burrata & grilled peach', 'hazelnut · honey · rocket'],
+                ['The main', 'Slow-roasted lamb', 'rosemary potatoes · salsa verde'],
+                ['To finish', f.cake, 'with a coupe of champagne'],
+              ],
           n: 10,
         }),
       ],

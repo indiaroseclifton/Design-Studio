@@ -127,6 +127,8 @@ export interface Design {
   customPalette: { b: string[]; g: string; f: string };
   /** the Stationery Studio's suite (src/stationery/model.ts) */
   stationery?: import('./stationery/model').Suite;
+  /** the Menu & Bar planner's plan (src/menu/model.ts) */
+  menu?: import('./menu/model').MenuPlan;
 }
 
 export type Selection = { k: 'item'; id: string } | { k: 'multi'; ids: string[] } | { k: 'table'; idx: number } | { k: 'chairs' } | null;

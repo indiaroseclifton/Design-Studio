@@ -3,6 +3,7 @@ import { CHAIRS, CLOTHS, DECOR, OVERLAYS, chairSpots, hasTbl } from '../engine/s
 import { placement } from './designOps';
 import type { Design, VenueDef } from '../types';
 import { PIECES, PIECE_ORDER, pieceQty } from '../stationery/model';
+import { BAR_STYLES, SERVICES, menuCosts } from '../menu/model';
 
 export interface QuoteSettings {
   cur: string;
@@ -51,6 +52,14 @@ export function quoteLines(S: Design, venue: VenueDef, prices: Record<string, nu
   const cnt = new Map<string, number>();
   for (const i of S.items) if (placement(S, i).visible) cnt.set(i.type, (cnt.get(i.type) ?? 0) + 1);
   for (const [k, q] of cnt) add('item:' + k, ITEMS[k].name, q, CATL[ITEMS[k].cat] || 'Other');
+  // Catering from the Menu & Bar planner.
+  const mp = S.menu;
+  if (mp) {
+    const c = menuCosts(mp, S.guests);
+    add('catering:food', `${SERVICES[mp.service].n} menu · ${mp.courses.length} courses`, c.adults, 'Catering', c.foodPerHead);
+    add('catering:kids', 'Children’s menu', mp.children, 'Catering', c.kidsPerHead);
+    add('catering:bar:' + mp.bar.style, `${BAR_STYLES[mp.bar.style].n} · ${mp.bar.hours} hours`, c.drinksPerHead ? c.adults : 0, 'Catering', c.drinksPerHead);
+  }
   // Printing for the Stationery Studio's suite.
   const st = S.stationery;
   if (st) for (const k of PIECE_ORDER) if (st.pieces[k]) add('stationery:' + k, PIECES[k].n, pieceQty(k, st, S.guests, S.tables.length), 'Stationery', PIECES[k].price);
