@@ -6,6 +6,7 @@ import { VenueStrip } from './components/ui/VenueStrip';
 import { HintPill } from './components/ui/HintPill';
 import { Toast } from './components/ui/Toast';
 import { Letterbox } from './components/ui/Letterbox';
+import { PanelHandles } from './components/ui/PanelHandles';
 import { Suspense, lazy, useEffect } from 'react';
 import { useVenuePhoto } from './lib/venuePhoto';
 import { useDesignStore } from './store/designStore';
@@ -80,6 +81,7 @@ export default function App() {
       <RightColumn />
       <VenueStrip />
       <HintPill />
+      <PanelHandles />
       <Toast />
       <Suspense fallback={<div className="lazy-wait">Loading…</div>}>
         {/* key: reopening the studio (or editing another arrangement) starts from fresh state */}

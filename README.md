@@ -193,6 +193,20 @@ full-screen view was open.
   - model-viewer is loaded from jsDelivr on first use, as in the prototype. If it can't load, the `.glb`
     can still be downloaded.
 
+### Minimising panels and full screen
+
+- Each panel has a handle on its edge: the catalogue, the settings column and the venue strip. Clicking a
+  handle slides that panel off screen, and the handle stays at the edge to bring it back. The toolbar
+  re-centres over the space.
+- In the Flower, Cake, Stationery, Menu, Music and Attire studios, the side panel minimises the same way,
+  and the preview widens to fill the screen.
+- **View** in the toolbar (under **More** on phones) lists each panel, with minimise or show all, and
+  **Full screen**. It lights up while anything is minimised or full screen is on.
+- Keys: **F** for full screen and **H** to hide or show the panels. In a studio, **H** toggles its side
+  panel.
+- Which panels are minimised is remembered between visits. Where the browser has no full-screen mode
+  (iPhone Safari), **Full screen** minimises the panels instead.
+
 ### Phones, tablets and drag-and-drop
 
 - **Screens up to 860px wide:**

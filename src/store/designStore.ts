@@ -16,6 +16,7 @@ import type { AttirePlan } from '../attire/model';
 
 export type ModalKind = 'designs' | 'quote' | 'addons';
 /** Full-screen overlays (only one at a time; opening one closes the studios and modals). */
+export type PanelKey = 'catalogue' | 'panel' | 'strip' | 'side';
 export type OverlayKind = 'lantern' | 'ar' | 'storybook' | 'stationery' | 'menu' | 'music' | 'attire';
 
 const MAX_HISTORY = 80;
@@ -48,6 +49,11 @@ interface StoreState {
   /** small screens: which side panel is open as a drawer */
   drawer: 'catalogue' | 'panel' | null;
   setDrawer: (d: 'catalogue' | 'panel' | null) => void;
+  /** panels minimised out of the way: the catalogue, the right-hand column, the venue strip, a studio's side panel */
+  hidden: Record<PanelKey, boolean>;
+  togglePanel: (k: PanelKey) => void;
+  /** hide (or bring back) the catalogue, the right column and the venue strip together */
+  setAllPanels: (hide: boolean) => void;
   openOverlay: (o: OverlayKind) => void;
   closeOverlay: () => void;
   /** Save the Stationery Studio's suite onto the design (undoable). */
@@ -189,6 +195,9 @@ export const useDesignStore = create<StoreState>()(
         overlay: null,
         drawer: null,
         setDrawer: (d) => set({ drawer: d }),
+        hidden: { catalogue: false, panel: false, strip: false, side: false },
+        togglePanel: (k) => set((s) => ({ hidden: { ...s.hidden, [k]: !s.hidden[k] } })),
+        setAllPanels: (hide) => set((s) => ({ hidden: { ...s.hidden, catalogue: hide, panel: hide, strip: hide } })),
         openOverlay: (o) => set({ overlay: o, studio: { open: false, editId: null }, cakeStudio: { open: false, editId: null }, modal: null }),
         closeOverlay: () => set({ overlay: null }),
         saveStationery: (suite) => {
@@ -503,7 +512,7 @@ export const useDesignStore = create<StoreState>()(
       name: 'vs3_state',
       version: 1,
       // The design and the viewer's preferences survive a reload; history, selection and UI state don't.
-      partialize: (s) => ({ design: s.design, tweaks: s.tweaks, motion: s.motion, packsOn: s.packsOn, snapOn: s.snapOn, showZone: s.showZone, activeCategory: s.activeCategory }),
+      partialize: (s) => ({ design: s.design, tweaks: s.tweaks, motion: s.motion, hidden: s.hidden, packsOn: s.packsOn, snapOn: s.snapOn, showZone: s.showZone, activeCategory: s.activeCategory }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<StoreState>;
         return {
@@ -511,6 +520,7 @@ export const useDesignStore = create<StoreState>()(
           design: normalizeDesign(p.design) ?? current.design,
           tweaks: { ...current.tweaks, ...p.tweaks },
           motion: p.motion ?? current.motion,
+          hidden: Object.fromEntries(Object.entries(current.hidden).map(([k, v]) => [k, typeof p.hidden?.[k as PanelKey] === 'boolean' ? p.hidden[k as PanelKey] : v])) as Record<PanelKey, boolean>,
           packsOn: Array.isArray(p.packsOn) ? p.packsOn.filter((x) => typeof x === 'string') : current.packsOn,
           snapOn: p.snapOn ?? current.snapOn,
           showZone: p.showZone ?? current.showZone,
